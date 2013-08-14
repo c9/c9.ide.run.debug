@@ -1,0 +1,24 @@
+<a:application xmlns:a="http://ajax.org/2005/aml">
+    <a:script><![CDATA[
+        function scopesort(value, args, xmlNode) {
+            return (xmlNode.tagName == "scope" ? 1 : 0) + value.toLowerCase();
+        }
+    ]]></a:script>
+    <a:datagrid id="datagrid"
+      border     = "0"
+      class      = "noscrollbar"
+      skinset    = "debugger"
+      options    = "size|move"
+      prerender  = "false"
+      caching    = "true"
+      empty-message = "No variables to display">
+        <a:actions />
+        <a:each match="[scope|variable]" sort="[@name]" sort-method="scopesort">
+            <a:insert match="[scope]" />
+            <a:insert match="[node()[@children='true']]" />
+            <a:column caption="Property" value="{[@name]||'Scope'}" width="40%" icon="debugger/genericvariable_obj.gif" tree="true" />
+            <a:column caption="Value" value="[@value]" width="60%" editor="textbox" />
+            <a:column caption="Type" value="[@type]" width="50"/>
+        </a:each>
+    </a:datagrid>
+</a:application>

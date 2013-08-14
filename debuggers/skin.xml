@@ -1,0 +1,488 @@
+<?xml version='1.0'?>
+<a:skin xmlns:a="http://ajax.org/2005/aml">
+    <a:datagrid name="datagrid">
+        <a:style><![CDATA[
+            .blackdg{
+                position: relative;
+                /*background-color: #303130;*/
+                overflow : hidden;
+    
+                font-family: Tahoma, Arial;
+                font-size: 8pt;
+    
+                padding: 0;
+                /*color : #333;*/
+                color : #e1e1e1;
+                
+                /*border-bottom: 10px solid rgb(255, 0, 0);*/
+            }
+    
+            .blackdg .headings{
+                height: 18px;
+                z-index : 10;
+                white-space : nowrap;
+                overflow: hidden;
+                /*background: rgb(61, 61, 61);*/
+                /*border-bottom: 1px solid rgb(36, 35, 35);*/
+                /*display: none;*/
+                /*border: 1px solid rgb(82, 82, 82);*/
+                /*border-width: 0 0 1px 0;*/
+                background: rgb(46, 46, 46);
+                border-bottom: 1px solid rgb(41, 41, 41);
+            }
+    
+            .blackdg .headings div{
+                overflow : hidden;
+                text-overflow : ellipsis;
+                color: rgb(150, 150, 150);
+                
+                /*border: 1px solid rgb(82, 82, 82);*/
+                /*border-width: 0px 1px 0 0;*/
+            }
+    
+            .blackdg .headings div u{
+                padding : 2px 4px 1px 3px;
+                display : block;
+                height : 15px;
+                text-decoration : none;
+            }
+    
+            .docktab .blackdg .headings div u{
+            }
+    
+            .blackdg .headings div.hover,
+            .blackdg .headings div.down,
+            .blackdg .headings div.drag{
+                color : rgb(199, 198, 198);
+                background: rgb(51, 51, 51);
+            }
+    
+            .blackdg .headings div.drag{
+            }
+    
+            .blackdg .headings div.down u,
+            .blackdg .headings div.hover u {
+            }
+    
+            .blackdg .headings div.ascending u{
+                background-image : url(images/sort_asc.gif);
+                background-repeat : no-repeat;
+                background-position : right 7px;
+            }
+    
+    
+            .blackdg .headings div.descending u {
+                background-image : url(images/sort_desc.gif);
+                background-repeat : no-repeat;
+                background-position : right 6px;
+            }
+    
+            .blackdg .records{
+                white-space : nowrap;
+            }
+            .blackdg .records blockquote{
+                margin : 0;
+            }
+    
+            .blackdg .records .row span{
+                height : 18px;
+            }
+    
+            .blackdg .records .row span u{
+                padding : 1px 3px 3px 4px;
+                height : 15px;
+                display : block;
+                text-decoration : none;
+                text-overflow : ellipsis;
+                white-space : nowrap;
+                overflow : hidden;
+                cursor: default;
+            }
+    
+            .blackdg .records .row{
+                height : 18px;
+                padding-left : 0;
+            }
+    
+            .blackdgFocus .records .indicate span{
+                padding : 0;
+                color : #333;
+            }
+    
+            .blackdgFocus .records .indicate span u{
+            }
+    
+            .blackdgFocus .records .row span{
+            }
+    
+            .blackdg .records .selected, .blackdg .records .selected span{
+            }
+            .blackdgFocus .records .selected, .blackdgFocus .records .selected span,
+            .blackdgFocus .records .dragAppend, .blackdgFocus .records .dragAppend span{
+            }
+            .blackdgFocus .records .selected span u {
+            }
+    
+            .blackdg .move_pointer{
+                height : 100px;
+                width : 2px;
+                position : absolute;
+                top : 0;
+                margin : -10px 0 0 -4px;
+                width : 9px;
+                height : 38px;
+                background : url(images/column_picker.gif) no-repeat 0 0;
+                overflow : hidden;
+                z-index : 1000;
+            }
+    
+            .blackdg .size_pointer{
+                border : 1px dotted gray;
+                border-width : 0 1px 0 1px;
+                height : 100%;
+                position : absolute;
+                top : 0px;
+                z-index : 1000;
+                cursor : e-resize;
+                cursor : ew-resize;
+            }
+    
+            .blackdg .message{
+                font-weight : normal;
+                color : #333;
+                padding : 0 0 10px 50px;
+                font-size : 11px;
+                margin-top : 10px;
+                border-bottom : 1px solid #eee;
+            }
+    
+            .blackdg .message label{
+                padding : 2px 0 0 4px;
+                height : 14px;
+                display : inline-block;
+                position : relative;
+                top : -3px;
+            }
+    
+            .blackdg .root .message{
+                padding : 0;
+                margin : 0;
+                border-bottom : 0;
+                height : 0;
+            }
+            .blackdg .root .message label{
+                top : 0;
+                padding : 0;
+                height : 0;
+                overflow : hidden;
+            }
+    
+            .pointer{
+                display : none;
+            }
+    
+            .blackdg .records span.treecell u{
+                text-decoration : none;
+                display : inline-block;
+                width : 100%;
+                padding : 1px 2px 3px 2px;
+                border : 0;
+            }
+    
+            .blackdg .records span.treecell u {
+                background-repeat: no-repeat;
+                padding-left:20px;
+            }
+    
+            .blackdg.noicon .records span.treecell u {
+                padding-left: 0;
+            }
+    
+            .blackdg .records .row .treecell .iconCell, .blackdg .records .row .iconCell  {
+                background-position : 1px 1px;
+                background-repeat   : no-repeat;
+                padding             : 1px 0 3px 22px;
+            }
+    
+            .blackdg .treecell strong{
+                width : 9px;
+                height : 9px;
+                margin : 4px 4px 0 4px;
+                position : relative;
+                top : -1px;
+                display : inline-block;
+                
+                width : 15px;
+                height : 15px;
+                margin : 2px 0 0 4px;
+                vertical-align : top;
+            }
+    
+            .blackdg .plus>.treecell strong,
+            .blackdg .pluslast>.treecell strong{
+                background-image : url(images/plus_dark.png);
+            }
+    
+            .blackdg .min>.treecell strong,
+            .blackdg .minlast>.treecell strong{
+                background-image : url(images/min_dark.png);
+            }
+    
+            .blackdg .loading>.treecell strong{
+                background : url(images/file-tree-load-spinner-dark.gif) no-repeat 0 0;
+                width : 16px;
+                height : 16px;
+                top : -1px !important;
+                left : -2px;
+                vertical-align : top;
+                margin-right : -1px !important;
+            }
+            .blackdg .loading.selected>.treecell strong{
+                background : url(images/file-tree-load-spinner-dark-unfocus.gif) no-repeat 0 0;
+            }
+            .blackdgFocus .loading.selected>.treecell strong{
+                background : url(images/file-tree-load-spinner-dark-selected.gif) no-repeat 0 0;
+            }
+            
+            .blackdg .row>span{
+                vertical-align : top;
+            }
+            
+            .blackdg{
+                color : #ccc;
+            }
+            .blackdgFocus{
+            }
+            
+            /*.blackdg .headings div u,*/
+            /*.blackdg .headings div,*/
+            /*.blackdg .records,*/
+            /*.blackdg .records .row span u,*/
+            /*.blackdg .records .selected, */
+            /*.blackdg .records .selected span{*/
+            /*    color : #999;*/
+            /*}*/
+            /*.blackdg .records .row span u{*/
+            /*    color : #ddd;*/
+            /*}*/
+            
+            .blackdg .records .row,
+            .blackdg .records .row span{
+                background : transparent;
+            }
+            .blackdg .records .row span{
+                overflow : hidden;
+            }
+            /*.blackdg .row:nth-child(4n-1) span{*/
+            /*    background : rgba(255,255,255,0.05);*/
+            /*}*/
+            .blackdg .row span.colsel{
+                background : rgba(0,0,0,0.15);
+            }
+            .blackdg .records .selected span{
+                background-color : rgb(56,56,56);
+                vertical-align : top;
+            }
+            .blackdgFocus .records .selected span{
+                background-color : #748512;
+                color : #f1f1f1;
+            }
+            .blackdg .records{
+                padding-top : 0;
+                top : 18px;
+                overflow : hidden;
+            }
+            
+            .blackdg .empty{
+                padding: 5px 5px 8px 5px;
+            }
+    
+            /*.blackdg {*/
+            /*    overflow : hidden;*/
+            /*    font-family: Tahoma, Arial;*/
+            /*    font-size: 8pt;*/
+            /*    padding: 0;*/
+            /*    color : #333;*/
+            /*}*/
+    
+            /*.blackdg .headings {*/
+            /*    height : 20px;*/
+            /*    z-index : 10;*/
+            /*    white-space : nowrap;*/
+            /*}*/
+    
+            /*.blackdg .records {*/
+            /*    white-space : nowrap;*/
+            /*    display:block;*/
+            /*    margin:0;*/
+            /*}*/
+    
+            /*.blackdg div.records .treecell strong {*/
+            /*    top : 0px;*/
+            /*}*/
+    
+            /*.draggrid .treecell .iconCell,*/
+            /*.blackdg .records span.treecell .iconCell {*/
+            /*    padding : 2px 0 1px 24px;*/
+            /*}*/
+        ]]></a:style>
+    
+    
+        <a:presentation>
+            <a:main head="div[1]" container="div[3]" pointer="div[2]" widthdiff="1" iframe2="true">
+                <div class="blackdg">
+                    <div class="headings">
+    
+                    </div>
+                    <div class="pointer"> </div>
+                    <div class="records"> </div>
+                </div>
+            </a:main>
+    
+            <a:headitem class="." caption="u/text()">
+                <div><u>-<span/></u></div>
+            </a:headitem>
+    
+            <a:rowheaditem class="." caption="text()">
+                <span>-</span>
+            </a:rowheaditem>
+    
+            <a:item class="." container="following-sibling::blockquote">
+                <div class="row"/>
+                <blockquote> </blockquote>
+            </a:item>
+    
+            <a:dragindicator>
+                <div class="dragdg"> </div>
+            </a:dragindicator>
+    
+            <a:cell caption="u"><span><u>-</u></span></a:cell>
+    
+            <a:treecell caption="u" openclose="strong" editoroffset="0"><span class="treecell"><strong> </strong><u>-</u></span></a:treecell>
+    
+            <a:container container=".">
+                <div class="dginfo">-</div>
+            </a:container>
+    
+            <a:loading>
+                <div class="message"></div>
+            </a:loading>
+    
+            <a:empty caption=".">
+                <div class="empty"> </div>
+            </a:empty>
+        </a:presentation>
+    </a:datagrid>
+    <a:list name="breakpoints">
+        <a:style><![CDATA[
+            .listBP{
+                overflow: auto;
+                position: relative;
+                background-color: #fafbfc;
+                cursor: default;
+                padding    : 3px;
+                color      : rgba(255,255,255,0.8);
+            }
+    
+            .listBP .bpItem{
+                padding    : 2px 2px 2px 22px;
+                position : relative;
+            }
+            .listBP .bpItem:hover{
+                background-color: #748512;
+                color: #f1f1f1;
+                border-radius : 3px;
+            }
+    
+            .listBP .content{
+                cursor : pointer;
+                font-family : Arial, Tahoma;
+                font-size : 12px;
+                padding : 2px 0 0 0;
+            }
+    
+            .listBP .content div{
+                font-family : Courier New;
+                padding : 0 0 0 0;
+                font-size : 12px;
+                white-space : nowrap;
+                overflow : hidden;
+                color      : rgba(255,255,255,0.6);
+            }
+    
+            .listBP .checkbox {
+                width      : 21px;
+                height     : 19px;
+                background : url("icons/toggle_breakpoints2.png") no-repeat 0 0;
+                display : block;
+                position : absolute;
+                left : 0px;
+                top : 4px;
+            }
+    
+            .listBP .bpItem .checkbox:hover{
+            }
+    
+            .listBP .bpItem .checkbox:active{
+            }
+    
+            .listBP .checked .checkbox:active {
+            }
+    
+            .listBP .checked .checkbox {
+                background : url("icons/toggle_breakpoints1.png") no-repeat 0 0;
+            }
+    
+            .listBP .checked .checkbox:hover{
+            }
+    
+            .listBPDisabled .checkbox {
+            }
+    
+            .listBPDisabled .bpItem {
+                opacity : 0.5
+            }
+    
+            .listBP .bpItem .btnclose {
+                width               : 21px;
+                height              : 19px;
+                position            : absolute;
+                right               : 2px;
+                top                 : 5px;
+                background-image    : url(icons/remove_breakpoints.png);
+                background-repeat   : no-repeat;
+                background-position : 0 0;
+                display             : none;
+            }
+    
+            .listBP .bpItem:hover .btnclose {
+                display: block;
+            }
+    
+            .listBP .bpItem .btnclose:hover {
+                background-position : 0 -19px;
+            }
+    
+            .listBP .bpItem .btnclose:active {
+                background-position : 0 -38px;
+            }
+        ]]></a:style>
+    
+        <a:presentation>
+            <a:main container=".">
+                <div class="listBP">
+                </div>
+            </a:main>
+            <a:item class="." caption="div" icon="div" select="." check="span">
+                <div class="bpItem">
+                    <span class="checkbox"> </span>
+                    <div class="content"> </div>
+                    <strong class="btnclose"> </strong>
+                </div>
+            </a:item>
+            <a:empty caption=".">
+                <div class="message">-</div>
+            </a:empty>
+        </a:presentation>
+    </a:list>
+</a:skin>

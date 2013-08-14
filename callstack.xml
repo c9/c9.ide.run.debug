@@ -1,0 +1,18 @@
+<a:application xmlns:a="http://ajax.org/2005/aml">
+    <a:datagrid
+      id         = "datagrid"
+      skinset    = "debugger"
+      border     = "0"
+      options    = "size|move"
+      caching    = "false"
+      class      = "noscrollbar"
+      empty-message = "No callstack to display">
+        <a:actions />
+        <a:each match="[frame]">
+            <a:column caption="Function" value="[@name]" width="60%" icon2="debugger/stckframe_obj.gif" />
+            <a:column caption="Script" value="[@path]" width="40%" />
+            <a:column caption="Ln" value="{parseInt([@line])+1}" width="30"/>
+            <a:column caption="Col" value="{parseInt([@column])+1}" width="30"/>
+        </a:each>
+    </a:datagrid>
+</a:application>
