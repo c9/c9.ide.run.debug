@@ -83,7 +83,13 @@ require([
         "plugins/c9.fs/proc",
         "plugins/c9.fs/net",
         "plugins/c9.fs/fs",
-        "plugins/c9.fs/vfs",
+        {
+            packagePath: "plugins/c9.vfs.client/vfs_client",
+            smithIo     : {
+                "prefix": "/smith.io/server"
+            }
+        },
+        "plugins/c9.ide.auth/auth",
         {
             packagePath : "plugins/c9.ide.run/run",
             testing     : true,

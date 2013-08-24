@@ -29,7 +29,13 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             packagePath: "plugins/c9.fs/fs",
             baseProc: baseProc
         },
-        "plugins/c9.fs/vfs",
+        {
+            packagePath: "plugins/c9.vfs.client/vfs_client",
+            smithIo     : {
+                "prefix": "/smith.io/server"
+            }
+        },
+        "plugins/c9.ide.auth/auth",
         "plugins/c9.ide.run.debug/breakpoints",
         
         //Mock Plugins
