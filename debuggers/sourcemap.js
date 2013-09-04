@@ -52,7 +52,7 @@ define(function(require, exports, module) {
         var plugin = new Plugin("Ajax.org", main.consumes);
         var emit   = plugin.getEmitter();
         
-        const KNOWN_MAP_TYPES = ["ts", "coffee"];
+        var KNOWN_MAP_TYPES = ["ts", "coffee"];
         
         var generated = {};
         var originals = {};
