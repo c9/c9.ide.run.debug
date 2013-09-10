@@ -102,7 +102,7 @@ define(function(require, exports, module) {
                 
                 variable.value = value;
                 
-                emit("variable.edit", {
+                emit("variableEdit", {
                     value    : value,
                     oldValue : oldValue,
                     node     : node,
@@ -126,7 +126,7 @@ define(function(require, exports, module) {
                     return false;
             });
             
-            datagrid.on("editor.create", function(e){
+            datagrid.on("editorCreate", function(e){
                 var tb = e.editor;
             });
             

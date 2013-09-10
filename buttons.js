@@ -195,7 +195,7 @@ define(function(require, exports, module) {
 //                }
 //            });
         
-            c9.on("state.change", function(e){
+            c9.on("stateChange", function(e){
                 if (e.state & c9.PROCESS) {
                     
                 }
@@ -242,7 +242,7 @@ define(function(require, exports, module) {
             });
             
             btnBpRemove.on("click", function(){
-                emit("breakpoints.remove");
+                emit("breakpointsRemove");
             });
             
             btnPause.on("click", function(){
@@ -265,9 +265,9 @@ define(function(require, exports, module) {
         
         function resume(){   emit("resume"); }
         function suspend(){  emit("suspend"); }
-        function stepInto(){ emit("step.into"); }
-        function stepOver(){ emit("step.over"); }
-        function stepOut(){  emit("step.out"); }
+        function stepInto(){ emit("stepInto"); }
+        function stepOver(){ emit("stepOver"); }
+        function stepOut(){  emit("stepOut"); }
         
         function toggleBreakpoints(force){
             enableBreakpoints = force !== undefined
@@ -285,7 +285,7 @@ define(function(require, exports, module) {
                 );
             }
             
-            emit("breakpoints.enable", {
+            emit("breakpointsEnable", {
                 value : enableBreakpoints
             });
         }
@@ -306,7 +306,7 @@ define(function(require, exports, module) {
                 );
             }
             
-            emit("pause.toggle", {
+            emit("pauseToggle", {
                 value : pauseOnBreaks
             });
         }

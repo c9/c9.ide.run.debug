@@ -96,7 +96,7 @@ define(function(require, exports, module) {
             // - [Hook debugger plugin] Getting a breakpoint from the server (or using the api) - also fires breakpoint.update
             //     - Fetch source in background
             //         - If sourcemap is detected update breakpoints
-            debug.on("breakpoints.update", function(e){
+            debug.on("breakpointsUpdate", function(e){
                 if (e.action == "add") {
                     var bp = e.breakpoint;
                     
@@ -139,7 +139,7 @@ define(function(require, exports, module) {
                             fetching--;
                             
                             if (!fetching)
-                                emit("fetching.done");
+                                emit("fetchingDone");
                         });
                     }
                 }
@@ -208,7 +208,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Update new frames with cached data
-            debug.on("frames.load", function(e){
+            debug.on("framesLoad", function(e){
                 var frames = e.frames;
                 
                 frames.forEach(function(frame){

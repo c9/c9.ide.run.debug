@@ -159,7 +159,7 @@ define(function(require, exports, module) {
         
             list.setAttribute("contextmenu", menu);
             
-            menu.on("prop.visible", function(){
+            menu.on("propVisible", function(){
                 var length = list.length;
                 
                 menu.childNodes.forEach(function(item){
@@ -591,7 +591,7 @@ define(function(require, exports, module) {
             if (isNaN(line))    line    = null;
             if (isNaN(column)) column = null;
             
-            emit("breakpoint.show", {
+            emit("breakpointShow", {
                 path   : path,
                 line   : line,
                 column : column
@@ -671,7 +671,7 @@ define(function(require, exports, module) {
          *   object:
          *     path  {String} description
          *     row   {Number} description
-         * @event breakpoint.show Fires when a user clicks on a breakpoint
+         * @event breakpointShow Fires when a user clicks on a breakpoint
          *   object:
          *     path   {Number} description
          *     row    {Number} description

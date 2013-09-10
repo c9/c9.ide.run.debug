@@ -108,7 +108,7 @@ define(function(require, exports, module) {
                 showDebugFrame(frame);
             updateMarker(frame);
                 
-            emit("frame.activate", {frame : activeFrame});
+            emit("frameActivate", {frame : activeFrame});
         }
         
         /***** Helper Functions *****/
@@ -315,7 +315,7 @@ define(function(require, exports, module) {
             if (noRecur)
                 return;
         
-            emit("scope.update", {
+            emit("scopeUpdate", {
                 scope     : frame,
                 variables : frame.variables
             });
@@ -323,7 +323,7 @@ define(function(require, exports, module) {
             // Update scopes if already loaded
             frame.scopes && frame.scopes.forEach(function(scope){
                 if (scope.variables) {
-                    emit("scope.update", {scope: scope});
+                    emit("scopeUpdate", {scope: scope});
                 }
             });
         };

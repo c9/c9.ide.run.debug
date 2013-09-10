@@ -160,7 +160,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             it('should goto a breakpoint', function(done) {
                 var bp = list.getFirstTraverseNode();
                 
-                breakpoints.on("breakpoint.show", function(e){
+                breakpoints.on("breakpointShow", function(e){
                     expect(e.path).to.equal("/file.txt");
                     expect(e.row).to.equal(1);
                     expect(e.column).to.equal(1);

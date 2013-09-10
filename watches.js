@@ -166,7 +166,7 @@ define(function(require, exports, module) {
                 }
             });
             
-            datagrid.on("editor.create", function(e){
+            datagrid.on("editorCreate", function(e){
                 var tb = e.editor;
                 
                 tb.on("keydown", function(e){

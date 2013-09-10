@@ -46,7 +46,7 @@ define(function(require, exports, module) {
         function load(){
             // State Change
             var stateTimer;
-            dbg.on("state.change", function(e){
+            dbg.on("stateChange", function(e){
                 var action = e.state == "running" ? "disable" : "enable";
                 
                 // Wait for 500ms in case we are step debugging
@@ -96,20 +96,20 @@ define(function(require, exports, module) {
             // Debug
             buttons.on("resume",     function(){ dbg.resume(); }, plugin);
             buttons.on("suspend",    function(){ dbg.suspend(); }, plugin);
-            buttons.on("step.into",  function(){ dbg.stepInto(); }, plugin);
-            buttons.on("step.out",   function(){ dbg.stepOut(); }, plugin);
-            buttons.on("step.over",  function(){ dbg.stepOver(); }, plugin);
-            buttons.on("breakpoints.remove", function(e){
+            buttons.on("stepInto",  function(){ dbg.stepInto(); }, plugin);
+            buttons.on("stepOut",   function(){ dbg.stepOut(); }, plugin);
+            buttons.on("stepOver",  function(){ dbg.stepOver(); }, plugin);
+            buttons.on("breakpointsRemove", function(e){
                 breakpoints.breakpoints.forEach(function(bp){
                     breakpoints.clearBreakpoint(bp);
                 });
             }, plugin);
-            buttons.on("breakpoints.enable", function(e){
+            buttons.on("breakpointsEnable", function(e){
                 e.value
                     ? breakpoints.activateAll()
                     : breakpoints.deactivateAll();
             }, plugin);
-            buttons.on("pause.toggle", function(e){ 
+            buttons.on("pauseToggle", function(e){ 
                 dbg.setBreakBehavior(
                     e.value === 1 ? "uncaught" : "all",
                     e.value === 0 ? false : true
@@ -131,7 +131,7 @@ define(function(require, exports, module) {
                 
                 // Reload Frames
                 function setFrames(err, frames) {
-                    emit("frames.load", {frames: frames});
+                    emit("framesLoad", {frames: frames});
                     
                     // Load frames into the callstack and if the frames 
                     // are completely reloaded, set active frame
@@ -166,14 +166,14 @@ define(function(require, exports, module) {
                     frame.line   = e.frame.line;
                     frame.column = e.frame.column;
                     
-                    emit("frames.load", {frames: frames});
+                    emit("framesLoad", {frames: frames});
                     callstack.loadFrames(frames, true);
                     callstack.activeFrame = frame;
                 }
                 // Otherwise set the current frame as the active one, until
                 // we have fetched all the frames
                 else {
-                    emit("frames.load", {frames: [e.frame]});
+                    emit("framesLoad", {frames: [e.frame]});
                     callstack.loadFrames([e.frame]);
                     callstack.activeFrame = e.frame;
                 }
@@ -200,7 +200,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // When a new frame becomes active
-            dbg.on("frame.activate", function(e){
+            dbg.on("frameActivate", function(e){
                 // This is disabled, because frames should be kept around a bit
                 // in order to update them, for a better UX experience
                 //callstack.activeFrame = e.frame;
@@ -236,7 +236,7 @@ define(function(require, exports, module) {
             }, plugin)
             
             // Updating the scopes of a frame
-            callstack.on("scope.update", function(e){
+            callstack.on("scopeUpdate", function(e){
                 if (e.variables) {
                     variables.updateScope(e.scope, e.variables);
                 }
@@ -255,7 +255,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Adding single new sources when they are compiles
-            dbg.on("sources.compile", function(e){
+            dbg.on("sourcesCompile", function(e){
                 callstack.addSource(e.source);
             }, plugin);
             
@@ -274,7 +274,7 @@ define(function(require, exports, module) {
             
             // When clicking on a frame in the call stack show it 
             // in the variables datagrid
-            callstack.on("frame.activate", function(e){
+            callstack.on("frameActivate", function(e){
                 // @todo reload the clicked frame recursively + keep state
                 variables.loadFrame(e.frame);
             }, plugin);
@@ -307,7 +307,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Editor variables of the current frame
-            variables.on("variable.edit", function(e){
+            variables.on("variableEdit", function(e){
                 // Set new value
                 dbg.setVariable(e.variable, e.parents, 
                   e.value, callstack.activeFrame, function(err){
@@ -355,7 +355,7 @@ define(function(require, exports, module) {
             function updateBreakpoint(e){
                 // Give plugins the ability to update a breakpoint before
                 // setting it in the debugger
-                emit("breakpoints.update", e);
+                emit("breakpointsUpdate", e);
                 
                 if (!state || state == "disconnected")
                     return;
@@ -382,11 +382,11 @@ define(function(require, exports, module) {
             breakpoints.on("update", updateBreakpoint, plugin);
             
             // Open a file at the right position when clicking on a breakpoint
-            breakpoints.on("breakpoint.show", function(e){
+            breakpoints.on("breakpointShow", function(e){
                 callstack.openFile(e);
             }, plugin);
             
-            dbg.on("breakpoint.update", function(e){
+            dbg.on("breakpointUpdate", function(e){
                 var bp = e.breakpoint;
                 
                 if (bp.actual) {
@@ -398,7 +398,7 @@ define(function(require, exports, module) {
                     }
                 }
                 
-                emit("breakpoints.update", {
+                emit("breakpointsUpdate", {
                     breakpoint : bp, 
                     action     : "add", 
                     force      : true

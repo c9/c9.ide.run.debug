@@ -405,7 +405,7 @@ define(function(require, exports, module) {
                 state = v8dbg.isRunning() ? "running" : "stopped";
             }
     
-            emit("state.change", {state: state});
+            emit("stateChange", {state: state});
     
             if (state != "stopped")
                 onChangeFrame(null);
@@ -448,13 +448,13 @@ define(function(require, exports, module) {
         }
     
         function onAfterCompile(e) {
-            emit("sources.compile", {source: createSource(e.data.script)})
+            emit("sourcesCompile", {source: createSource(e.data.script)})
         }
     
         function onChangeFrame(frame, silent) {
             activeFrame = frame;
             if (!silent)
-                emit("frame.activate", {frame: frame});
+                emit("frameActivate", {frame: frame});
         }
     
         /***** Socket *****/
@@ -741,7 +741,7 @@ define(function(require, exports, module) {
             
             if (!scriptId) {
                 // Wait until source is parsed
-                plugin.on("sources.compile", function wait(e){
+                plugin.on("sourcesCompile", function wait(e){
                     if (e.source.path.indexOf(path) > -1) {
                         plugin.off("sources.compile", wait);
                         setBreakpoint(bp, callback);
@@ -755,7 +755,7 @@ define(function(require, exports, module) {
                     bp.id = info.breakpoint;
                     if (info.actual_locations) {
                         bp.actual = info.actual_locations[0];
-                        emit("breakpoint.update", {breakpoint: bp});
+                        emit("breakpointUpdate", {breakpoint: bp});
                     }
                     callback && callback(bp, info);
                 });
@@ -853,14 +853,14 @@ define(function(require, exports, module) {
          * @event break Fires ...
          *   object:
          *     frame    {Object} description
-         * @event state.change Fires ...
+         * @event stateChange Fires ...
          *   object:
          *     state    {null|"running"|"stopped"} description
          * @event exception Fires ...
          *   object:
          *     frame     {Object} descriptionn
          *     exception {Error} description
-         * @event frame.activate Fires ...
+         * @event frameActivate Fires ...
          *   object:
          *     frame    {Object} description
          * @event getFrames Fires ...
@@ -869,7 +869,7 @@ define(function(require, exports, module) {
          * @event sources Fires ...
          *   object:
          *     sources  {Array} description
-         * @event sources.compile Fires when a source file is (re-)compiled.
+         * @event sourcesCompile Fires when a source file is (re-)compiled.
          *   In your event handler, make sure you check against the sources you
          *   already have collected to see if you need to update or add your
          *   source.
