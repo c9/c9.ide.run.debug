@@ -149,7 +149,7 @@ define(function(require, exports, module) {
             debug.on("beforeAttach", function(e){
                 // Wait until all breakpoints have been checked
                 if (fetching) {
-                    plugin.once("fetching.done", function(){
+                    plugin.once("fetchingDone", function(){
                         debug.debug(e.runner, e.callback);
                     });
                     return false;
