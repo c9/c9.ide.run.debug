@@ -50,7 +50,7 @@ define(function(require, exports, module) {
 //                    _self.updateBreakpointModel(doc.acesession);
 //            });
     
-            tabs.on("after.activate", function(e){
+            tabs.on("afterActivate", function(e){
                 var page = e.page;
                 if (!page || !page.editor || page.editor.type != "ace")
                     return;

@@ -72,7 +72,7 @@ define(function(require, exports, module) {
             datagrid.setAttribute("model", modelFrames);
             
             // Update markers when a document becomes available
-            tabs.on("after.activate", function(e) {
+            tabs.on("afterActivate", function(e) {
                 updateMarker(activeFrame);
             });
             
@@ -222,7 +222,7 @@ define(function(require, exports, module) {
                 };
             }
 
-            if (emit("before.open", {
+            if (emit("beforeOpen", {
                 source    : findSource(scriptId) || { id : scriptId },
                 state     : state,
                 generated : options.generated

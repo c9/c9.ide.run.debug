@@ -208,8 +208,8 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Clicking on the call stack
-            callstack.on("before.open", function(e){
-                return emit("before.open", e);
+            callstack.on("beforeOpen", function(e){
+                return emit("beforeOpen", e);
             }, plugin)
             
             callstack.on("open", function(e){
@@ -456,7 +456,7 @@ define(function(require, exports, module) {
             //@todo
             
             // Set script source when a file is saved
-            save.on("after.save", function(e) {
+            save.on("afterSave", function(e) {
                 if (state == "disconnected")
                     return;
 
@@ -577,7 +577,7 @@ define(function(require, exports, module) {
             
             // Hook for plugins to delay or cancel debugger attaching
             // However cancels is responible for calling the callback
-            if (emit("before.attach", {
+            if (emit("beforeAttach", {
                 runner   : runner, 
                 callback : callback
             }) === false)

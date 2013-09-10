@@ -150,7 +150,7 @@ define(function(require, exports, module) {
                 });
             });
             
-            datagrid.on("before.edit", function(e){
+            datagrid.on("beforeEdit", function(e){
                 // Don't allow setting the value of new variables
                 if (e.heading.caption == "Value" 
                   && datagrid.selected.getAttribute("ref").substr(0,3) == "new") {

@@ -146,7 +146,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             //     - [Hook debugger plugin] Make sure init waits until done
-            debug.on("before.attach", function(e){
+            debug.on("beforeAttach", function(e){
                 // Wait until all breakpoints have been checked
                 if (fetching) {
                     plugin.once("fetching.done", function(){
@@ -167,7 +167,7 @@ define(function(require, exports, module) {
             //                     - load original file
             //                 - update all breakpoints set on this file
             //                 - update all frames in this file
-            debug.on("before.open", function(e){
+            debug.on("beforeOpen", function(e){
                 if (e.generated)
                     return;
                 

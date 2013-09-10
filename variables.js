@@ -116,7 +116,7 @@ define(function(require, exports, module) {
                 });
             });
             
-            datagrid.on("before.edit", function(e){
+            datagrid.on("beforeEdit", function(e){
                 // Don't allow setting the value of scopes
                 if (datagrid.selected.localName == "scope")
                     return false;
