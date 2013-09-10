@@ -619,7 +619,7 @@ define(function(require, exports, module) {
                     onChangeFrame(null, silent);
                 }
                 
-                emit("frames.get", {frames: frames});
+                emit("getFrames", {frames: frames});
                 callback(null, frames);
             });
         }

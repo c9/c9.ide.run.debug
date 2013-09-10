@@ -322,7 +322,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Editing watches in the current or global frame
-            watches.on("watch.set", function(e){
+            watches.on("setWatch", function(e){
                 // Execute expression
                 if (e.isNew) {
                     dbg.evaluate(e.name, callstack.activeFrame, 

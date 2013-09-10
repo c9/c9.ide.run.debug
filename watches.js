@@ -132,7 +132,7 @@ define(function(require, exports, module) {
                     }
                 }
                 
-                emit("watch.set", {
+                emit("setWatch", {
                     name     : name,
                     value    : value,
                     node     : node,
@@ -201,7 +201,7 @@ define(function(require, exports, module) {
                 var node = findVariableXml(variable);
                 if (!node) return;
                 
-                emit("watch.set", {
+                emit("setWatch", {
                     name     : variable.name,
                     node     : node,
                     isNew    : true,
