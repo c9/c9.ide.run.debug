@@ -42,12 +42,12 @@ require([
                 skin  : "tab_console",
                 nodes : [
                     {
-                        type : "page",
+                        type : "tab",
                         editorType : "output",
                         active : true
                     },
                     {
-                        type : "page",
+                        type : "tab",
                         editorType : "immediate",
                         document : {
                             title : "Immediate"
@@ -72,7 +72,7 @@ require([
             testing     : 2
         },
         "plugins/c9.ide.editors/pane",
-        "plugins/c9.ide.editors/page",
+        "plugins/c9.ide.editors/tab",
         {
             packagePath : "plugins/c9.ide.ace/ace",
             staticPrefix : "plugins/c9.ide.layout.classic"
@@ -156,9 +156,9 @@ require([
         var debug    = imports["debugger"];
         var v8dbg    = imports["v8debugger"];
         
-        expect.html.setConstructor(function(page){
-            if (typeof page == "object")
-                return page.pane.aml.getPage("editor::" + page.editorType).$ext;
+        expect.html.setConstructor(function(tab){
+            if (typeof tab == "object")
+                return tab.pane.aml.getPage("editor::" + tab.editorType).$ext;
         });
         
         function countEvents(count, expected, done){

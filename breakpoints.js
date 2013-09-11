@@ -51,15 +51,15 @@ define(function(require, exports, module) {
 //            });
     
             tabs.on("afterActivate", function(e){
-                var page = e.page;
-                if (!page || !page.editor || page.editor.type != "ace")
+                var tab = e.tab;
+                if (!tab || !tab.editor || tab.editor.type != "ace")
                     return;
                     
-                var ace = page.editor.ace;
+                var ace = tab.editor.ace;
                 
                 decorateAce(ace);
-                decorateDocument(page.document);
-                updateDocument(page.document);
+                decorateDocument(tab.document);
+                updateDocument(tab.document);
             });
             
             // restore the breakpoints from the IDE settings
@@ -233,7 +233,7 @@ define(function(require, exports, module) {
                 
                 var session   = editor.session;
                 var line      = e.getDocumentPosition().row;
-                var path      = session.c9doc.page.path;
+                var path      = session.c9doc.tab.path;
                 var className = session.getBreakpoints()[line];
                 var obp       = findBreakpoint(path, line);
                 var removed   = false;
@@ -387,7 +387,7 @@ define(function(require, exports, module) {
                 
             var session = doc.getSession();
             var rows    = [];
-            var path    = doc.page.path;
+            var path    = doc.tab.path;
             
             if (!session.session)
                 return;
@@ -438,19 +438,19 @@ define(function(require, exports, module) {
 //        }
 
 //        function updateOpenFiles() {
-//            tabs.getPages().forEach(function(page){
-//                if (page.editor.type == "ace") {
-//                    updateDocument(page.document);
+//            tabs.getPages().forEach(function(tab){
+//                if (tab.editor.type == "ace") {
+//                    updateDocument(tab.document);
 //                }
 //            });
 //        }
 
         function updateBreakpoint(breakpoint, action){
             //This can be optimized, currently rereading everything
-            var page = tabs.findPage(breakpoint.path);
-            if (page) {
+            var tab = tabs.findPage(breakpoint.path);
+            if (tab) {
                 // @todo there used to be a timeout here
-                updateDocument(page.document);
+                updateDocument(tab.document);
             }
             
             // Don't call update to enable/disable breakpoints when they are
@@ -533,10 +533,10 @@ define(function(require, exports, module) {
         }
         
         function redrawBreakpoint(bp){
-            var page = tabs.findPage(bp.path);
-            if (!page) return;
+            var tab = tabs.findPage(bp.path);
+            if (!tab) return;
             
-            updateDocument(page.document);
+            updateDocument(tab.document);
             
             var bpx = findBreakpointXml(bp);
             bpx.setAttribute("line", bp.line);

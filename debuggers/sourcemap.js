@@ -199,7 +199,7 @@ define(function(require, exports, module) {
                         e.state.value = source;
                     }
                     
-                    tabs.open(e.state, function(err, page, done){
+                    tabs.open(e.state, function(err, tab, done){
                         if (err) return; //@todo util.alert??
                     });
                 });

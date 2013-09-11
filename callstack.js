@@ -127,12 +127,12 @@ define(function(require, exports, module) {
         }
 
         function updateMarker(frame) {
-            var page   = tabs.focussedPage;
-            var editor = page && page.editor;
+            var tab   = tabs.focussedPage;
+            var editor = tab && tab.editor;
             if (!editor || editor.type != "ace")
                 return;
                 
-            var session = page.document.getSession().session;
+            var session = tab.document.getSession().session;
 
             session.$stackMarker && removeMarker(session, "stack");
             session.$stepMarker && removeMarker(session, "step");
@@ -140,7 +140,7 @@ define(function(require, exports, module) {
             if (!frame)
                 return;
                 
-            var path      = page.path;
+            var path      = tab.path;
             var framePath = frame.path;
             var row       = frame.line;
             
@@ -229,16 +229,16 @@ define(function(require, exports, module) {
             }) === false)
                 return;
 
-            tabs.open(state, function(err, page, done){
+            tabs.open(state, function(err, tab, done){
                 emit("open", {
                     source    : findSource(scriptId) || { id : scriptId },
-                    page      : page,
+                    tab      : tab,
                     line      : row,
                     column    : column,
                     generated : options.generated,
                     done      : function(source){
-                        page.document.value = source;
-                        // page.document.getSession().jumpTo({
+                        tab.document.value = source;
+                        // tab.document.getSession().jumpTo({
                         //     row    : row,
                         //     column : column
                         // });

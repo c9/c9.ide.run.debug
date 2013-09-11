@@ -220,7 +220,7 @@ define(function(require, exports, module) {
                         path  : e.source.path, 
                         value : value,
                         done  : e.done,
-                        page  : e.page
+                        tab  : e.tab
                     }) !== false)
                         e.done(value);
                 }
@@ -231,7 +231,7 @@ define(function(require, exports, module) {
                 }
                 else {
                     dbg.getSource(e.source, done);
-                    e.page.document.getSession().readOnly = true;
+                    e.tab.document.getSession().readOnly = true;
                 }
             }, plugin)
             
