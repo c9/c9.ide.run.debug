@@ -127,7 +127,7 @@ define(function(require, exports, module) {
         }
 
         function updateMarker(frame) {
-            var tab   = tabs.focussedPage;
+            var tab   = tabs.focussedTab;
             var editor = tab && tab.editor;
             if (!editor || editor.type != "ace")
                 return;

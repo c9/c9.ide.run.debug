@@ -79,8 +79,8 @@ define(function(require, exports, module) {
                     + breakpoints.join("") + "</breakpoints>");
                 
                 // update the currently active document
-                if (tabs.focussedPage && tabs.focussedPage.editor.type == "ace") {
-                    updateDocument(tabs.focussedPage.document);
+                if (tabs.focussedTab && tabs.focussedTab.editor.type == "ace") {
+                    updateDocument(tabs.focussedTab.document);
                 }
                 
                 if (settings.getBool("user/breakpoints/@show"))
@@ -438,7 +438,7 @@ define(function(require, exports, module) {
 //        }
 
 //        function updateOpenFiles() {
-//            tabs.getPages().forEach(function(tab){
+//            tabs.getTabs().forEach(function(tab){
 //                if (tab.editor.type == "ace") {
 //                    updateDocument(tab.document);
 //                }
@@ -447,7 +447,7 @@ define(function(require, exports, module) {
 
         function updateBreakpoint(breakpoint, action){
             //This can be optimized, currently rereading everything
-            var tab = tabs.findPage(breakpoint.path);
+            var tab = tabs.findTab(breakpoint.path);
             if (tab) {
                 // @todo there used to be a timeout here
                 updateDocument(tab.document);
@@ -533,7 +533,7 @@ define(function(require, exports, module) {
         }
         
         function redrawBreakpoint(bp){
-            var tab = tabs.findPage(bp.path);
+            var tab = tabs.findTab(bp.path);
             if (!tab) return;
             
             updateDocument(tab.document);

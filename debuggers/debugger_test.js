@@ -229,7 +229,7 @@ require([
                         debug.off("detach", c2);
                         debug.off("break", c2);
                         
-                        expect.html(tabs.focussedPage, "Output Mismatch")
+                        expect.html(tabs.focussedTab, "Output Mismatch")
                             .text(/Hello\sWorld/);
                         
                         fs.rmfile("/helloworld.js", function(){

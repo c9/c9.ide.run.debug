@@ -112,7 +112,7 @@ require([
                         done();
                     });
                     chrome.send('Network.enable');
-                    chrome.send('Page.reload');
+                    chrome.send('Tab.reload');
                 });
             });
         });
@@ -125,7 +125,7 @@ require([
                         done();
                     });
                     chrome.send('Network.enable');
-                    chrome.send('Page.reload');
+                    chrome.send('Tab.reload');
                 });
             });
         });
@@ -140,14 +140,14 @@ require([
                         done();
                     });
                     chrome.send('Network.enable');
-                    chrome.send('Page.reload');
+                    chrome.send('Tab.reload');
                 });
             });
         });
         describe('checking the result and without specifyng parameters', function () {
             it('should succeed', function (done) {
                 Chrome(function(chrome) {
-                    chrome.send('Page.enable', function (error, response) {
+                    chrome.send('Tab.enable', function (error, response) {
                         chrome.close();
                         assert(!error);
                         done();
@@ -174,14 +174,14 @@ require([
                         done();
                     });
                     chrome.Network.enable();
-                    chrome.Page.reload();
+                    chrome.Tab.reload();
                 });
             });
         });
         describe('checking the result and without specifyng parameters (shorthand)', function () {
             it('should succeed', function (done) {
                 Chrome(function(chrome) {
-                    chrome.Page.enable(function (error, response) {
+                    chrome.Tab.enable(function (error, response) {
                         chrome.close();
                         assert(!error);
                         done();

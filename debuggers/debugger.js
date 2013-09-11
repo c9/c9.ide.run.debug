@@ -391,7 +391,7 @@ define(function(require, exports, module) {
                 
                 if (bp.actual) {
                     // Delete breakpoints that are outside of the doc length
-                    var session = tabs.findPage(bp.path).document.getSession();
+                    var session = tabs.findTab(bp.path).document.getSession();
                     if (bp.actual.line >= session.session.getLength()) {
                         breakpoints.clearBreakpoint(bp);
                         return;
