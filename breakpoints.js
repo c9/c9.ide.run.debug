@@ -668,11 +668,11 @@ define(function(require, exports, module) {
          * Draws the file tree
          * @event draw Fires when the breakpoints list is drawn
          * @event update Fires when a breakpoint is updated
-         *   object:
+         * @param {Object} e
          *     path  {String} description
          *     row   {Number} description
          * @event breakpointShow Fires when a user clicks on a breakpoint
-         *   object:
+         * @param {Object} e
          *     path   {Number} description
          *     row    {Number} description
          *     column {Number} description

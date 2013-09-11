@@ -853,29 +853,29 @@ define(function(require, exports, module) {
          *   "running"
          * 
          * @event break Fires ...
-         *   object:
+         * @param {Object} e
          *     frame    {Object} description
          * @event stateChange Fires ...
-         *   object:
+         * @param {Object} e
          *     state    {null|"running"|"stopped"} description
          * @event exception Fires ...
-         *   object:
+         * @param {Object} e
          *     frame     {Object} descriptionn
          *     exception {Error} description
          * @event frameActivate Fires ...
-         *   object:
+         * @param {Object} e
          *     frame    {Object} description
          * @event getFrames Fires ...
-         *   object:
+         * @param {Object} e
          *     frames   {Array} description
          * @event sources Fires ...
-         *   object:
+         * @param {Object} e
          *     sources  {Array} description
          * @event sourcesCompile Fires when a source file is (re-)compiled.
          *   In your event handler, make sure you check against the sources you
          *   already have collected to see if you need to update or add your
          *   source.
-         *   object:
+         * @param {Object} e
          *     file     {Object} the file information (not the content)
          *       path       {String}
          *       text       {String}
