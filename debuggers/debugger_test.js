@@ -68,7 +68,7 @@ require([
         },
         "plugins/c9.ide.editors/editor",
         {
-            packagePath : "plugins/c9.ide.editors/tabs",
+            packagePath : "plugins/c9.ide.editors/tabmanager",
             testing     : 2
         },
         "plugins/c9.ide.editors/pane",
@@ -139,7 +139,7 @@ require([
             setup    : expect.html.mocked
         },
         {
-            consumes : ["run", "debugger", "fs", "tabs", "sourcemap", "v8debugger"],
+            consumes : ["run", "debugger", "fs", "tabManager", "sourcemap", "v8debugger"],
             provides : [],
             setup    : main
         }
@@ -152,7 +152,7 @@ require([
     function main(options, imports, register) {
         var run      = imports.run;
         var fs       = imports.fs;
-        var tabs     = imports.tabs;
+        var tabs     = imports.tabManager;
         var debug    = imports["debugger"];
         var v8dbg    = imports["v8debugger"];
         

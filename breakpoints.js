@@ -5,7 +5,7 @@
  * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
  */
 define(function(require, exports, module) {
-    main.consumes = ["plugin", "c9", "util", "settings", "ui", "tabs"];
+    main.consumes = ["plugin", "c9", "util", "settings", "ui", "tabManager"];
     main.provides = ["breakpoints"];
     return main;
 
@@ -15,7 +15,7 @@ define(function(require, exports, module) {
         var Plugin   = imports.plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
-        var tabs     = imports.tabs;
+        var tabs     = imports.tabManager;
         
         var markup     = require("text!./breakpoints.xml");
         var html       = require("text!./breakpoints.html");

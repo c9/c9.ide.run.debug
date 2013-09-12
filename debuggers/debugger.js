@@ -8,7 +8,7 @@ define(function(require, exports, module) {
     main.consumes = [
         "plugin", "c9", "util", "settings", "ui", "layout", "menus", "save", 
         "buttons", "callstack", "breakpoints", "immediate", "variables", "fs",
-        "watches", "run", "panels", "tabs" //, "quickwatch"
+        "watches", "run", "panels", "tabManager" //, "quickwatch"
     ];
     main.provides = ["debugger"];
     return main;
@@ -23,7 +23,7 @@ define(function(require, exports, module) {
         var menus    = imports.menus;
         var save     = imports.save;
         var layout   = imports.layout;
-        var tabs     = imports.tabs;
+        var tabs     = imports.tabManager;
         var panels   = imports.panels;
         var run      = imports.run;
         

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "util", "settings", "debugger", "preferences", "fs", "tabs"
+        "plugin", "util", "settings", "debugger", "preferences", "fs", "tabManager"
     ];
     main.provides = ["sourcemap"];
     return main;
@@ -42,7 +42,7 @@ define(function(require, exports, module) {
         var debug    = imports.debugger;
         var prefs    = imports.preferences;
         var fs       = imports.fs;
-        var tabs     = imports.tabs;
+        var tabs     = imports.tabManager;
         
         // Source Map Parser
         var SourceMapConsumer = require('lib/source-map/lib/source-map/source-map-consumer').SourceMapConsumer;

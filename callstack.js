@@ -6,7 +6,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "c9", "util", "settings", "ui", "layout", "tabs"
+        "plugin", "c9", "util", "settings", "ui", "layout", "tabManager"
     ];
     main.provides = ["callstack"];
     return main;
@@ -18,7 +18,7 @@ define(function(require, exports, module) {
         var settings = imports.settings;
         var ui       = imports.ui;
         var layout   = imports.layout;
-        var tabs     = imports.tabs;
+        var tabs     = imports.tabManager;
         
         var Range    = require("ace/range").Range;
         var Frame    = require("./data/frame");
