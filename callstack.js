@@ -72,7 +72,7 @@ define(function(require, exports, module) {
             datagrid.setAttribute("model", modelFrames);
             
             // Update markers when a document becomes available
-            tabs.on("afterActivate", function(e) {
+            tabs.on("tabAfterActivate", function(e) {
                 updateMarker(activeFrame);
             });
             
