@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "util", "settings", "debugger", "preferences", "fs", "tabManager"
+        "Plugin", "util", "settings", "debugger", "preferences", "fs", "tabManager"
     ];
     main.provides = ["sourcemap"];
     return main;
@@ -37,7 +37,7 @@ define(function(require, exports, module) {
     
     function main(options, imports, register) {
         var util     = imports.util;
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var settings = imports.settings;
         var debug    = imports.debugger;
         var prefs    = imports.preferences;

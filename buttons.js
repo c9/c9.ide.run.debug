@@ -6,14 +6,14 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "c9", "settings", "ui", "layout", "commands", "console"
+        "Plugin", "c9", "settings", "ui", "layout", "commands", "console"
     ];
     main.provides = ["buttons"];
     return main;
 
     function main(options, imports, register) {
         var c9       = imports.c9;
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         //var settings = imports.settings;
         var ui       = imports.ui;
         //var menus    = imports.menus;

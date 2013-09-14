@@ -6,13 +6,13 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "settings", "ui", "layout", "util"
+        "Plugin", "settings", "ui", "layout", "util"
     ];
     main.provides = ["variables"];
     return main;
 
     function main(options, imports, register) {
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
         var layout   = imports.layout;

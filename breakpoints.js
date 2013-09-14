@@ -5,14 +5,14 @@
  * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
  */
 define(function(require, exports, module) {
-    main.consumes = ["plugin", "c9", "util", "settings", "ui", "tabManager"];
+    main.consumes = ["Plugin", "c9", "util", "settings", "ui", "tabManager"];
     main.provides = ["breakpoints"];
     return main;
 
     function main(options, imports, register) {
         var c9       = imports.c9;
         var util     = imports.util;
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
         var tabs     = imports.tabManager;

@@ -6,7 +6,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "c9", "util", "settings", "ui", "layout", "tabManager"
+        "Plugin", "c9", "util", "settings", "ui", "layout", "tabManager"
     ];
     main.provides = ["callstack"];
     return main;
@@ -14,7 +14,7 @@ define(function(require, exports, module) {
     function main(options, imports, register) {
         var c9       = imports.c9;
         var util     = imports.util;
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
         var layout   = imports.layout;

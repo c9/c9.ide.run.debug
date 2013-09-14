@@ -16,13 +16,13 @@
 //https://github.com/google/devtoolsExtended
 
 define(function(require, exports, module) {
-    main.consumes = ["plugin", "c9", "debugger", "net"];
+    main.consumes = ["Plugin", "c9", "debugger", "net"];
     main.provides = ["chromedebugger"];
     return main;
     
     function main(options, imports, register) {
         var c9       = imports.c9;
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var net      = imports.net;
         var debug    = imports["debugger"];
         
