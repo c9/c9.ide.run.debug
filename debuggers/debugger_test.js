@@ -22,7 +22,6 @@ require([
             workspaceId  : "ubuntu/ip-10-35-77-180",
             startdate    : new Date(),
             debug        : true,
-            smithIo      : "{\"prefix\":\"/smith.io/server\"}",
             hosted       : true,
             local        : false,
             hostname     : "dev.javruben.c9.io",
@@ -86,7 +85,7 @@ require([
         {
             packagePath: "plugins/c9.vfs.client/vfs_client",
             smithIo     : {
-                "prefix": "/smith.io/server"
+                "path": "/smith.io/server"
             }
         },
         "plugins/c9.ide.auth/auth",
