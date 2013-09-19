@@ -16,7 +16,6 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         },
         "plugins/c9.core/ext",
         "plugins/c9.core/http",
-        "plugins/c9.core/events",
         "plugins/c9.core/util",
         "plugins/c9.core/settings",
         {
@@ -39,7 +38,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         
         //Mock Plugins
         {
-            consumes : ["emitter", "apf", "ui"],
+            consumes : ["apf", "ui"],
             provides : ["commands", "panels", "tabs", "layout", "watcher"],
             setup    : expect.html.mocked
         },
