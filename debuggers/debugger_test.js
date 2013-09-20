@@ -22,7 +22,6 @@ require([
             workspaceId  : "ubuntu/ip-10-35-77-180",
             startdate    : new Date(),
             debug        : true,
-            smithIo      : "{\"prefix\":\"/smith.io/server\"}",
             hosted       : true,
             local        : false,
             hostname     : "dev.javruben.c9.io",
@@ -31,7 +30,6 @@ require([
         },
         
         "plugins/c9.core/ext",
-        "plugins/c9.core/events",
         "plugins/c9.core/http",
         "plugins/c9.core/util",
         "plugins/c9.ide.ui/lib_apf",
@@ -86,9 +84,10 @@ require([
         {
             packagePath: "plugins/c9.vfs.client/vfs_client",
             smithIo     : {
-                "prefix": "/smith.io/server"
+                "path": "/smith.io/server"
             }
         },
+        "plugins/c9.vfs.client/endpoint.standalone",
         "plugins/c9.ide.auth/auth",
         {
             packagePath : "plugins/c9.ide.run/run",
@@ -131,7 +130,7 @@ require([
         
         // Mock plugins
         {
-            consumes : ["emitter", "apf", "ui"],
+            consumes : ["apf", "ui"],
             provides : [
                 "commands", "watcher", "anims", "save", "preferences", 
                 "panels", "layout", "menus", "clipboard"

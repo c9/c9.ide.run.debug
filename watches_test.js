@@ -9,7 +9,6 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             packagePath : "plugins/c9.core/c9",
             startdate   : new Date(),
             debug       : true,
-            smithIo     : "{\"prefix\":\"/smith.io/server\"}",
             hosted      : true,
             davPrefix   : "/",
             local       : false,
@@ -17,7 +16,6 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         },
         "plugins/c9.core/ext",
         "plugins/c9.core/http",
-        "plugins/c9.core/events",
         "plugins/c9.core/util",
         "plugins/c9.core/settings",
         {
@@ -32,15 +30,16 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         {
             packagePath: "plugins/c9.vfs.client/vfs_client",
             smithIo     : {
-                "prefix": "/smith.io/server"
+                "path": "/smith.io/server"
             }
         },
+        "plugins/c9.vfs.client/endpoint.standalone",
         "plugins/c9.ide.auth/auth",
         "plugins/c9.ide.run.debug/watches",
         
         //Mock Plugins
         {
-            consumes : ["emitter", "apf", "ui"],
+            consumes : ["apf", "ui"],
             provides : ["commands", "panels", "tabManager", "layout", "watcher"],
             setup    : expect.html.mocked
         },
