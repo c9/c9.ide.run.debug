@@ -36,16 +36,16 @@ require([
         {
             packagePath : "plugins/c9.core/settings",
             settings : "<settings><auto><console>" + JSON.stringify({
-                type  : "pane", 
+                type  : "tab", 
                 skin  : "tab_console",
                 nodes : [
                     {
-                        type : "tab",
+                        type : "page",
                         editorType : "output",
                         active : true
                     },
                     {
-                        type : "tab",
+                        type : "page",
                         editorType : "immediate",
                         document : {
                             title : "Immediate"
@@ -66,11 +66,11 @@ require([
         },
         "plugins/c9.ide.editors/editor",
         {
-            packagePath : "plugins/c9.ide.editors/tabmanager",
+            packagePath : "plugins/c9.ide.editors/tabs",
             testing     : 2
         },
-        "plugins/c9.ide.editors/pane",
         "plugins/c9.ide.editors/tab",
+        "plugins/c9.ide.editors/page",
         {
             packagePath : "plugins/c9.ide.ace/ace",
             staticPrefix : "plugins/c9.ide.layout.classic"
@@ -138,7 +138,7 @@ require([
             setup    : expect.html.mocked
         },
         {
-            consumes : ["run", "debugger", "fs", "tabManager", "sourcemap", "v8debugger"],
+            consumes : ["run", "debugger", "fs", "tabs", "sourcemap", "v8debugger"],
             provides : [],
             setup    : main
         }
@@ -151,13 +151,13 @@ require([
     function main(options, imports, register) {
         var run      = imports.run;
         var fs       = imports.fs;
-        var tabs     = imports.tabManager;
+        var tabs     = imports.tabs;
         var debug    = imports["debugger"];
         var v8dbg    = imports["v8debugger"];
         
-        expect.html.setConstructor(function(tab){
-            if (typeof tab == "object")
-                return tab.pane.aml.getPage("editor::" + tab.editorType).$ext;
+        expect.html.setConstructor(function(page){
+            if (typeof page == "object")
+                return page.tab.aml.getPage("editor::" + page.editorType).$ext;
         });
         
         function countEvents(count, expected, done){
@@ -228,7 +228,7 @@ require([
                         debug.off("detach", c2);
                         debug.off("break", c2);
                         
-                        expect.html(tabs.focussedTab, "Output Mismatch")
+                        expect.html(tabs.focussedPage, "Output Mismatch")
                             .text(/Hello\sWorld/);
                         
                         fs.rmfile("/helloworld.js", function(){

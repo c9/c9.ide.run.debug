@@ -88,7 +88,7 @@ define(function(require, exports, module) {
             'setExtraHTTPHeaders',
             'setUserAgentOverride'
         ],
-        'Tab': [
+        'Page': [
             'disable',
             'enable',
             'navigate',

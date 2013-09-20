@@ -40,7 +40,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         //Mock Plugins
         {
             consumes : ["apf", "ui"],
-            provides : ["commands", "panels", "tabManager", "layout", "watcher"],
+            provides : ["commands", "panels", "tabs", "layout", "watcher"],
             setup    : expect.html.mocked
         },
         {
@@ -159,7 +159,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             it('should goto a breakpoint', function(done) {
                 var bp = list.getFirstTraverseNode();
                 
-                breakpoints.on("breakpointShow", function(e){
+                breakpoints.on("breakpoint.show", function(e){
                     expect(e.path).to.equal("/file.txt");
                     expect(e.row).to.equal(1);
                     expect(e.column).to.equal(1);

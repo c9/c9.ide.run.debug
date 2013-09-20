@@ -5,17 +5,17 @@
  * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
  */
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "c9", "util", "settings", "ui", "tabManager"];
+    main.consumes = ["plugin", "c9", "util", "settings", "ui", "tabs"];
     main.provides = ["breakpoints"];
     return main;
 
     function main(options, imports, register) {
         var c9       = imports.c9;
         var util     = imports.util;
-        var Plugin   = imports.Plugin;
+        var Plugin   = imports.plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
-        var tabs     = imports.tabManager;
+        var tabs     = imports.tabs;
         
         var markup     = require("text!./breakpoints.xml");
         var html       = require("text!./breakpoints.html");
@@ -50,16 +50,16 @@ define(function(require, exports, module) {
 //                    _self.updateBreakpointModel(doc.acesession);
 //            });
     
-            tabs.on("tabAfterActivate", function(e){
-                var tab = e.tab;
-                if (!tab || !tab.editor || tab.editor.type != "ace")
+            tabs.on("after.activate", function(e){
+                var page = e.page;
+                if (!page || !page.editor || page.editor.type != "ace")
                     return;
                     
-                var ace = tab.editor.ace;
+                var ace = page.editor.ace;
                 
                 decorateAce(ace);
-                decorateDocument(tab.document);
-                updateDocument(tab.document);
+                decorateDocument(page.document);
+                updateDocument(page.document);
             });
             
             // restore the breakpoints from the IDE settings
@@ -79,8 +79,8 @@ define(function(require, exports, module) {
                     + breakpoints.join("") + "</breakpoints>");
                 
                 // update the currently active document
-                if (tabs.focussedTab && tabs.focussedTab.editor.type == "ace") {
-                    updateDocument(tabs.focussedTab.document);
+                if (tabs.focussedPage && tabs.focussedPage.editor.type == "ace") {
+                    updateDocument(tabs.focussedPage.document);
                 }
                 
                 if (settings.getBool("user/breakpoints/@show"))
@@ -159,7 +159,7 @@ define(function(require, exports, module) {
         
             list.setAttribute("contextmenu", menu);
             
-            menu.on("propVisible", function(){
+            menu.on("prop.visible", function(){
                 var length = list.length;
                 
                 menu.childNodes.forEach(function(item){
@@ -233,7 +233,7 @@ define(function(require, exports, module) {
                 
                 var session   = editor.session;
                 var line      = e.getDocumentPosition().row;
-                var path      = session.c9doc.tab.path;
+                var path      = session.c9doc.page.path;
                 var className = session.getBreakpoints()[line];
                 var obp       = findBreakpoint(path, line);
                 var removed   = false;
@@ -387,7 +387,7 @@ define(function(require, exports, module) {
                 
             var session = doc.getSession();
             var rows    = [];
-            var path    = doc.tab.path;
+            var path    = doc.page.path;
             
             if (!session.session)
                 return;
@@ -438,19 +438,19 @@ define(function(require, exports, module) {
 //        }
 
 //        function updateOpenFiles() {
-//            tabs.getTabs().forEach(function(tab){
-//                if (tab.editor.type == "ace") {
-//                    updateDocument(tab.document);
+//            tabs.getPages().forEach(function(page){
+//                if (page.editor.type == "ace") {
+//                    updateDocument(page.document);
 //                }
 //            });
 //        }
 
         function updateBreakpoint(breakpoint, action){
             //This can be optimized, currently rereading everything
-            var tab = tabs.findTab(breakpoint.path);
-            if (tab) {
+            var page = tabs.findPage(breakpoint.path);
+            if (page) {
                 // @todo there used to be a timeout here
-                updateDocument(tab.document);
+                updateDocument(page.document);
             }
             
             // Don't call update to enable/disable breakpoints when they are
@@ -533,10 +533,10 @@ define(function(require, exports, module) {
         }
         
         function redrawBreakpoint(bp){
-            var tab = tabs.findTab(bp.path);
-            if (!tab) return;
+            var page = tabs.findPage(bp.path);
+            if (!page) return;
             
-            updateDocument(tab.document);
+            updateDocument(page.document);
             
             var bpx = findBreakpointXml(bp);
             bpx.setAttribute("line", bp.line);
@@ -591,7 +591,7 @@ define(function(require, exports, module) {
             if (isNaN(line))    line    = null;
             if (isNaN(column)) column = null;
             
-            emit("breakpointShow", {
+            emit("breakpoint.show", {
                 path   : path,
                 line   : line,
                 column : column
@@ -668,11 +668,11 @@ define(function(require, exports, module) {
          * Draws the file tree
          * @event draw Fires when the breakpoints list is drawn
          * @event update Fires when a breakpoint is updated
-         * @param {Object} e
+         *   object:
          *     path  {String} description
          *     row   {Number} description
-         * @event breakpointShow Fires when a user clicks on a breakpoint
-         * @param {Object} e
+         * @event breakpoint.show Fires when a user clicks on a breakpoint
+         *   object:
          *     path   {Number} description
          *     row    {Number} description
          *     column {Number} description

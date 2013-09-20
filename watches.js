@@ -6,13 +6,13 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "settings", "ui", "layout", "util"
+        "plugin", "settings", "ui", "layout", "util"
     ];
     main.provides = ["watches"];
     return main;
 
     function main(options, imports, register) {
-        var Plugin   = imports.Plugin;
+        var Plugin   = imports.plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
         var layout   = imports.layout;
@@ -132,7 +132,7 @@ define(function(require, exports, module) {
                     }
                 }
                 
-                emit("setWatch", {
+                emit("watch.set", {
                     name     : name,
                     value    : value,
                     node     : node,
@@ -150,7 +150,7 @@ define(function(require, exports, module) {
                 });
             });
             
-            datagrid.on("beforeEdit", function(e){
+            datagrid.on("before.edit", function(e){
                 // Don't allow setting the value of new variables
                 if (e.heading.caption == "Value" 
                   && datagrid.selected.getAttribute("ref").substr(0,3) == "new") {
@@ -166,7 +166,7 @@ define(function(require, exports, module) {
                 }
             });
             
-            datagrid.on("editorCreate", function(e){
+            datagrid.on("editor.create", function(e){
                 var tb = e.editor;
                 
                 tb.on("keydown", function(e){
@@ -201,7 +201,7 @@ define(function(require, exports, module) {
                 var node = findVariableXml(variable);
                 if (!node) return;
                 
-                emit("setWatch", {
+                emit("watch.set", {
                     name     : variable.name,
                     node     : node,
                     isNew    : true,
@@ -307,7 +307,7 @@ define(function(require, exports, module) {
         /**
          * Draws the file tree
          * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
+         *   object:
          *     node     {XMLNode} description
          *     oldpath  {String} description
          **/

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "util", "settings", "debugger", "preferences", "fs", "tabManager"
+        "plugin", "util", "settings", "debugger", "preferences", "fs", "tabs"
     ];
     main.provides = ["sourcemap"];
     return main;
@@ -37,12 +37,12 @@ define(function(require, exports, module) {
     
     function main(options, imports, register) {
         var util     = imports.util;
-        var Plugin   = imports.Plugin;
+        var Plugin   = imports.plugin;
         var settings = imports.settings;
         var debug    = imports.debugger;
         var prefs    = imports.preferences;
         var fs       = imports.fs;
-        var tabs     = imports.tabManager;
+        var tabs     = imports.tabs;
         
         // Source Map Parser
         var SourceMapConsumer = require('lib/source-map/lib/source-map/source-map-consumer').SourceMapConsumer;
@@ -96,7 +96,7 @@ define(function(require, exports, module) {
             // - [Hook debugger plugin] Getting a breakpoint from the server (or using the api) - also fires breakpoint.update
             //     - Fetch source in background
             //         - If sourcemap is detected update breakpoints
-            debug.on("breakpointsUpdate", function(e){
+            debug.on("breakpoints.update", function(e){
                 if (e.action == "add") {
                     var bp = e.breakpoint;
                     
@@ -139,17 +139,17 @@ define(function(require, exports, module) {
                             fetching--;
                             
                             if (!fetching)
-                                emit("fetchingDone");
+                                emit("fetching.done");
                         });
                     }
                 }
             }, plugin);
             
             //     - [Hook debugger plugin] Make sure init waits until done
-            debug.on("beforeAttach", function(e){
+            debug.on("before.attach", function(e){
                 // Wait until all breakpoints have been checked
                 if (fetching) {
-                    plugin.once("fetchingDone", function(){
+                    plugin.once("fetching.done", function(){
                         debug.debug(e.runner, e.callback);
                     });
                     return false;
@@ -167,7 +167,7 @@ define(function(require, exports, module) {
             //                     - load original file
             //                 - update all breakpoints set on this file
             //                 - update all frames in this file
-            debug.on("beforeOpen", function(e){
+            debug.on("before.open", function(e){
                 if (e.generated)
                     return;
                 
@@ -199,7 +199,7 @@ define(function(require, exports, module) {
                         e.state.value = source;
                     }
                     
-                    tabs.open(e.state, function(err, tab, done){
+                    tabs.open(e.state, function(err, page, done){
                         if (err) return; //@todo util.alert??
                     });
                 });
@@ -208,7 +208,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Update new frames with cached data
-            debug.on("framesLoad", function(e){
+            debug.on("frames.load", function(e){
                 var frames = e.frames;
                 
                 frames.forEach(function(frame){
@@ -376,7 +376,7 @@ define(function(require, exports, module) {
         /**
          * Draws the file tree
          * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
+         *   object:
          *     node     {XMLNode} description
          *     oldpath  {String} description
          **/
