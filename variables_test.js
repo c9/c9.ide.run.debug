@@ -33,6 +33,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
                 "path": "/smith.io/server"
             }
         },
+        "plugins/c9.vfs.client/endpoint.standalone",
         "plugins/c9.ide.auth/auth",
         "plugins/c9.ide.run.debug/variables",
         
