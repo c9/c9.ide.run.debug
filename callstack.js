@@ -6,7 +6,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "c9", "util", "settings", "ui", "layout", "tabs"
+        "Plugin", "c9", "util", "settings", "ui", "layout", "tabManager"
     ];
     main.provides = ["callstack"];
     return main;
@@ -14,11 +14,11 @@ define(function(require, exports, module) {
     function main(options, imports, register) {
         var c9       = imports.c9;
         var util     = imports.util;
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
         var layout   = imports.layout;
-        var tabs     = imports.tabs;
+        var tabs     = imports.tabManager;
         
         var Range    = require("ace/range").Range;
         var Frame    = require("./data/frame");
@@ -72,7 +72,7 @@ define(function(require, exports, module) {
             datagrid.setAttribute("model", modelFrames);
             
             // Update markers when a document becomes available
-            tabs.on("after.activate", function(e) {
+            tabs.on("tabAfterActivate", function(e) {
                 updateMarker(activeFrame);
             });
             
@@ -108,7 +108,7 @@ define(function(require, exports, module) {
                 showDebugFrame(frame);
             updateMarker(frame);
                 
-            emit("frame.activate", {frame : activeFrame});
+            emit("frameActivate", {frame : activeFrame});
         }
         
         /***** Helper Functions *****/
@@ -127,12 +127,12 @@ define(function(require, exports, module) {
         }
 
         function updateMarker(frame) {
-            var page   = tabs.focussedPage;
-            var editor = page && page.editor;
+            var tab   = tabs.focussedTab;
+            var editor = tab && tab.editor;
             if (!editor || editor.type != "ace")
                 return;
                 
-            var session = page.document.getSession().session;
+            var session = tab.document.getSession().session;
 
             session.$stackMarker && removeMarker(session, "stack");
             session.$stepMarker && removeMarker(session, "step");
@@ -140,7 +140,7 @@ define(function(require, exports, module) {
             if (!frame)
                 return;
                 
-            var path      = page.path;
+            var path      = tab.path;
             var framePath = frame.path;
             var row       = frame.line;
             
@@ -222,23 +222,23 @@ define(function(require, exports, module) {
                 };
             }
 
-            if (emit("before.open", {
+            if (emit("beforeOpen", {
                 source    : findSource(scriptId) || { id : scriptId },
                 state     : state,
                 generated : options.generated
             }) === false)
                 return;
 
-            tabs.open(state, function(err, page, done){
+            tabs.open(state, function(err, tab, done){
                 emit("open", {
                     source    : findSource(scriptId) || { id : scriptId },
-                    page      : page,
+                    tab      : tab,
                     line      : row,
                     column    : column,
                     generated : options.generated,
                     done      : function(source){
-                        page.document.value = source;
-                        // page.document.getSession().jumpTo({
+                        tab.document.value = source;
+                        // tab.document.getSession().jumpTo({
                         //     row    : row,
                         //     column : column
                         // });
@@ -315,7 +315,7 @@ define(function(require, exports, module) {
             if (noRecur)
                 return;
         
-            emit("scope.update", {
+            emit("scopeUpdate", {
                 scope     : frame,
                 variables : frame.variables
             });
@@ -323,7 +323,7 @@ define(function(require, exports, module) {
             // Update scopes if already loaded
             frame.scopes && frame.scopes.forEach(function(scope){
                 if (scope.variables) {
-                    emit("scope.update", {scope: scope});
+                    emit("scopeUpdate", {scope: scope});
                 }
             });
         };
@@ -392,7 +392,7 @@ define(function(require, exports, module) {
         /**
          * Draws the file tree
          * @event afterfilesave Fires after a file is saved
-         *   object:
+         * @param {Object} e
          *     node     {XMLNode} description
          *     oldpath  {String} description
          **/

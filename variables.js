@@ -6,13 +6,13 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "plugin", "settings", "ui", "layout", "util"
+        "Plugin", "settings", "ui", "layout", "util"
     ];
     main.provides = ["variables"];
     return main;
 
     function main(options, imports, register) {
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var settings = imports.settings;
         var ui       = imports.ui;
         var layout   = imports.layout;
@@ -102,7 +102,7 @@ define(function(require, exports, module) {
                 
                 variable.value = value;
                 
-                emit("variable.edit", {
+                emit("variableEdit", {
                     value    : value,
                     oldValue : oldValue,
                     node     : node,
@@ -116,7 +116,7 @@ define(function(require, exports, module) {
                 });
             });
             
-            datagrid.on("before.edit", function(e){
+            datagrid.on("beforeEdit", function(e){
                 // Don't allow setting the value of scopes
                 if (datagrid.selected.localName == "scope")
                     return false;
@@ -126,7 +126,7 @@ define(function(require, exports, module) {
                     return false;
             });
             
-            datagrid.on("editor.create", function(e){
+            datagrid.on("editorCreate", function(e){
                 var tb = e.editor;
             });
             
@@ -279,7 +279,7 @@ define(function(require, exports, module) {
         /**
          * Draws the file tree
          * @event afterfilesave Fires after a file is saved
-         *   object:
+         * @param {Object} e
          *     node     {XMLNode} description
          *     oldpath  {String} description
          **/

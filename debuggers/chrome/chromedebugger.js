@@ -16,13 +16,13 @@
 //https://github.com/google/devtoolsExtended
 
 define(function(require, exports, module) {
-    main.consumes = ["plugin", "c9", "debugger", "net"];
+    main.consumes = ["Plugin", "c9", "debugger", "net"];
     main.provides = ["chromedebugger"];
     return main;
     
     function main(options, imports, register) {
         var c9       = imports.c9;
-        var Plugin   = imports.plugin;
+        var Plugin   = imports.Plugin;
         var net      = imports.net;
         var debug    = imports["debugger"];
         
@@ -406,7 +406,7 @@ define(function(require, exports, module) {
                 state = v8dbg.isRunning() ? "running" : "stopped";
             }
     
-            emit("state.change", {state: state});
+            emit("stateChange", {state: state});
     
             if (state != "stopped")
                 onChangeFrame(null);
@@ -449,13 +449,13 @@ define(function(require, exports, module) {
         }
     
         function onAfterCompile(e) {
-            emit("sources.compile", {source: createSource(e.data.script)})
+            emit("sourcesCompile", {source: createSource(e.data.script)})
         }
     
         function onChangeFrame(frame, silent) {
             activeFrame = frame;
             if (!silent)
-                emit("frame.activate", {frame: frame});
+                emit("frameActivate", {frame: frame});
         }
     
         /***** Socket *****/
@@ -620,7 +620,7 @@ define(function(require, exports, module) {
                     onChangeFrame(null, silent);
                 }
                 
-                emit("frames.get", {frames: frames});
+                emit("getFrames", {frames: frames});
                 callback(null, frames);
             });
         }
@@ -742,7 +742,7 @@ define(function(require, exports, module) {
             
             if (!scriptId) {
                 // Wait until source is parsed
-                plugin.on("sources.compile", function wait(e){
+                plugin.on("sourcesCompile", function wait(e){
                     if (e.source.path.indexOf(path)) {
                         plugin.off("sources.compile", wait);
                         setBreakpoint(bp, callback);
@@ -757,7 +757,7 @@ define(function(require, exports, module) {
                     
                     if (info.actual_locations) {
                         bp.actual = info.actual_locations[0];
-                        emit("breakpoint.update", {breakpoint: bp});
+                        emit("breakpointUpdate", {breakpoint: bp});
                     }
                     callback && callback(bp, info);
                 });
@@ -853,29 +853,29 @@ define(function(require, exports, module) {
          *   "running"
          * 
          * @event break Fires ...
-         *   object:
+         * @param {Object} e
          *     frame    {Object} description
-         * @event state.change Fires ...
-         *   object:
+         * @event stateChange Fires ...
+         * @param {Object} e
          *     state    {null|"running"|"stopped"} description
          * @event exception Fires ...
-         *   object:
+         * @param {Object} e
          *     frame     {Object} descriptionn
          *     exception {Error} description
-         * @event frame.activate Fires ...
-         *   object:
+         * @event frameActivate Fires ...
+         * @param {Object} e
          *     frame    {Object} description
-         * @event frames.get Fires ...
-         *   object:
+         * @event getFrames Fires ...
+         * @param {Object} e
          *     frames   {Array} description
          * @event sources Fires ...
-         *   object:
+         * @param {Object} e
          *     sources  {Array} description
-         * @event sources.compile Fires when a source file is (re-)compiled.
+         * @event sourcesCompile Fires when a source file is (re-)compiled.
          *   In your event handler, make sure you check against the sources you
          *   already have collected to see if you need to update or add your
          *   source.
-         *   object:
+         * @param {Object} e
          *     file     {Object} the file information (not the content)
          *       path       {String}
          *       text       {String}
