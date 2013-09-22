@@ -159,7 +159,7 @@ define(function(require, exports, module) {
         
             list.setAttribute("contextmenu", menu);
             
-            menu.on("propVisible", function(){
+            menu.on("prop.visible", function(){
                 var length = list.length;
                 
                 menu.childNodes.forEach(function(item){
