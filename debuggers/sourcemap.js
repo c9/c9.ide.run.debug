@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "util", "settings", "debugger", "preferences", "fs", "tabManager"
+        "Plugin", "settings", "debugger", "preferences", "fs", "tabManager"
     ];
     main.provides = ["sourcemap"];
     return main;
@@ -36,7 +36,6 @@ define(function(require, exports, module) {
     */
     
     function main(options, imports, register) {
-        var util     = imports.util;
         var Plugin   = imports.Plugin;
         var settings = imports.settings;
         var debug    = imports.debugger;
@@ -46,6 +45,8 @@ define(function(require, exports, module) {
         
         // Source Map Parser
         var SourceMapConsumer = require('lib/source-map/lib/source-map/source-map-consumer').SourceMapConsumer;
+        var basename          = require("path").basename;
+        var dirname           = require("path").dirname;
         
         /***** Initialization *****/
         
@@ -129,11 +130,11 @@ define(function(require, exports, module) {
                                     bp.sourcemap = map.generatedPositionFor({
                                         line   : bp.line + 1,
                                         column : bp.column + 1,
-                                        source : fs.getFilename(bp.path)
+                                        source : basename(bp.path)
                                     });
                                     makeZeroBased(bp.sourcemap);
                                     bp.sourcemap.source = 
-                                        fs.getParentPath(bp.path) + map.file;
+                                        dirname(bp.path) + map.file;
                                 }
                             }
                             fetching--;
@@ -183,7 +184,7 @@ define(function(require, exports, module) {
                         });
                         
                         // Set path, line, column
-                        var path = fs.getParentPath(e.state.path) + mapping.source; //@todo is this the correct path
+                        var path = dirname(e.state.path) + mapping.source; //@todo is this the correct path
                         
                         e.state.path            = path; 
                         e.state.document.title  = mapping.source;
@@ -222,7 +223,7 @@ define(function(require, exports, module) {
                         
                         frame.line   = mapping.line - 1;
                         frame.column = mapping.column - 1;
-                        frame.path   = fs.getParentPath(frame.path) + mapping.source;
+                        frame.path   = dirname(frame.path) + mapping.source;
                         
                         if (mapping.name) 
                             frame.name   = mapping.name;
@@ -288,9 +289,9 @@ define(function(require, exports, module) {
                 
                 // Store paths in cache
                 map._sources._array.forEach(function(p){
-                    originals[fs.getParentPath(path) + p] = path;
+                    originals[dirname(path) + p] = path;
                 });
-                generated[fs.getParentPath(path) + map.file] = path;
+                generated[dirname(path) + map.file] = path;
                 
                 // Cache Map
                 maps[path] = map;
@@ -313,7 +314,7 @@ define(function(require, exports, module) {
             }
             
             if (mapPath.charAt(0) != "/")
-                mapPath = fs.getParentPath(path) + mapPath;
+                mapPath = dirname(path) + mapPath;
             
             // Fetch the map itself
             fetchMap(mapPath, callback);
