@@ -6,7 +6,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "c9", "util", "settings", "ui", "layout", "menus", "save", 
+        "Panel", "c9", "util", "settings", "ui", "layout", "menus", "save", 
         "buttons", "callstack", "breakpoints", "immediate", "variables", "fs",
         "watches", "run", "panels", "tabManager" //, "quickwatch"
     ];
@@ -16,7 +16,7 @@ define(function(require, exports, module) {
     function main(options, imports, register) {
         var c9       = imports.c9;
         var util     = imports.util;
-        var Plugin   = imports.Plugin;
+        var Panel    = imports.Panel;
         var settings = imports.settings;
         var ui       = imports.ui;
         var fs       = imports.fs;
@@ -37,7 +37,15 @@ define(function(require, exports, module) {
         
         /***** Initialization *****/
         
-        var plugin = new Plugin("Ajax.org", main.consumes);
+        var plugin = new Panel("Ajax.org", main.consumes, {
+            index        : 100,
+            caption      : "Debugger",
+            className    : "debugger",
+            elementName  : "winDebugger",
+            minWidth     : 165,
+            width        : 300,
+            where        : "right"
+        });
         var emit   = plugin.getEmitter();
         
         var dbg, debuggers = {}, pauseOnBreaks = 0, state = "disconnected";
@@ -509,8 +517,6 @@ define(function(require, exports, module) {
                 // bar.appendChild(frame);
                 c.draw({container: frame});
             });
-            
-            emit("draw");
         }
         
         function updatePanels(action, runstate){
@@ -619,20 +625,14 @@ define(function(require, exports, module) {
             });
             
             // Register this panel on the left-side panels
-            panels.register({
-                index        : 100,
-                caption      : "Debugger",
-                command      : "toggledebugger",
-                hint         : "show the debugger panel",
-                // bindKey      : { mac: "Command-U", win: "Ctrl-U" },
-                className    : "debugger",
-                panel        : plugin,
-                elementName  : "winDebugger",
-                minWidth     : 165,
-                width        : 300,
-                draw         : draw,
-                where        : "right"
+            plugin.setCommand({
+                name : "toggledebugger",
+                hint : "show the debugger panel",
+                // bindKey      : { mac: "Command-U", win: "Ctrl-U" }
             });
+        });
+        plugin.on("draw", function(){
+            draw();
         });
         plugin.on("enable", function(){
             
