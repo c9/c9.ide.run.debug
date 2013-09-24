@@ -493,7 +493,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Create UI elements
-            var bar = opts.panel.appendChild(new ui.bar({
+            var bar = opts.aml.appendChild(new ui.bar({
                 "id"    : "winDebugger",
                 "skin"  : "panel-bar",
                 "class" : "debugcontainer"
@@ -631,8 +631,8 @@ define(function(require, exports, module) {
                 // bindKey      : { mac: "Command-U", win: "Ctrl-U" }
             });
         });
-        plugin.on("draw", function(){
-            draw();
+        plugin.on("draw", function(e){
+            draw(e);
         });
         plugin.on("enable", function(){
             
