@@ -219,10 +219,11 @@ define(function(require, exports, module) {
                     if (err) return; //@todo util.alert?
                     
                     if (emit("open", { 
-                        path  : e.source.path, 
-                        value : value,
-                        done  : e.done,
-                        tab  : e.tab
+                        path   : e.source.path, 
+                        source : e.source,
+                        value  : value,
+                        done   : e.done,
+                        tab    : e.tab
                     }) !== false)
                         e.done(value);
                 }
@@ -576,7 +577,7 @@ define(function(require, exports, module) {
             }
             
             // Hook for plugins to delay or cancel debugger attaching
-            // However cancels is responible for calling the callback
+            // Whoever cancels is responible for calling the callback
             if (emit("beforeAttach", {
                 runner   : runner, 
                 callback : callback
@@ -711,61 +712,93 @@ define(function(require, exports, module) {
              */
             get sources(){ return callstack.sources; },
             /**
-             * 
+             * Retrieves if the debugger will break on exceptions
+             * @property {Boolean} breakOnExceptions
+             * @readonly
              */
             get breakOnExceptions(){ return dbg.breakOnExceptions; },
             /**
-             * 
+             * Retrieves whether the debugger will break on uncaught exceptions
+             * @property {Boolean} breakOnUncaughtExceptions
+             * @readonly
              */
             get breakOnUncaughtExceptions(){ return dbg.breakOnUncaughtExceptions; },
             
             _events : [
                 /**
-                 * Fires 
+                 * Fires prior to a debugger attaching to a process.
+                 * 
+                 * This event serves as a hook for plugins to delay or 
+                 * cancel a debugger attaching. Whoever cancels is responible 
+                 * for calling the callback.
+                 * 
                  * @event beforeAttach
-                 * @param {Object} e
+                 * @cancellable
+                 * @param {Object}   e
+                 * @param {Object}   e.runner    The object that is running the process. See {@link #debug}.
+                 * @param {Function} e.callback  The callback with which {@link #debug} was called.
                  */
                 "beforeAttach",
                 /**
-                 * Fires 
+                 * Fires when the debugger has attached itself to the process.
                  * @event attach
-                 * @param {Object} e
+                 * @param {Object}                  e
+                 * @param {debugger.Breakpoint[]}   e.breakpoints  The breakpoints that are currently set.
                  */
                 "attach",
                 /**
-                 * Fires 
+                 * Fires when the debugger has detached itself from the process.
                  * @event detach
-                 * @param {Object} e
                  */
                 "detach",
                 /**
-                 * Fires 
+                 * Fires when the callstack frames have loaded for current 
+                 * frame that the debugger is breaked at.
                  * @event framesLoad
-                 * @param {Object} e
+                 * @param {Object}           e
+                 * @param {debugger.Frame[]} e.frames  The frames of the callstack.
                  */
                 "framesLoad",
                 /**
-                 * Fires 
+                 * Fires when the debugger hits a breakpoint or an exception.
                  * @event break
-                 * @param {Object} e
+                 * @param {Object}           e
+                 * @param {debugger.Frame}   e.frame        The frame where the debugger has breaked at.
+                 * @param {debugger.Frame[]} [e.frames]     The callstack frames.
+                 * @param {Error}            [e.exception]  The exception that the debugger breaked at.
                  */
                 "break",
                 /**
-                 * Fires 
+                 * Fires prior to opening a file from the debugger.
                  * @event beforeOpen
-                 * @param {Object} e
+                 * @cancellable
+                 * @param {Object}          e
+                 * @param {debugger.Source} e.source     The source file to open.
+                 * @param {Object}          e.state      The state object that is passed to the {@link tabManager#open} method.
+                 * @param {Boolean}         e.generated  Specifies whether the file is a generated file.
                  */
                 "beforeOpen",
                 /**
-                 * Fires 
+                 * Fires when a file is opened from the debugger.
                  * @event open
-                 * @param {Object} e
+                 * @cancellable
+                 * @param {Object}          e
+                 * @param {debugger.Source} e.source      The source file to open.
+                 * @param {String}          e.path        The path of the source file to open
+                 * @param {String}          e.value       The value of the source file.
+                 * @param {Function}        e.done        Call this function if you are cancelling the event.
+                 * @param {Function}        e.done.value  The value of the source file
+                 * @param {Tab}             e.tab         The created tab for the source file.
                  */
                 "open",
                 /**
-                 * Fires 
+                 * Fires when a breakpoint is updated from the UI
                  * @event breakpointsUpdate
                  * @param {Object} e
+                 * @param {debugger.Breakpoint} breakpoint
+                 * @param {String}              action      One of the following 
+                 *   possible values: "add", "remove", "condition", "enable", "disable".
+                 * @param {Boolean}             force       Specifies whether the update is forced.
                  */
                 "breakpointsUpdate"
             ],
@@ -841,17 +874,28 @@ define(function(require, exports, module) {
             },
             
             /**
-             * 
+             * Defines how the debugger deals with exceptions.
+             * @param {"all"/"uncaught"} type          Specifies which errors to break on.
+             * @param {Boolean}          enabled       Specifies whether to enable breaking on exceptions.
+             * @param {Function}         callback      Called after the setting is changed.
+             * @param {Error}            callback.err  The error if any error occured.
              */
-            setBreakBehavior : function(){ 
-                dbg.setBreakBehavior(); 
+            setBreakBehavior : function(type, enabled, callback){ 
+                dbg.setBreakBehavior(type, enabled, callback); 
             },
             
             /**
-             * 
+             * Evaluates an expression in a frame or in global space.
+             * @param {String}          expression         The expression.
+             * @param {debugger.Frame}  frame              The stack frame which serves as the contenxt of the expression.
+             * @param {Boolean}         global             Specifies whether to execute the expression in global space.
+             * @param {Boolean}         disableBreak       Specifies whether to disabled breaking when executing this expression.
+             * @param {Function}        callback           Called after the expression has executed.
+             * @param {Error}           callback.err       The error if any error occured.
+             * @param {Variable}        callback.variable  The result of the expression.
              */
-            evaluate : function(frame, global, disableBreak){ 
-                dbg.evaluate(frame, global, disableBreak); 
+            evaluate : function(expression, frame, global, disableBreak, callback){ 
+                dbg.evaluate(expression, frame, global, disableBreak, callback); 
             },
             
             /**

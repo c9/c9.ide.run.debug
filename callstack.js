@@ -232,7 +232,7 @@ define(function(require, exports, module) {
             tabs.open(state, function(err, tab, done){
                 emit("open", {
                     source    : findSource(scriptId) || { id : scriptId },
-                    tab      : tab,
+                    tab       : tab,
                     line      : row,
                     column    : column,
                     generated : options.generated,
