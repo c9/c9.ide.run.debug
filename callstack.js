@@ -199,8 +199,7 @@ define(function(require, exports, module) {
                     + util.escapeXpathString(path) + "]/@scriptid");
             }
             
-            var isFileFromWorkspace = 
-                path.substring(0, c9.davPrefix.length) == c9.davPrefix;
+            var isFileFromWorkspace = path.charAt(0) == "/";
             
             var state = {
                 path       : path,
