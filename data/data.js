@@ -1,3 +1,25 @@
+/**
+ * Data base class for the Cloud9 Debugger.
+ * @class debugger.Data
+ */
+/**
+ * Retrieves an XML representation of this object.
+ * @property {String} xml
+ */
+/**
+ * Retrieves a json representation of thie object.
+ * @property {String} json
+ */
+/**
+ * Returns a string representation of this object (similar to {@link #xml})
+ * @method toString
+ * @return {String}
+ */
+/**
+ * Determines whether the passed object is logically an exact copy.
+ * @method equals
+ * @param {Object} object
+ */
 define(function(require, exports, module) {
     
     function Data(props, sets){
@@ -11,8 +33,6 @@ define(function(require, exports, module) {
             });
             _self.__defineSetter__(prop, function(v){ 
                 this.data[prop] = v;
-//                throw new Error("Cannot set property of " 
-//                    + this.tagName.uCaseFirst())
             });
         })
     }

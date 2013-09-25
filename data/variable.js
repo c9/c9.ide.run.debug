@@ -1,3 +1,47 @@
+/**
+ * Variable class for the Cloud9 Debugger.
+ * @class debugger.Variable
+ * @extends debugger.Data
+ */
+/**
+ * @property {"variable"} tagName  The tag name used for xml serialization of this object.
+ * @readonly
+ */
+/**
+ * @property {String} name  The name of this variable.
+ */
+/**
+ * @property {String} value  The value of this variable.
+ */
+/**
+ * @property {String} type  The data type of this variable (e.g. "number", "int32", "string")
+ */
+/**
+ * @property {String} ref  The unique reference that identifies this variable.
+ */
+/**
+ * @property {Scope} scope  The scope this variable belongs to.
+ */
+/**
+ * @property {Boolean} children  Sets or retrieves whether this variable has sub properties.
+ */
+/**
+ * @property {Boolean} error  Whether this variable represents an error state. 
+ *   This can happen when an expression is evaluated, which results in an error.
+ */
+/**
+ * @property {debugger.Variable[]} properties  The properties of this object (if any).
+ */
+/**
+ * Finds a {@link debugger.Variable} object related to this frame.
+ * @method findVariable
+ * @param {String} ref      The {@link debugger.Variable#ref} property of 
+ *   the variable to find.
+ * @param {String} name     The name of the variable to find.
+ * @param {Array}  parents  Pass an empty array to receive all the parent 
+ *   scopes/variables that lead to the variable that is found.
+ * @return {Variable}
+ */
 define(function(require, exports, module) {
     
     var Data = require("./data");

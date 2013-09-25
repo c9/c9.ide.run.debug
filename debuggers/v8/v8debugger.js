@@ -1,9 +1,3 @@
-/**
- * node debugger Module for the Cloud9 IDE
- *
- * @copyright 2010, Ajax.org B.V.
- * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
- */
 define(function(require, exports, module) {
     main.consumes = ["Plugin", "c9", "debugger", "net"];
     main.provides = ["v8debugger"];
@@ -835,51 +829,83 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * V8 Debugger Plugin for Cloud9 IDE. This plugin is as stateless as
-         * possible.
+         * Debugger implementation for Cloud9 IDE. When you are implementing a 
+         * custom debugger, implement this API. If you are looking for the
+         * debugger interface of Cloud9 IDE, check out the {@link debugger}.
+         * 
+         * This interface is defined to be as stateless as possible. By 
+         * implementing these methods and events you'll be able to hook your
+         * debugger seemlessly into the Cloud9 debugger UI.
+         * 
+         * See also {@link debugger#registerDebugger}.
          * 
          * @class debugger.implementation
-         * 
-         * @property state {null|"running"|"stopped"} state of the debugged process
-         *    null      process doesn't exist
-         *   "stopped"  paused on breakpoint
-         *   "running"
-         * 
-         * @event break Fires ...
-         * @param {Object} e
-         *     frame    {Object} description
-         * @event stateChange Fires ...
-         * @param {Object} e
-         *     state    {null|"running"|"stopped"} description
-         * @event exception Fires ...
-         * @param {Object} e
-         *     frame     {Object} descriptionn
-         *     exception {Error} description
-         * @event frameActivate Fires ...
-         * @param {Object} e
-         *     frame    {Object} description
-         * @event getFrames Fires ...
-         * @param {Object} e
-         *     frames   {Array} description
-         * @event sources Fires ...
-         * @param {Object} e
-         *     sources  {Array} description
-         * @event sourcesCompile Fires when a source file is (re-)compiled.
-         *   In your event handler, make sure you check against the sources you
-         *   already have collected to see if you need to update or add your
-         *   source.
-         * @param {Object} e
-         *     file     {Object} the file information (not the content)
-         *       path       {String}
-         *       text       {String}
-         *       debug      {Boolean}
-         *       scriptid   {Number}
-         *       scriptname {String}
-         *       lineoffset {Number}
-         **/
+         */
         plugin.freezePublicAPI({
+            /**
+             * @property state {null|"running"|"stopped"} state of the debugged process
+             *    null      process doesn't exist
+             *   "stopped"  paused on breakpoint
+             *   "running"
+             */
+            get state(){ return state; },
             get breakOnExceptions(){ return breakOnExceptions; },
             get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
+            
+            _events : [
+                /**
+                 * Fires 
+                 * @event break
+                 * @param {Object}          e
+                 * @param {debugger.Frame}  e.frame
+                 */
+                "break",
+                /**
+                 * Fires 
+                 * @event stateChange
+                 * @param {Object}          e
+                 * @param {debugger.Frame}  e.state
+                 */
+                "stateChange",
+                /**
+                 * Fires 
+                 * @event exception
+                 * @param {Object}          e
+                 * @param {debugger.Frame}  e.frame
+                 * @param {Error}           e.exception
+                 */
+                "exception",
+                /**
+                 * Fires 
+                 * @event frameActivate
+                 * @param {Object}          e
+                 * @param {debugger.Frame}  e.frame
+                 */
+                "frameActivate",
+                /**
+                 * Fires 
+                 * @event getFrames
+                 * @param {Object}          e
+                 * @param {debugger.Frame}  e.frames
+                 */
+                "getFrames",
+                /**
+                 * Fires 
+                 * @event sources
+                 * @param {Object}            e
+                 * @param {debugger.Source[]} e.sources
+                 */
+                "sources",
+                /**
+                 * Fires when a source file is (re-)compiled. In your event 
+                 * handler, make sure you check against the sources you already 
+                 * have collected to see if you need to update or add your source.
+                 * @event sourcesCompile 
+                 * @param {Object}          e
+                 * @param {debugger.Source} e.file  the source file that is compiled.
+                 **/
+                "sourcesCompile"
+            ],
             
             /**
              * Attaches the debugger to the started debugee instance
