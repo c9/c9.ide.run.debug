@@ -1,9 +1,3 @@
-/**
- * Generic Debugger for Cloud9 IDE
- *
- * @copyright 2010, Ajax.org B.V.
- * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
- */
 define(function(require, exports, module) {
     main.consumes = [
         "Panel", "c9", "util", "settings", "ui", "layout", "menus", "save", 
@@ -647,60 +641,200 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
-         *     node     {XMLNode} description
-         *     oldpath  {String} description
-         **/
+         * Generic Debugger for Cloud9 IDE. This plugin is responsible for 
+         * binding the different debug panels to a debugger implementation.
+         * 
+         * The default debug panels are:
+         * 
+         * * {@link breakpoints}
+         * * {@link buttons}
+         * * {@link callstack}
+         * * {@link variables}
+         * * {@link watches}
+         * 
+         * #### Remarks
+         * 
+         * * The debugger also works together with the {@link immediate Immediate Panel}.
+         * * If you want to create a debugger for your platform, check out the
+         * {@link debugger.implementation} reference specification.
+         * * The debugger implementation is choosen based on configuration
+         * variables in the runner. See {@link #debug} and {@link run#run} for
+         * more information on runners.
+         * 
+         * The following example shows how to start a debugger and 
+         * programmatically work with breakpoints and breaks:
+         * 
+         *     // Start a process by executing example.js with the 
+         *     // default runner for that extension (Node.js)
+         *     var process = run.run("auto", {
+         *         path  : "/example.js",
+         *         debug : true
+         *     }, function(err, pid){
+         *     
+         *         // When a breakpoint is hit, ask if the user wants to break.
+         *         debug.on("break", function(){
+         *             if (!confirm("Would you like to break here?"))
+         *                 debug.resume();
+         *         });
+         *         
+         *         // Set a breakpoint on the first line of example.js
+         *         debug.setBreakpoint({
+         *             path       : "/example.js",
+         *             line       : 0,
+         *             column     : 0,
+         *             enabled    : true
+         *         });
+         *         
+         *         // Attach a debugger to the running process
+         *         debug.debug(process.runner, function(err){
+         *             if (err) throw err.message;
+         *         });
+         *     });
+         *
+         * @singleton
+         */
         plugin.freezePublicAPI({
+            /**
+             * When the debugger has hit a breakpoint or an exception, it breaks
+             * and shows the active frame in the callstack panel. The active
+             * frame represents the scope at which the debugger is stopped.
+             * @property {debugger.Frame} activeFrame
+             */
             get activeFrame(){ return callstack.activeFrame; },
             set activeFrame(frame){ callstack.activeFrame = frame; },
+            /**
+             * A list of sources that are available from the debugger. These
+             * can be files that are loaded in the runtime as well as code that
+             * is injected by a script or by the runtime itself.
+             * @property {debugger.Source[]} sources
+             * @readonly
+             */
             get sources(){ return callstack.sources; },
+            /**
+             * 
+             */
+            get breakOnExceptions(){ return dbg.breakOnExceptions; },
+            /**
+             * 
+             */
+            get breakOnUncaughtExceptions(){ return dbg.breakOnUncaughtExceptions; },
+            
+            _events : [
+                /**
+                 * Fires 
+                 * @event beforeAttach
+                 * @param {Object} e
+                 */
+                "beforeAttach",
+                /**
+                 * Fires 
+                 * @event attach
+                 * @param {Object} e
+                 */
+                "attach",
+                /**
+                 * Fires 
+                 * @event detach
+                 * @param {Object} e
+                 */
+                "detach",
+                /**
+                 * Fires 
+                 * @event framesLoad
+                 * @param {Object} e
+                 */
+                "framesLoad",
+                /**
+                 * Fires 
+                 * @event break
+                 * @param {Object} e
+                 */
+                "break",
+                /**
+                 * Fires 
+                 * @event beforeOpen
+                 * @param {Object} e
+                 */
+                "beforeOpen",
+                /**
+                 * Fires 
+                 * @event open
+                 * @param {Object} e
+                 */
+                "open",
+                /**
+                 * Fires 
+                 * @event breakpointsUpdate
+                 * @param {Object} e
+                 */
+                "breakpointsUpdate"
+            ],
             
             /**
+             * Attaches the debugger that is specified by the runner to the
+             * running process that is started using the same runner.
+             * 
+             * *N.B.: There can only be one debugger attached at the same time.*
+             * 
+             * @param {Object}   runnner        The runner as specified in {@link run#run}.
+             * @param {Function} callback       Called when the debugger is attached.
+             * @param {Error}    callback.err   Error object with information on an error if one occured.
              */
             debug : debug,
             
             /**
+             * Detaches the started debugger from it's process.
              */
             stop : stop,
             
             /**
+             * Registers a {@link debugger.implementation debugger implementation}
+             * with a unique name. This name is used as the "debugger" property
+             * of the runner.
+             * @param {String}                  name      The unique name of this debugger implementation.
+             * @param {debugger.implementation} debugger  The debugger implementation.
              */
             registerDebugger : registerDebugger,
             
             /**
+             * Unregisters a{@link debugger.implementation debugger implementation}.
+             * @param {String}                  name      The unique name of this debugger implementation.
+             * @param {debugger.implementation} debugger  The debugger implementation.
              */
             unregisterDebugger : unregisterDebugger,
             
             /**
-             * 
+             * Continues execution of a process after it has hit a breakpoint.
              */
             resume : function(){ dbg.resume() },
             
             /**
-             * 
+             * Pauses the execution of a process at the next statement.
              */
             suspend : function(){ dbg.suspend() },
             
             /**
-             * 
+             * Step into the next statement.
              */
             stepInto : function(){ dbg.stepInto() },
             
             /**
-             * 
+             * Step out of the current statement.
              */
             stepOut : function(){ dbg.stepOut() },
             
             /**
-             * 
+             * Step over the next statement.
              */
             stepOver : function(){ dbg.stepOver() },
             
             /**
-             * 
+             * Retrieves the contents of a source file from the debugger (not 
+             * the file system).
+             * @param {debugger.Source} source         The source file.
+             * @param {Function}        callback       Called when the contents is retrieved.
+             * @param {Function}        callback.err   Error object if an error occured.
+             * @param {Function}        callback.data  The contents of the file.
              */
             getSource : function(source, callback){ 
                 dbg.getSource(source, callback);
@@ -709,23 +843,28 @@ define(function(require, exports, module) {
             /**
              * 
              */
-            updateFrame : callstack.updateFrame,
+            setBreakBehavior : function(){ 
+                dbg.setBreakBehavior(); 
+            },
             
             /**
              * 
              */
-            changeBreakpoint : breakpoints.changeBreakpoint,
+            evaluate : function(frame, global, disableBreak){ 
+                dbg.evaluate(frame, global, disableBreak); 
+            },
             
             /**
-             * 
+             * Adds a breakpoint to a line in a source file.
+             * @param {debugger.Breakpoint} breakpoint  The breakpoint to add.
              */
             setBreakpoint : breakpoints.setBreakpoint,
             
             /**
-             * 
+             * Removes a breakpoint from a line in a source file.
+             * @param {debugger.Breakpoint} breakpoint  The breakpoint to remove.
              */
             clearBreakpoint : breakpoints.clearBreakpoint
-            
         });
         
         register(null, {

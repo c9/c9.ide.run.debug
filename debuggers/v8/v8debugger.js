@@ -43,13 +43,6 @@ define(function(require, exports, module) {
             "4" : "catch"
         }
         
-        plugin.__defineGetter__("breakOnExceptions", function(){ 
-            return breakOnExceptions;
-        });
-        plugin.__defineGetter__("breakOnUncaughtExceptions", function(){ 
-            return breakOnUncaughtExceptions;
-        });
-        
         var hasChildren = {
             "object"   : 8,
             "function" : 4
@@ -845,6 +838,8 @@ define(function(require, exports, module) {
          * V8 Debugger Plugin for Cloud9 IDE. This plugin is as stateless as
          * possible.
          * 
+         * @class debugger.implementation
+         * 
          * @property state {null|"running"|"stopped"} state of the debugged process
          *    null      process doesn't exist
          *   "stopped"  paused on breakpoint
@@ -883,6 +878,9 @@ define(function(require, exports, module) {
          *       lineoffset {Number}
          **/
         plugin.freezePublicAPI({
+            get breakOnExceptions(){ return breakOnExceptions; },
+            get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
+            
             /**
              * Attaches the debugger to the started debugee instance
              * @param runner The type of the running process
