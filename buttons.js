@@ -1,25 +1,19 @@
-/**
- * Debugger UI for Cloud9 IDE
- *
- * @copyright 2010, Ajax.org B.V.
- * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
- */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "c9", "settings", "ui", "layout", "commands", "console"
+        "Plugin", "c9", "ui", "commands", "console", "debugger", "settings"
     ];
     main.provides = ["buttons"];
     return main;
 
+    // @todo consider merging this plugin with the debugger plugin
     function main(options, imports, register) {
-        var c9       = imports.c9;
-        var Plugin   = imports.Plugin;
-        //var settings = imports.settings;
-        var ui       = imports.ui;
-        //var menus    = imports.menus;
-        var commands = imports.commands;
-        var layout   = imports.layout;
-        var console  = imports.console;
+        var c9         = imports.c9;
+        var Plugin     = imports.Plugin;
+        var debug      = imports.debugger;
+        var ui         = imports.ui;
+        var commands   = imports.commands;
+        var console    = imports.console;
+        var settings   = imports.settings;
         
         var markup = require("text!./buttons.xml");
         var css    = require("text!./buttons.css");
@@ -29,43 +23,7 @@ define(function(require, exports, module) {
         var plugin = new Plugin("Ajax.org", main.consumes);
         var emit   = plugin.getEmitter();
         
-        plugin.__defineGetter__("state", function(){ 
-            return state; 
-        });
-        plugin.__defineSetter__("state", function(v){ 
-            state = v;
-            
-            if (!btnResume)
-                return;
-
-            btnResume.$ext.style.display = state == "stopped" 
-                ? "inline-block" : "none";
-            btnSuspend.$ext.style.display = state == "disconnected" 
-                || state != "stopped" ? "inline-block" : "none";
-                
-            btnSuspend.setAttribute("disabled",     state == "disconnected");
-            btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-            btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-            btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
-            btnScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
-            // lstScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
-        });
-        plugin.__defineGetter__("enableBreakpoints", function(){ 
-            return enableBreakpoints; 
-        });
-        plugin.__defineSetter__("enableBreakpoints", function(v){ 
-            enableBreakpoints = v;
-            toggleBreakpoints(v);
-        });
-        plugin.__defineGetter__("pauseOnBreaks", function(){ 
-            return pauseOnBreaks; 
-        });
-        plugin.__defineSetter__("pauseOnBreaks", function(v){ 
-            pauseOnBreaks = v; 
-            togglePause(v);
-        });
-        
-        var enableBreakpoints, pauseOnBreaks, state;
+        var enableBreakpoints, pauseOnBreaks, state, dbg;
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             lstScripts, btnSuspend, btnBreakpoints, btnPause, btnBpRemove,
             btnScripts, btnOutput, btnImmediate; // ui elements
@@ -122,79 +80,23 @@ define(function(require, exports, module) {
                     stepOut();
                 }
             }, plugin);
-//            commands.addCommand({
-//                name: "evalInteractive",
-//                bindKey: {mac: "Command-Return", win: "Ctrl-Return"},
-//                hint:  "execute selection in interactive window",
-//                exec: function(editor) {
-//                    var menu = dock.getButtons("ext/debugger/debugger", "dbInteractive")[0];
-//                    dock.layout.showMenu(menu.uniqueId);
-//                    dbInteractive.parentNode.set(dbInteractive);
-//    
-//                    txtCode.focus();
-//                    var range = editor.getSelectionRange();
-//                    var val = range.isEmpty()
-//                        ? editor.session.getLine(range.start.row)
-//                        : editor.session.getTextRange(range);
-//    
-//                    txtCode.$editor.setValue(val.trim());
-//                    require("ext/debugger" + "/inspector").consoleTextHandler({keyCode:13,ctrlKey:true});
-//                },
-//                isAvailable: function(editor, event) {
-//                    if (dbg.state != "stopped")
-//                        return false;
-//                    if (event instanceof KeyboardEvent &&
-//                      (!apf.activeElement || !apf.activeElement.$editor || apf.activeElement.$editor.path != "ext/code/code"))
-//                        return false;
-//                    return true;
-//                },
-//                findEditor: function(editor) {
-//                    if (editor && editor.amlEditor)
-//                        return editor.amlEditor.$editor;
-//                    return editor;
-//                }
-//            }, plugin);
-    
-//            function getDebugHandler(runner) {
-//                return _self.handlers.filter(function (handler) {
-//                    return handler.handlesRunner(runner);
-//                })[0];
-//            }
-//    
-//            ide.addEventListener("dbg.ready", function(e) {
-//                if (_self.$dbgImpl)
-//                    return;
-//                var runnerMatch = /(\w+)-debug-ready/.exec(e.type);
-//                var debugHandler;
-//                if (runnerMatch && (debugHandler = getDebugHandler(runnerMatch[1]))) {
-//                    onAttach(debugHandler, e.pid, runnerMatch[1]);
-//                }
-//                else {
-//                    console.log("Appropriate debug handler not found !!");
-//                }
-//            });
-//    
-//            ide.addEventListener("dbg.exit", function(e) {
-//                if (_self.$dbgImpl) {
-//                    _self.$dbgImpl.detach();
-//                    _self.$dbgImpl = null;
-//                }
-//            });
-//    
-//            ide.addEventListener("dbg.state", function(e) {
-//                if (_self.$dbgImpl)
-//                    return;
-//    
-//                var runnerRE = /(\w+)-debug/;
-//                var runnerMatch;
-//                var debugHandler;
-//                for (var attr in e) {
-//                    if ((runnerMatch = runnerRE.exec(attr)) && (debugHandler = getDebugHandler(runnerMatch[1]))) {
-//                        onAttach(debugHandler, e[runnerMatch[0]], runnerMatch[1]);
-//                    }
-//                }
-//            });
-        
+
+            // Draw the buttons when the debugger is drawn
+            debug.on("draw", draw, plugin);
+            
+            // Update button state
+            debug.on("stateChange", function(e){
+                setState(e.state);
+            });
+            
+            // Set and clear the dbg variable
+            debug.on("attach", function(e){
+                dbg = e.implementation;
+            });
+            debug.on("detach", function(e){
+                dbg = null;
+            });
+            
             c9.on("stateChange", function(e){
                 if (e.state & c9.PROCESS) {
                     
@@ -214,7 +116,7 @@ define(function(require, exports, module) {
             ui.insertCss(css, plugin);
             
             // Create UI elements
-            var parent = options.container;
+            var parent = options.aml;
             ui.insertMarkup(parent, markup, plugin);
             
             container = plugin.getElement("hbox");
@@ -241,6 +143,21 @@ define(function(require, exports, module) {
                 toggleBreakpoints();
             });
             
+            // buttons.on("breakpointsRemove", function(e){
+            //     breakpoints.breakpoints.forEach(function(bp){
+            //         breakpoints.clearBreakpoint(bp);
+            //     });
+            // }, plugin);
+            // buttons.on("breakpointsEnable", function(e){
+            //     e.value
+            //         ? breakpoints.activateAll()
+            //         : breakpoints.deactivateAll();
+            // }, plugin);
+            // breakpoints.on("active", function(e){
+            //     buttons.enableBreakpoints = e.value;
+            // }, plugin);
+            
+            // @todo move this to the breakpoints plugin
             btnBpRemove.on("click", function(){
                 emit("breakpointsRemove");
             });
@@ -257,17 +174,31 @@ define(function(require, exports, module) {
                 commands.exec("showimmediate");
             });
             
+            // @todo Move this to the callstack plugin
+            // Load the scripts in the sources dropdown
+            // buttons.getElement("lstScripts", function(lstScripts){
+            //     lstScripts.setModel(callstack.modelSources);
+                
+            //     lstScripts.on("afterselect", function(e){
+            //         callstack.openFile({
+            //             scriptId  : e.selected.getAttribute("id"),
+            //             path      : e.selected.getAttribute("path"),
+            //             generated : true
+            //         });
+            //     }, plugin)
+            // });
             btnScripts.setAttribute("submenu", lstScripts.parentNode);
             
-            draw = function(){};
             emit("draw");
         }
         
-        function resume(){   emit("resume"); }
-        function suspend(){  emit("suspend"); }
-        function stepInto(){ emit("stepInto"); }
-        function stepOver(){ emit("stepOver"); }
-        function stepOut(){  emit("stepOut"); }
+        /***** Methods *****/
+        
+        function resume(){   dbg && dbg.resume(); }
+        function suspend(){  dbg && dbg.suspend(); }
+        function stepInto(){ dbg && dbg.stepInto(); }
+        function stepOver(){ dbg && dbg.stepOver(); }
+        function stepOut(){  dbg && dbg.stepOut(); }
         
         function toggleBreakpoints(force){
             enableBreakpoints = force !== undefined
@@ -306,12 +237,33 @@ define(function(require, exports, module) {
                 );
             }
             
-            emit("pauseToggle", {
-                value : pauseOnBreaks
-            });
+            dbg.setBreakBehavior(
+                pauseOnBreaks === 1 ? "uncaught" : "all",
+                pauseOnBreaks === 0 ? false : true
+            );
+            
+            pauseOnBreaks = pauseOnBreaks;
+            settings.set("user/debug/@pause", pauseOnBreaks);
         }
         
-        /***** Methods *****/
+        function setState(v){
+            state = v;
+            
+            if (!btnResume)
+                return;
+
+            btnResume.$ext.style.display = state == "stopped" 
+                ? "inline-block" : "none";
+            btnSuspend.$ext.style.display = state == "disconnected" 
+                || state != "stopped" ? "inline-block" : "none";
+                
+            btnSuspend.setAttribute("disabled",     state == "disconnected");
+            btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+            btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+            btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+            btnScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+            // lstScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+        }
         
         function show(){
             draw();
@@ -341,13 +293,21 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
-         *     node     {XMLNode} description
-         *     oldpath  {String} description
+         * A panel in the debugger panel responsible for displaying the debug 
+         * buttons.
          **/
         plugin.freezePublicAPI({
+            get enableBreakpoints(){ return enableBreakpoints; },
+            set enableBreakpoints(v){ 
+                enableBreakpoints = v;
+                toggleBreakpoints(v);
+            },
+            get pauseOnBreaks(){ return pauseOnBreaks; },
+            set pauseOnBreaks(v){ 
+                pauseOnBreaks = v; 
+                togglePause(v);
+            },
+            
             /**
              * 
              */
@@ -367,49 +327,3 @@ define(function(require, exports, module) {
         });
     }
 });
-
-//    registerDebugHandler : function(handler) {
-//        this.handlers.push(handler);
-//    },
-//
-//    loadSources : function(callback) {
-//        this.$dbgImpl && this.$dbgImpl.loadSources(callback);
-//    },
-//
-//    loadSource : function(script, callback) {
-//        this.$dbgImpl && this.$dbgImpl.loadSource(script, callback);
-//    },
-//
-//    loadObject : function(item, callback) {
-//        this.$dbgImpl && this.$dbgImpl.loadObject(item, callback);
-//    },
-//
-//    loadFrame : function(frame, callback) {
-//        this.$dbgImpl && this.$dbgImpl.loadFrame(frame, callback);
-//    },
-//
-//    resume : function(stepaction, stepcount, callback) {
-//        ide.dispatchEvent("beforecontinue");
-//
-//        this.$dbgImpl && this.$dbgImpl.resume(stepaction, stepcount || 1, callback);
-//    },
-//
-//    suspend : function() {
-//        this.$dbgImpl && this.$dbgImpl.suspend();
-//    },
-//
-//    evaluate : function(expression, frame, global, disableBreak, callback){
-//        this.$dbgImpl && this.$dbgImpl.evaluate(expression, frame, global, disableBreak, callback);
-//    },
-//
-//    changeLive : function(scriptId, newSource, previewOnly, callback) {
-//        this.$dbgImpl && this.$dbgImpl.changeLive(scriptId, newSource, previewOnly, callback);
-//    },
-//
-//    lookup: function(handles, includeSource, callback) {
-//        this.$dbgImpl && this.$dbgImpl.lookup(handles, includeSource, callback);
-//    },
-//
-//    updateBreakpoints: function() {
-//        this.$dbgImpl && this.$dbgImpl.updateBreakpoints();
-//    }

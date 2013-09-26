@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Panel", "c9", "util", "settings", "ui", "layout", "menus", "save", 
-        "buttons", "callstack", "breakpoints", "immediate", "variables", "fs",
+        "callstack", "breakpoints", "immediate", "variables", "fs",
         "watches", "run", "panels", "tabManager" //, "quickwatch"
     ];
     main.provides = ["debugger"];
@@ -21,7 +21,6 @@ define(function(require, exports, module) {
         var panels   = imports.panels;
         var run      = imports.run;
         
-        var buttons     = imports.buttons;
         var callstack   = imports.callstack;
         var breakpoints = imports.breakpoints;
         var immediate   = imports.immediate;
@@ -62,17 +61,9 @@ define(function(require, exports, module) {
                 }
             }, plugin);
             
-            run.on("started", function(){
-                running = run.STARTED;
-                buttons.state = state;
-            }, plugin);
-            run.on("stopped", function(){
-                running = run.STOPPED;
-                buttons.state = "disconnected";
-            }, plugin);
-            
             // Receive the breakpoints on attach
             dbg.on("attach", function(e){
+                e.implementation = dbg;
                 emit("attach", e);
                 
                 // Add breakpoints that we potentially got from the server
@@ -84,44 +75,15 @@ define(function(require, exports, module) {
                 // Deactivate breakpoints if user wants to
                 if (!breakpoints.enableBreakpoints)
                     breakpoints.deactivateAll();
-                
-                
             }, plugin);
             
             dbg.on("detach", function(e){
-                buttons.state = "detached";
+                // buttons.state = "detached";
+                state = "disconnected";
+                emit("stateChange", { state: state });
                 
                 //@todo
                 emit("detach", e);
-            }, plugin);
-            
-            // Debug
-            buttons.on("resume",     function(){ dbg.resume(); }, plugin);
-            buttons.on("suspend",    function(){ dbg.suspend(); }, plugin);
-            buttons.on("stepInto",  function(){ dbg.stepInto(); }, plugin);
-            buttons.on("stepOut",   function(){ dbg.stepOut(); }, plugin);
-            buttons.on("stepOver",  function(){ dbg.stepOver(); }, plugin);
-            buttons.on("breakpointsRemove", function(e){
-                breakpoints.breakpoints.forEach(function(bp){
-                    breakpoints.clearBreakpoint(bp);
-                });
-            }, plugin);
-            buttons.on("breakpointsEnable", function(e){
-                e.value
-                    ? breakpoints.activateAll()
-                    : breakpoints.deactivateAll();
-            }, plugin);
-            buttons.on("pauseToggle", function(e){ 
-                dbg.setBreakBehavior(
-                    e.value === 1 ? "uncaught" : "all",
-                    e.value === 0 ? false : true
-                );
-                
-                pauseOnBreaks = e.value;
-                settings.set("user/debug/@pause", e.value);
-            }, plugin);
-            breakpoints.on("active", function(e){
-                buttons.enableBreakpoints = e.value;
             }, plugin);
             
             // When hitting a breakpoint or exception or stepping
@@ -261,19 +223,6 @@ define(function(require, exports, module) {
             dbg.on("sourcesCompile", function(e){
                 callstack.addSource(e.source);
             }, plugin);
-            
-            // Load the scripts in the sources dropdown
-            buttons.getElement("lstScripts", function(lstScripts){
-                lstScripts.setModel(callstack.modelSources);
-                
-                lstScripts.on("afterselect", function(e){
-                    callstack.openFile({
-                        scriptId  : e.selected.getAttribute("id"),
-                        path      : e.selected.getAttribute("path"),
-                        generated : true
-                    });
-                }, plugin)
-            });
             
             // When clicking on a frame in the call stack show it 
             // in the variables datagrid
@@ -495,27 +444,27 @@ define(function(require, exports, module) {
             }));
             plugin.addElement(bar);
             
-            // Draw buttons
-            buttons.draw({container: bar});
-            
-            var scroller = bar.$ext.appendChild(document.createElement("div"))
+            var scroller = bar.$ext.appendChild(document.createElement("div"));
             scroller.className = "scroller";
             
-            var captions = ["Watch Expressions", "Call Stack", "Scope Variables", "Breakpoints"];
-            [watches, callstack, variables, breakpoints].forEach(function(c, i){
-                var frame = ui.frame({ 
-                    htmlNode    : scroller,
-                    buttons     : "min",
-                    activetitle : "min",
-                    caption     : captions[i]
-                });
-                // bar.appendChild(frame);
-                c.draw({container: frame});
-            });
+            emit("draw", { html: scroller, aml: bar });
+            
+            // var captions = ["Watch Expressions", "Call Stack", "Scope Variables", "Breakpoints"];
+            // [watches, callstack, variables, breakpoints].forEach(function(c, i){
+            //     var frame = ui.frame({ 
+            //         htmlNode    : scroller,
+            //         buttons     : "min",
+            //         activetitle : "min",
+            //         caption     : captions[i]
+            //     });
+            //     // bar.appendChild(frame);
+            //     c.draw({container: frame});
+            // });
         }
         
         function updatePanels(action, runstate){
             state = running != run.STOPPED ? runstate : "disconnected";
+            emit("stateChange", { state: state });
             
             watches[action]();
             
@@ -523,14 +472,12 @@ define(function(require, exports, module) {
             if (action == "disable")
                 callstack.clearFrames();
                 
-            //buttons[action]();
-            buttons.state = state;
+            // buttons.state = state;
             
             variables[action]();
             breakpoints[action]();
             
             immediate[action]("debugger"); // @todo
-            //quickwatch[action]();
             
             if (action == "disable")
                 watches.updateAll();
@@ -547,8 +494,12 @@ define(function(require, exports, module) {
                 delete debuggers[type];
         }
         
-        function debug(runner, callback){
+        function debug(process, callback){
             var err;
+            
+            var runner = process.runner;
+            if (runner instanceof Array)
+                runner = runner[runner.length - 1];
             
             // Only update debugger implementation if switching or not yet set
             if (!dbg || dbg != debuggers[runner["debugger"]]) {
@@ -575,6 +526,19 @@ define(function(require, exports, module) {
                 // Attach all events necessary
                 load();
             }
+            
+            if (process.running == process.STARTED)
+                running = process.STARTED;
+            else {
+                process.on("started", function(){
+                    running = run.STARTED;
+                    // buttons.state = state;
+                }, plugin);
+            }
+            process.on("stopped", function(){
+                running = run.STOPPED;
+                // buttons.state = "disconnected";
+            }, plugin);
             
             // Hook for plugins to delay or cancel debugger attaching
             // Whoever cancels is responible for calling the callback
@@ -743,7 +707,8 @@ define(function(require, exports, module) {
                  * Fires when the debugger has attached itself to the process.
                  * @event attach
                  * @param {Object}                  e
-                 * @param {debugger.Breakpoint[]}   e.breakpoints  The breakpoints that are currently set.
+                 * @param {debugger.Breakpoint[]}   e.breakpoints     The breakpoints that are currently set.
+                 * @param {debugger.implementation} e.implementation  The used debugger implementation
                  */
                 "attach",
                 /**

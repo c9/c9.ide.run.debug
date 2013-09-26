@@ -374,11 +374,7 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
-         *     node     {XMLNode} description
-         *     oldpath  {String} description
+         * Adds source map support to the {@link debugger Cloud9 Debugger}.
          **/
         plugin.freezePublicAPI({
             
