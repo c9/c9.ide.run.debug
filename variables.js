@@ -48,6 +48,10 @@ define(function(require, exports, module) {
             callstack.on("scopeUpdate", function(e){
                 updateScope(e.scope, e.variables);
             })
+            callstack.on("framesLoad", function(e){
+                // Clear the cached states of the variable datagrid
+                clearCache();
+            })
             
             // When clicking on a frame in the call stack show it 
             // in the variables datagrid
@@ -82,18 +86,6 @@ define(function(require, exports, module) {
                     });
                 }
             }, plugin);
-            
-            // restore the variables from the IDE settings
-            settings.on("read", function (e) {
-                settings.setDefaults("user/variables", [["show", "false"]]);
-                
-                if (settings.getBool("user/variables/@show"))
-                    show();
-            });
-            
-            settings.on("write", function (e) {
-                
-            });
         }
 
         var drawn;
@@ -191,15 +183,6 @@ define(function(require, exports, module) {
         }
         
         /***** Methods *****/
-        
-        function show(){
-            draw();
-            datagrid.show();
-        }
-        
-        function hide(){
-            datagrid.hide();
-        }
         
         function loadFrame(frame){
             if (frame == activeFrame)
@@ -337,28 +320,8 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
-         *     node     {XMLNode} description
-         *     oldpath  {String} description
          **/
         plugin.freezePublicAPI({
-            /**
-             * 
-             */
-            draw : draw,
-            
-            /**
-             * 
-             */
-            show : show,
-            
-            /**
-             * 
-             */
-            hide : hide,
-            
             /**
              * 
              */

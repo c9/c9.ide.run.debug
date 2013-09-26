@@ -76,9 +76,6 @@ define(function(require, exports, module) {
                         
                         e.frame = activeFrame;
                         emit("framesLoad", e);
-                        
-                        // Clear the cached states of the variable datagrid
-                        variables.clearCache();
                     }
                 }
                 
@@ -110,7 +107,7 @@ define(function(require, exports, module) {
             
             debug.on("break", function(e){
                 // Show the frame in the editor
-                showDebugFrame(activeFrame);
+                debug.showDebugFrame(activeFrame);
             });
             
             debug.on("frameActivate", function(e){
@@ -144,18 +141,6 @@ define(function(require, exports, module) {
                     // @todo update the UI
                 });
             }, plugin);
-            
-            // restore the callstack from the IDE settings
-            settings.on("read", function (e) {
-                settings.setDefaults("user/callstack", [["show", "false"]]);
-                
-                if (settings.getBool("user/callstack/@show"))
-                    show();
-            });
-            
-            settings.on("write", function (e) {
-                
-            });
         }
 
         var drawn = false;
@@ -245,7 +230,7 @@ define(function(require, exports, module) {
             
             // Highlight frame in Ace and Open the file
             if (frame)
-                showDebugFrame(frame);
+                debug.showDebugFrame(frame);
             // updateMarker(frame);
                 
             emit("frameActivate", { frame : activeFrame });
@@ -300,15 +285,6 @@ define(function(require, exports, module) {
         }
         
         /***** Methods *****/
-        
-        function show(){
-            draw();
-            datagrid.show();
-        }
-        
-        function hide(){
-            datagrid.hide();
-        }
         
         function findSourceByPath(path){
             for (var i = 0, l = sources.length, source; i < l; i++) {
@@ -469,71 +445,10 @@ define(function(require, exports, module) {
         plugin.freezePublicAPI({
             get activeFrame(){ return activeFrame; },
             set activeFrame(frame){ setActiveFrame(frame); },
+            
             get sources(){ return sources; },
+            
             get frames(){ return frames; },
-            
-            get modelSources(){ return modelSources; },
-            get modelFrames(){ return modelFrames; },
-            
-            /**
-             * 
-             */
-            draw : draw,
-            
-            /**
-             * 
-             */
-            show : show,
-            
-            /**
-             * 
-             */
-            hide : hide,
-            
-            /**
-             * 
-             */
-            findSource : findSource,
-            
-            /**
-             * 
-             */
-            findSourceByPath : findSourceByPath,
-            
-            /**
-             * 
-             */
-            findSourceXml : findSourceXml,
-            
-            /**
-             * 
-             */
-            findFrame : findFrame,
-            
-            /**
-             * 
-             */
-            findFrameXml : findFrameXml,
-            
-            /**
-             * 
-             */
-            loadFrames : loadFrames,
-            
-            /**
-             * 
-             */
-            loadSources : loadSources,
-            
-            /**
-             * 
-             */
-            clearFrames : clearFrames,
-            
-            /**
-             * 
-             */
-            addSource : addSource,
             
             /**
              * 
@@ -548,7 +463,7 @@ define(function(require, exports, module) {
             /**
              * 
              */
-            updateMarker : updateMarker
+            updateMarkers : updateMarker
         });
         
         register(null, {

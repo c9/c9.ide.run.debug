@@ -62,18 +62,9 @@ define(function(require, exports, module) {
             
             // restore the variables from the IDE settings
             settings.on("read", function (e) {
-                settings.setDefaults("user/watches", [["show", "false"]]);
-                
                 var watches = settings.getJson("user/watches") || [];
                 model.load("<watches>" + watches.join("") 
                     + "<variable new='new' name='' value='' ref='new" + (count++) + "'/></watches>");
-                
-                if (settings.getBool("user/watches/@show"))
-                    show();
-            });
-            
-            settings.on("write", function (e) {
-                
             });
         }
 
@@ -238,15 +229,6 @@ define(function(require, exports, module) {
         
         /***** Methods *****/
         
-        function show(){
-            draw();
-            datagrid.show();
-        }
-        
-        function hide(){
-            datagrid.hide();
-        }
-        
         function updateAll(){
             watches.forEach(function(variable){
                 var node = findVariableXml(variable);
@@ -367,21 +349,6 @@ define(function(require, exports, module) {
          **/
         plugin.freezePublicAPI({
             get watches(){ return watches; },
-            
-            /**
-             * 
-             */
-            show : show,
-            
-            /**
-             * 
-             */
-            hide : hide,
-            
-            /**
-             * 
-             */
-            draw : draw,
             
             /**
              * 

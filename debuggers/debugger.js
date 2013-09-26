@@ -16,8 +16,8 @@ define(function(require, exports, module) {
         var immediate = imports.immediate;
         var run       = imports.run;
         
-        var markup = require("text!./buttons.xml");
-        var css    = require("text!./buttons.css");
+        var markup = require("text!./debugger.xml");
+        var css    = require("text!./debugger.css");
         
         /***** Initialization *****/
         
@@ -33,12 +33,11 @@ define(function(require, exports, module) {
         var emit   = plugin.getEmitter();
         
         var dbg, debuggers = {}, pauseOnBreaks = 0, state = "disconnected";
-        var running, activeFrame, sources; 
+        var running, activeFrame, sources, breakpoints = [];
         
         var enableBreakpoints;
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
-            btnSuspend, btnBreakpoints, btnPause, btnBpRemove,
-            btnOutput, btnImmediate; // ui elements
+            btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
         
         var loaded = false;
         function load(){
@@ -109,24 +108,6 @@ define(function(require, exports, module) {
                     dbg && dbg.stepOut();
                 }
             }, plugin);
-            
-            // Update button state
-            plugin.on("stateChange", function(e){
-                state = e.state;
-                
-                if (!btnResume)
-                    return;
-    
-                btnResume.$ext.style.display = state == "stopped" 
-                    ? "inline-block" : "none";
-                btnSuspend.$ext.style.display = state == "disconnected" 
-                    || state != "stopped" ? "inline-block" : "none";
-                    
-                btnSuspend.setAttribute("disabled",     state == "disconnected");
-                btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-                btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-                btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
-            });
         }
         
         var drawn;
@@ -157,7 +138,7 @@ define(function(require, exports, module) {
             ui.insertCss(css, plugin);
             
             // Create UI elements
-            var parent = options.aml;
+            var parent = bar;
             ui.insertMarkup(parent, markup, plugin);
             
             container = plugin.getElement("hbox");
@@ -167,8 +148,6 @@ define(function(require, exports, module) {
             btnStepInto    = plugin.getElement("btnStepInto");
             btnStepOut     = plugin.getElement("btnStepOut");
             btnSuspend     = plugin.getElement("btnSuspend");
-            btnBreakpoints = plugin.getElement("btnBreakpoints");
-            btnBpRemove    = plugin.getElement("btnBpRemove");
             btnPause       = plugin.getElement("btnPause");
             btnOutput      = plugin.getElement("btnOutput");
             btnImmediate   = plugin.getElement("btnImmediate");
@@ -190,7 +169,25 @@ define(function(require, exports, module) {
                 commands.exec("showimmediate");
             });
             
-            emit("draw", { html: scroller, aml: bar });
+            // Update button state
+            plugin.on("stateChange", function(e){
+                state = e.state;
+                
+                if (!btnResume)
+                    return;
+    
+                btnResume.$ext.style.display = state == "stopped" 
+                    ? "inline-block" : "none";
+                btnSuspend.$ext.style.display = state == "disconnected" 
+                    || state != "stopped" ? "inline-block" : "none";
+                    
+                btnSuspend.setAttribute("disabled",     state == "disconnected");
+                btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+                btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+                btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+            }, plugin);
+            
+            emit("drawPanels", { html: scroller, aml: bar });
         }
         
         /***** Methods *****/
@@ -215,6 +212,7 @@ define(function(require, exports, module) {
             // Receive the breakpoints on attach
             dbg.on("attach", function(e){
                 e.implementation = dbg;
+                togglePause(pauseOnBreaks);
                 emit("attach", e);
             }, plugin);
             
@@ -260,37 +258,6 @@ define(function(require, exports, module) {
                 activeFrame = e.frame;
                 emit("frameActivate", e);
             }, plugin);
-            
-            // @todo move to open method
-            // Clicking on the call stack
-            // callstack.on("beforeOpen", function(e){
-            //     return emit("beforeOpen", e);
-            // }, plugin)
-            
-            // @todo move to open method
-            // callstack.on("open", function(e){
-            //     function done(err, value){
-            //         if (err) return; //@todo util.alert?
-                    
-            //         if (emit("open", { 
-            //             path   : e.source.path, 
-            //             source : e.source,
-            //             value  : value,
-            //             done   : e.done,
-            //             tab    : e.tab
-            //         }) !== false)
-            //             e.done(value);
-            //     }
-                
-            //     //!e.generated && 
-            //     if ((e.source.path || "").charAt(0) == "/") {
-            //         fs.readFile(e.source.path, "utf8", done);
-            //     }
-            //     else {
-            //         dbg.getSource(e.source, done);
-            //         e.tab.document.getSession().readOnly = true;
-            //     }
-            // }, plugin)
             
             dbg.on("sources", function(e){
                 sources = e.sources;
@@ -348,6 +315,9 @@ define(function(require, exports, module) {
         }
         
         function togglePause(force){
+            if (state == "disconnected")
+                return;
+            
             pauseOnBreaks = force !== undefined
                 ? force
                 : (pauseOnBreaks > 1 ? 0 : pauseOnBreaks + 1);
@@ -399,10 +369,6 @@ define(function(require, exports, module) {
             });
         }
     
-        /**
-         *  show file
-         *    options {path or scriptId, row, column}
-         */
         function openFile(options) {
             var row      = options.line + 1;
             var column   = options.column;
@@ -435,7 +401,9 @@ define(function(require, exports, module) {
             var state = {
                 path       : path,
                 active     : true,
-                value      : -1,
+                value      : source.path && source.path.charAt(0) == "/" 
+                    ? undefined 
+                    : -1,
                 document   : {
                     title  : path.substr(path.lastIndexOf("/") + 1),
                     ace    : {
@@ -451,7 +419,7 @@ define(function(require, exports, module) {
                     column : column
                 };
             }
-
+            
             if (emit("beforeOpen", {
                 source    : source,
                 state     : state,
@@ -460,21 +428,34 @@ define(function(require, exports, module) {
                 return;
 
             tabs.open(state, function(err, tab, done){
-                emit("open", {
-                    source    : source,
-                    tab       : tab,
-                    line      : row,
-                    column    : column,
-                    generated : options.generated,
-                    done      : function(source){
-                        tab.document.value = source;
-                        // tab.document.getSession().jumpTo({
-                        //     row    : row,
-                        //     column : column
-                        // });
-                        // done();
-                    }
-                })
+                // If we need to load the contens ourselves, lets.
+                if (done) {
+                    dbg.getSource(source, function(err, value){
+                        if (err) return;
+                        
+                        function debugDone(value){
+                            tab.document.value = value;
+                            // tab.document.getSession().jumpTo({
+                            //     row    : row,
+                            //     column : column
+                            // });
+                            // done();
+                        }
+                        
+                        if (emit("open", {
+                            path      : source.path,
+                            source    : source,
+                            value     : value,
+                            tab       : tab,
+                            line      : row,
+                            column    : column,
+                            generated : options.generated,
+                            done      : debugDone
+                        }) !== false)
+                            debugDone(value);
+                    });
+                    tab.document.getSession().readOnly = true;
+                }
             });
         }
         
@@ -654,22 +635,6 @@ define(function(require, exports, module) {
              * @readonly
              */
             get breakOnUncaughtExceptions(){ return dbg.breakOnUncaughtExceptions; },
-            /**
-             * 
-             */
-            get pauseOnBreaks(){ return pauseOnBreaks; },
-            set pauseOnBreaks(v){ 
-                pauseOnBreaks = v; 
-                togglePause(v);
-            },
-            /**
-             * 
-             */
-            get enableBreakpoints(){ return enableBreakpoints; },
-            set enableBreakpoints(v){ 
-                enableBreakpoints = v;
-                emit("enableBreakpoints", v);
-            },
             
             _events : [
                 /**
@@ -738,32 +703,7 @@ define(function(require, exports, module) {
                  * @param {Function}        e.done.value  The value of the source file
                  * @param {Tab}             e.tab         The created tab for the source file.
                  */
-                "open",
-                /**
-                 * Fires when a breakpoint is added
-                 * @event setBreakpoint
-                 * @param {Object} e
-                 * @param {debugger.Breakpoint} breakpoint  The breakpoint that is added.
-                 * @param {Function}            callback    The callback called when the breakpoint is added.
-                 * @private
-                 */
-                "setBreakpoint",
-                /**
-                 * Fires when a breakpoint is removed
-                 * @event clearBreakpoint
-                 * @param {Object} e
-                 * @param {debugger.Breakpoint} breakpoint  The breakpoint that is remove.
-                 * @param {Function}            callback    The callback called when the breakpoint is remove.
-                 * @private
-                 */
-                "clearBreakpoint",
-                /**
-                 * Fires when all breakpoints are enabled or disabled
-                 * @event enableBreakpoints
-                 * @param {Boolean} enabled  Specifies whether all breakpoints are enabled.
-                 * @private
-                 */
-                "enableBreakpoints"
+                "open"
             ],
             
             /**
@@ -844,7 +784,8 @@ define(function(require, exports, module) {
              * @param {Error}            callback.err  The error if any error occured.
              */
             setBreakBehavior : function(type, enabled, callback){ 
-                dbg.setBreakBehavior(type, enabled, callback); 
+                // dbg.setBreakBehavior(type, enabled, callback); 
+                togglePause(enabled ? (type == "uncaught" ? 1 : 2) : 0);
             },
             
             /**
@@ -859,22 +800,6 @@ define(function(require, exports, module) {
              */
             evaluate : function(expression, frame, global, disableBreak, callback){ 
                 dbg.evaluate(expression, frame, global, disableBreak, callback); 
-            },
-            
-            /**
-             * Adds a breakpoint to a line in a source file.
-             * @param {debugger.Breakpoint} breakpoint  The breakpoint to add.
-             */
-            setBreakpoint : function(bp, callback){
-                emit("setBreakpoint", { breakpoint: bp, callback: callback });
-            },
-            
-            /**
-             * Removes a breakpoint from a line in a source file.
-             * @param {debugger.Breakpoint} breakpoint  The breakpoint to remove.
-             */
-            clearBreakpoint : function(bp, callback){
-                emit("clearBreakpoint", { breakpoint: bp, callback: callback });
             },
             
             /**

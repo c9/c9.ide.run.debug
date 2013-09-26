@@ -87,17 +87,6 @@ define(function(require, exports, module) {
                 return breakpoints; 
             });
             
-            debug.on("setBreakpoint", function(e){
-                setBreakpoint(e.breakpoint, e.callback);
-            });
-            debug.on("clearBreakpoint", function(e){
-                clearBreakpoint(e.breakpoint, e.callback);
-            });
-            debug.on("enableBreakpoints", function(enabled){
-                enableBreakpoints = enabled;
-                toggleBreakpoints(enabled);
-            });
-            
             debug.on("breakpointUpdate", function(e){
                 var bp = e.breakpoint;
                 
@@ -132,13 +121,12 @@ define(function(require, exports, module) {
             
             // Breakpoints may have already been set
             breakpoints.forEach(function(bp){
-                updateBreakpoint(bp, "add");
+                updateBreakpointAtDebugger(bp, "add");
             });
             
             // restore the breakpoints from the IDE settings
             settings.on("read", function (e) {
                 settings.setDefaults("user/breakpoints", [
-                    ["show", "false"],
                     ["active", "true"]
                 ]);
                 
@@ -155,9 +143,6 @@ define(function(require, exports, module) {
                 if (tabs.focussedTab && tabs.focussedTab.editor.type == "ace") {
                     updateDocument(tabs.focussedTab.document);
                 }
-                
-                if (settings.getBool("user/breakpoints/@show"))
-                    show();
                 
                 enableBreakpoints = settings.getBool("user/breakpoints/@active");
                 toggleBreakpoints(enableBreakpoints);
@@ -281,20 +266,20 @@ define(function(require, exports, module) {
             });
             
             var hbox2 = debug.getElement("hbox2");
-            var btnBreakpoints = hbox2.appendChild(new ui.button({
+            btnBreakpoints = hbox2.insertBefore(new ui.button({
                 id       : "btnBreakpoints",
                 tooltip  : "Deactivate Breakpoints",
                 icon     : "toggle_breakpoints2.png",
                 skinset  : "default",
                 skin     : "c9-menu-btn"
-            }));
-            var btnBpRemove = hbox2.appendChild(new ui.button({
+            }), hbox2.selectSingleNode("a:divider"));
+            btnBpRemove = hbox2.insertBefore(new ui.button({
                 id       : "btnBpRemove",
                 tooltip  : "Clear All Breakpoints",
                 icon     : "remove_breakpoints.png",
                 skinset  : "default",
                 skin     : "c9-menu-btn"
-            }));
+            }), hbox2.selectSingleNode("a:divider"));
             plugin.addElement(btnBreakpoints, btnBpRemove);
             
             btnBreakpoints.on("click", function(){
@@ -335,7 +320,7 @@ define(function(require, exports, module) {
         }
         
         // Breakpoints
-        function updateBreakpoint(bp, action){
+        function updateBreakpointAtDebugger(bp, action){
             // Give plugins the ability to update a breakpoint before
             // setting it in the debugger
             // emit("breakpointsUpdate", e);
@@ -483,7 +468,8 @@ define(function(require, exports, module) {
             var session = doc.getSession()
             if (session.hasBreakpoints)
                 return;
-            
+
+            if (!session.session) debugger;            
             session.session.on("change", function(e) {
                 var breakpoints = session.session.$breakpoints;
                 
@@ -603,7 +589,7 @@ define(function(require, exports, module) {
             // Don't call update to enable/disable breakpoints when they are
             // all deactivated
             if (enableBreakpoints || (action != "enable" && action != "disable"))
-                updateBreakpoint(breakpoint, action);
+                updateBreakpointAtDebugger(breakpoint, action);
             
             changed = true;
         }
@@ -776,15 +762,6 @@ define(function(require, exports, module) {
             toggleBreakpoints(false);
         }
         
-        function show(){
-            draw();
-            list.show();
-        }
-        
-        function hide(){
-            list.hide();
-        }
-        
         /***** Lifecycle *****/
         
         plugin.on("load", function(){
@@ -815,6 +792,7 @@ define(function(require, exports, module) {
              * 
              */
             get breakpoints(){ return breakpoints.slice(0); },
+            
             /**
              * 
              */
@@ -823,6 +801,11 @@ define(function(require, exports, module) {
                 enableBreakpoints = v;
                 toggleBreakpoints(v);
             },
+            
+            /**
+             * 
+             */
+            setCondition : setCondition,
             
             /**
              * 
@@ -852,42 +835,12 @@ define(function(require, exports, module) {
             /**
              * 
              */
-            findBreakpoint : findBreakpoint,
-            
-            /**
-             * 
-             */
-            findBreakpoints : findBreakpoints,
-            
-            /**
-             * 
-             */
             activateAll : activateAll,
             
             /**
              * 
              */
-            deactivateAll : deactivateAll,
-            
-            /**
-             * 
-             */
-            redrawBreakpoint : redrawBreakpoint,
-            
-            /**
-             * 
-             */
-            draw : draw,
-            
-            /**
-             * 
-             */
-            show : show,
-            
-            /**
-             * 
-             */
-            hide : hide
+            deactivateAll : deactivateAll
         });
         
         register(null, {
