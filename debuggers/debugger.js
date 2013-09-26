@@ -37,8 +37,8 @@ define(function(require, exports, module) {
         
         var enableBreakpoints;
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
-            lstScripts, btnSuspend, btnBreakpoints, btnPause, btnBpRemove,
-            btnScripts, btnOutput, btnImmediate; // ui elements
+            btnSuspend, btnBreakpoints, btnPause, btnBpRemove,
+            btnOutput, btnImmediate; // ui elements
         
         var loaded = false;
         function load(){
@@ -50,6 +50,9 @@ define(function(require, exports, module) {
                     ["pause", "0"],
                     ["autoshow", "true"]
                 ]);
+                
+                pauseOnBreaks = settings.getNumber("user/debug/@pause");
+                togglePause(pauseOnBreaks);
             });
             
             // Register this panel on the left-side panels
@@ -107,27 +110,6 @@ define(function(require, exports, module) {
                 }
             }, plugin);
             
-            // function toggleBreakpoints(force){
-            //     enableBreakpoints = force !== undefined
-            //         ? force
-            //         : !enableBreakpoints;
-                
-            //     if (btnBreakpoints) {
-            //         btnBreakpoints.setAttribute("icon", enableBreakpoints 
-            //             ? "toggle_breakpoints2.png" 
-            //             : "toggle_breakpoints1.png");
-            //         btnBreakpoints.setAttribute("tooltip", 
-            //             enableBreakpoints
-            //                 ? "Deactivate Breakpoints"
-            //                 : "Activate Breakpoints"
-            //         );
-            //     }
-                
-            //     emit("breakpointsEnable", {
-            //         value : enableBreakpoints
-            //     });
-            // }
-        
             // Update button state
             plugin.on("stateChange", function(e){
                 state = e.state;
@@ -144,8 +126,6 @@ define(function(require, exports, module) {
                 btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
                 btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
                 btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
-                btnScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
-                // lstScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
             });
         }
         
@@ -186,47 +166,16 @@ define(function(require, exports, module) {
             btnStepOver    = plugin.getElement("btnStepOver");
             btnStepInto    = plugin.getElement("btnStepInto");
             btnStepOut     = plugin.getElement("btnStepOut");
-            lstScripts     = plugin.getElement("lstScripts");
             btnSuspend     = plugin.getElement("btnSuspend");
             btnBreakpoints = plugin.getElement("btnBreakpoints");
             btnBpRemove    = plugin.getElement("btnBpRemove");
             btnPause       = plugin.getElement("btnPause");
-            btnScripts     = plugin.getElement("btnScripts");
             btnOutput      = plugin.getElement("btnOutput");
             btnImmediate   = plugin.getElement("btnImmediate");
             
             // @todo move this to F8 and toggle between resume
             // btnSuspend.on("click", function(){
             //     suspend();
-            // });
-            
-            // btnBreakpoints.on("click", function(){
-            //     toggleBreakpoints();
-            // });
-            
-            // buttons.on("breakpointsRemove", function(e){
-            //     breakpoints.breakpoints.forEach(function(bp){
-            //         breakpoints.clearBreakpoint(bp);
-            //     });
-            // }, plugin);
-            // buttons.on("breakpointsEnable", function(e){
-            //     e.value
-            //         ? breakpoints.activateAll()
-            //         : breakpoints.deactivateAll();
-            // }, plugin);
-            // breakpoints.on("active", function(e){
-            //     buttons.enableBreakpoints = e.value;
-            // }, plugin);
-            
-            // @todo move this to the breakpoints plugin
-            btnBpRemove.on("click", function(){
-                emit("breakpointsRemove");
-            });
-            
-            // settings.on("read", function(){
-            //     buttons.enableBreakpoints = breakpoints.enableBreakpoints;
-            //     buttons.pauseOnBreaks = pauseOnBreaks =
-            //         settings.getNumber("user/debug/@pause");
             // });
             
             btnPause.on("click", function(){
@@ -240,21 +189,6 @@ define(function(require, exports, module) {
             btnImmediate.on("click", function(){
                 commands.exec("showimmediate");
             });
-            
-            // @todo Move this to the callstack plugin
-            // Load the scripts in the sources dropdown
-            // buttons.getElement("lstScripts", function(lstScripts){
-            //     lstScripts.setModel(callstack.modelSources);
-                
-            //     lstScripts.on("afterselect", function(e){
-            //         callstack.openFile({
-            //             scriptId  : e.selected.getAttribute("id"),
-            //             path      : e.selected.getAttribute("path"),
-            //             generated : true
-            //         });
-            //     }, plugin)
-            // });
-            btnScripts.setAttribute("submenu", lstScripts.parentNode);
             
             emit("draw", { html: scroller, aml: bar });
         }
@@ -447,6 +381,103 @@ define(function(require, exports, module) {
                 delete debuggers[type];
         }
         
+        function showDebugFrame(frame) {
+            openFile({
+                scriptId : frame.sourceId,
+                line     : frame.line - 1,
+                column   : frame.column,
+                text     : frame.name,
+                path     : frame.path
+            });
+        }
+    
+        function showDebugFile(script, row, column) {
+            openFile({
+                scriptId : script.id,
+                line     : row, 
+                column   : column
+            });
+        }
+    
+        /**
+         *  show file
+         *    options {path or scriptId, row, column}
+         */
+        function openFile(options) {
+            var row      = options.line + 1;
+            var column   = options.column;
+            var path     = options.path;
+            var scriptId = options.script ? options.script.id : options.scriptId;
+            var source;
+            
+            if (options.source)
+                source = options.source;
+            
+            sources.every(function(src){
+                if (scriptId && src.id == scriptId) {
+                    path   = src.path;
+                    source = src;
+                    return false;
+                }
+                if (path && src.path == path) {
+                    scriptId = src.scriptId;
+                    source   = src;
+                    return false;
+                }
+                return true;
+            });
+            
+            if (!source)
+                source = { id : scriptId };
+            
+            var isFileFromWorkspace = path.charAt(0) == "/";
+            
+            var state = {
+                path       : path,
+                active     : true,
+                value      : -1,
+                document   : {
+                    title  : path.substr(path.lastIndexOf("/") + 1),
+                    ace    : {
+                        scriptId    : scriptId,
+                        debug       : isFileFromWorkspace ? 0 : 1,
+                        lineoffset  : 0
+                    }
+                }
+            };
+            if (row) {
+                state.document.ace.jump = {
+                    row    : row,
+                    column : column
+                };
+            }
+
+            if (emit("beforeOpen", {
+                source    : source,
+                state     : state,
+                generated : options.generated
+            }) === false)
+                return;
+
+            tabs.open(state, function(err, tab, done){
+                emit("open", {
+                    source    : source,
+                    tab       : tab,
+                    line      : row,
+                    column    : column,
+                    generated : options.generated,
+                    done      : function(source){
+                        tab.document.value = source;
+                        // tab.document.getSession().jumpTo({
+                        //     row    : row,
+                        //     column : column
+                        // });
+                        // done();
+                    }
+                })
+            });
+        }
+        
         function debug(process, callback){
             var err;
             
@@ -637,7 +668,7 @@ define(function(require, exports, module) {
             get enableBreakpoints(){ return enableBreakpoints; },
             set enableBreakpoints(v){ 
                 enableBreakpoints = v;
-                toggleBreakpoints(v);
+                emit("enableBreakpoints", v);
             },
             
             _events : [
@@ -709,15 +740,30 @@ define(function(require, exports, module) {
                  */
                 "open",
                 /**
-                 * Fires when a breakpoint is updated from the UI
-                 * @event breakpointsUpdate
+                 * Fires when a breakpoint is added
+                 * @event setBreakpoint
                  * @param {Object} e
-                 * @param {debugger.Breakpoint} breakpoint
-                 * @param {String}              action      One of the following 
-                 *   possible values: "add", "remove", "condition", "enable", "disable".
-                 * @param {Boolean}             force       Specifies whether the update is forced.
+                 * @param {debugger.Breakpoint} breakpoint  The breakpoint that is added.
+                 * @param {Function}            callback    The callback called when the breakpoint is added.
+                 * @private
                  */
-                "breakpointsUpdate"
+                "setBreakpoint",
+                /**
+                 * Fires when a breakpoint is removed
+                 * @event clearBreakpoint
+                 * @param {Object} e
+                 * @param {debugger.Breakpoint} breakpoint  The breakpoint that is remove.
+                 * @param {Function}            callback    The callback called when the breakpoint is remove.
+                 * @private
+                 */
+                "clearBreakpoint",
+                /**
+                 * Fires when all breakpoints are enabled or disabled
+                 * @event enableBreakpoints
+                 * @param {Boolean} enabled  Specifies whether all breakpoints are enabled.
+                 * @private
+                 */
+                "enableBreakpoints"
             ],
             
             /**
@@ -747,7 +793,7 @@ define(function(require, exports, module) {
             registerDebugger : registerDebugger,
             
             /**
-             * Unregisters a{@link debugger.implementation debugger implementation}.
+             * Unregisters a {@link debugger.implementation debugger implementation}.
              * @param {String}                  name      The unique name of this debugger implementation.
              * @param {debugger.implementation} debugger  The debugger implementation.
              */
@@ -819,14 +865,41 @@ define(function(require, exports, module) {
              * Adds a breakpoint to a line in a source file.
              * @param {debugger.Breakpoint} breakpoint  The breakpoint to add.
              */
-            setBreakpoint : breakpoints.setBreakpoint,
+            setBreakpoint : function(bp, callback){
+                emit("setBreakpoint", { breakpoint: bp, callback: callback });
+            },
             
             /**
              * Removes a breakpoint from a line in a source file.
              * @param {debugger.Breakpoint} breakpoint  The breakpoint to remove.
              */
-            clearBreakpoint : breakpoints.clearBreakpoint,
+            clearBreakpoint : function(bp, callback){
+                emit("clearBreakpoint", { breakpoint: bp, callback: callback });
+            },
             
+            /**
+             * Displays a frame in the ace editor.
+             * @param {debugger.Frame} frame  The frame to display
+             */
+            showDebugFrame : showDebugFrame,
+            
+            /**
+             * Displays a debugger source file in the ace editor
+             * @param {debugger.Source} script  The source file to display
+             * @param {Number}          row     The row (zero bound) to scroll to.
+             * @param {Number}          column  The column (zero bound) to scroll to.
+             */
+            showDebugFile : showDebugFile,
+            
+            /**
+             * Opens a file from disk or from the debugger.
+             * @param {Number}          [row]         The row (zero bound) to scroll to.
+             * @param {Number}          [column]      The column (zero bound) to scroll to.
+             * @param {String}          [path]        The path of the file to open
+             * @param {debugger.Script} [script]      The source file to open
+             * @param {String}          [scriptId]    The script id of the file to open
+             * @param {Boolean}         [generated]   
+             */
             openFile : openFile
         });
         

@@ -37,7 +37,7 @@ define(function(require, exports, module) {
         var sources = [];
         var frames  = [];
         
-        var activeFrame, dbg;
+        var activeFrame, dbg, menu, button;
         
         var loaded = false;
         function load(){
@@ -183,6 +183,48 @@ define(function(require, exports, module) {
                 setActiveFrame(e.selected && findFrame(e.selected), true);
             });
             
+            var hbox = debug.getElement("hbox");
+            menu = hbox.ownerDocument.documentElement.appendChild(new ui.menu({
+                childNodes : [
+                    new ui.list({
+                      id            : "lstScripts",
+                      margin        : "3 0 0 4",
+                      skin          : "list_dark",
+                      maxitems      : "10",
+                      disabled      : "true" ,
+                      each          : "[source]",
+                      caption       : "[@name]",
+                      autoselect    : "false",
+                      icon          : "debugger/file_obj.gif" ,
+                      onafterselect : "this.parentNode.hide()",
+                    })
+                ]
+            }));
+            button = hbox.appendChild(new ui.button({
+                id       : "btnScripts",
+                tooltip  : "Available internal and external scripts",
+                icon     : "scripts.png",
+                right    : "0",
+                top      : "0",
+                skin     : "c9-menu-btn",
+                disabled : "true"
+            }));
+            plugin.addElement(menu, button);
+            
+            // Load the scripts in the sources dropdown
+            var list = menu.firstChild
+            list.setModel(modelSources);
+            list.on("afterselect", function(e){
+                debug.openFile({
+                    scriptId  : e.selected.getAttribute("id"),
+                    path      : e.selected.getAttribute("path"),
+                    generated : true
+                });
+            }, plugin);
+            
+            // Set context menu to the button
+            button.setAttribute("submenu", menu);
+            
             emit("draw");
         }
         
@@ -258,93 +300,6 @@ define(function(require, exports, module) {
         }
         
         /***** Methods *****/
-        
-        function showDebugFrame(frame) {
-            openFile({
-                scriptId : frame.sourceId,
-                line     : frame.line - 1,
-                column   : frame.column,
-                text     : frame.name,
-                path     : frame.path
-            });
-        }
-    
-        function showDebugFile(scriptId, row, column, text) {
-            openFile({
-                scriptId : scriptId, 
-                line     : row, 
-                column   : column, 
-                text     : text
-            });
-        }
-    
-        /**
-         *  show file
-         *    options {path or scriptId, row, column}
-         */
-        function openFile(options) {
-            var row      = options.line + 1;
-            var column   = options.column;
-            var text     = options.text || "" ;
-            var path     = options.path;
-            var scriptId = options.scriptId;
-            
-            if (!path) {
-                path = modelSources.queryValue("//file[@scriptid='" 
-                    + scriptId + "']/@path");
-            }
-            else if (!scriptId) {
-                scriptId = modelSources.queryValue("//file[@path=" 
-                    + util.escapeXpathString(path) + "]/@scriptid");
-            }
-            
-            var isFileFromWorkspace = path.charAt(0) == "/";
-            
-            var state = {
-                path       : path,
-                active     : true,
-                value      : -1,
-                document   : {
-                    title  : path.substr(path.lastIndexOf("/") + 1),
-                    ace    : {
-                        scriptId    : scriptId,
-                        debug       : isFileFromWorkspace ? 0 : 1,
-                        lineoffset  : 0
-                    }
-                }
-            };
-            if (row) {
-                state.document.ace.jump = {
-                    row    : row,
-                    column : column
-                };
-            }
-
-            if (emit("beforeOpen", {
-                source    : findSource(scriptId) || { id : scriptId },
-                state     : state,
-                generated : options.generated
-            }) === false)
-                return;
-
-            tabs.open(state, function(err, tab, done){
-                emit("open", {
-                    source    : findSource(scriptId) || { id : scriptId },
-                    tab       : tab,
-                    line      : row,
-                    column    : column,
-                    generated : options.generated,
-                    done      : function(source){
-                        tab.document.value = source;
-                        // tab.document.getSession().jumpTo({
-                        //     row    : row,
-                        //     column : column
-                        // });
-                        // done();
-                    }
-                })
-            });
-        }
         
         function show(){
             draw();
@@ -490,10 +445,12 @@ define(function(require, exports, module) {
             draw(e);
         });
         plugin.on("enable", function(){
-            
+            menu.enable();
+            button.enable();
         });
         plugin.on("disable", function(){
-            
+            menu.disable();
+            button.disable();
         });
         plugin.on("unload", function(){
             loaded = false;
@@ -532,21 +489,6 @@ define(function(require, exports, module) {
              * 
              */
             hide : hide,
-            
-            /**
-             * 
-             */
-            showDebugFrame : showDebugFrame,
-            
-            /**
-             * 
-             */
-            showDebugFile : showDebugFile,
-            
-            /**
-             * 
-             */
-            openFile : openFile,
             
             /**
              * 

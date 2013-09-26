@@ -31,13 +31,6 @@
           command  = "stepout"
           disabled = "true" />
           <br />
-        <a:button id="btnScripts" 
-          tooltip  = "Available internal and external scripts"
-          icon     = "scripts.png" 
-          right    = "0"
-          top      = "0"
-          skin     = "c9-menu-btn" 
-          disabled = "true" />
     </a:bar>
     <a:bar id="hbox2" 
       class   = "fakehbox aligncenter debugger_buttons bottombuttons basic" 
@@ -52,16 +45,6 @@
           class    = "pause0"
           skinset  = "default"
           skin     = "c9-menu-btn" />
-        <a:button id="btnBreakpoints" 
-          tooltip  = "Deactivate Breakpoints"
-          icon     = "toggle_breakpoints2.png" 
-          skinset  = "default"
-          skin     = "c9-menu-btn" />
-        <a:button id="btnBpRemove" 
-          tooltip  = "Clear All Breakpoints"
-          icon     = "remove_breakpoints.png" 
-          skinset  = "default"
-          skin     = "c9-menu-btn" />
         <a:divider  skin="c9-divider" />
         <a:button id="btnOutput" 
           caption  = "Output"
@@ -72,17 +55,4 @@
           skinset  = "default"
           skin     = "c9-menu-btn" />
     </a:bar>
-    
-    <a:menu>
-        <a:list id="lstScripts"
-          margin     = "3 0 0 4"
-          skin       = "list_dark"
-          maxitems   = "10"
-          disabled   = "true" 
-          each       = "[source]"
-          caption    = "[@name]"
-          autoselect = "false"
-          icon       = "debugger/file_obj.gif" 
-          onafterselect = "this.parentNode.hide()" />
-    </a:menu>
 </a:application>

@@ -32,6 +32,7 @@ define(function(require, exports, module) {
         
         var dbg;
         var list, menu, model, hCondition, hInput; // UI Elements
+        var btnBreakpoints, btnBpRemove;
         
         var loaded = false;
         function load(){
@@ -86,6 +87,17 @@ define(function(require, exports, module) {
                 return breakpoints; 
             });
             
+            debug.on("setBreakpoint", function(e){
+                setBreakpoint(e.breakpoint, e.callback);
+            });
+            debug.on("clearBreakpoint", function(e){
+                clearBreakpoint(e.breakpoint, e.callback);
+            });
+            debug.on("enableBreakpoints", function(enabled){
+                enableBreakpoints = enabled;
+                toggleBreakpoints(enabled);
+            });
+            
             debug.on("breakpointUpdate", function(e){
                 var bp = e.breakpoint;
                 
@@ -119,7 +131,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Breakpoints may have already been set
-            breakpoints.breakpoints.forEach(function(bp){
+            breakpoints.forEach(function(bp){
                 updateBreakpoint(bp, "add");
             });
             
@@ -148,6 +160,8 @@ define(function(require, exports, module) {
                     show();
                 
                 enableBreakpoints = settings.getBool("user/breakpoints/@active");
+                toggleBreakpoints(enableBreakpoints);
+                
                 if (!enableBreakpoints)
                     list.setAttribute("class", "listBPDisabled");
             });
@@ -266,10 +280,59 @@ define(function(require, exports, module) {
                 }
             });
             
+            var hbox2 = debug.getElement("hbox2");
+            var btnBreakpoints = hbox2.appendChild(new ui.button({
+                id       : "btnBreakpoints",
+                tooltip  : "Deactivate Breakpoints",
+                icon     : "toggle_breakpoints2.png",
+                skinset  : "default",
+                skin     : "c9-menu-btn"
+            }));
+            var btnBpRemove = hbox2.appendChild(new ui.button({
+                id       : "btnBpRemove",
+                tooltip  : "Clear All Breakpoints",
+                icon     : "remove_breakpoints.png",
+                skinset  : "default",
+                skin     : "c9-menu-btn"
+            }));
+            plugin.addElement(btnBreakpoints, btnBpRemove);
+            
+            btnBreakpoints.on("click", function(){
+                toggleBreakpoints();
+            });
+            
+            btnBpRemove.on("click", function(){
+                breakpoints.forEach(function(bp){
+                    clearBreakpoint(bp);
+                });
+            });
+            
             emit("draw");
         }
         
         /***** Helper Functions *****/
+        
+        function toggleBreakpoints(force){
+            enableBreakpoints = force !== undefined
+                ? force
+                : !enableBreakpoints;
+            
+            if (btnBreakpoints) {
+                btnBreakpoints.setAttribute("icon", enableBreakpoints 
+                    ? "toggle_breakpoints2.png" 
+                    : "toggle_breakpoints1.png");
+                btnBreakpoints.setAttribute("tooltip", 
+                    enableBreakpoints
+                        ? "Deactivate Breakpoints"
+                        : "Activate Breakpoints"
+                );
+            }
+            
+            if (enableBreakpoints)
+                activateAll();
+            else
+                deactivateAll();
+        }
         
         // Breakpoints
         function updateBreakpoint(bp, action){
@@ -695,7 +758,7 @@ define(function(require, exports, module) {
             
             list.setAttribute("class", "");
             
-            emit("active", {value: true});
+            toggleBreakpoints(true);
         }
         
         function deactivateAll(){
@@ -710,7 +773,7 @@ define(function(require, exports, module) {
             
             list.setAttribute("class", "listBPDisabled");
             
-            emit("active", {value: false});
+            toggleBreakpoints(false);
         }
         
         function show(){
@@ -748,8 +811,18 @@ define(function(require, exports, module) {
          * 
          **/
         plugin.freezePublicAPI({
+            /**
+             * 
+             */
             get breakpoints(){ return breakpoints.slice(0); },
+            /**
+             * 
+             */
             get enableBreakpoints(){ return enableBreakpoints; },
+            set enableBreakpoints(v){ 
+                enableBreakpoints = v;
+                toggleBreakpoints(v);
+            },
             
             /**
              * 
