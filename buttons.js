@@ -162,6 +162,12 @@ define(function(require, exports, module) {
                 emit("breakpointsRemove");
             });
             
+            // settings.on("read", function(){
+            //     buttons.enableBreakpoints = breakpoints.enableBreakpoints;
+            //     buttons.pauseOnBreaks = pauseOnBreaks =
+            //         settings.getNumber("user/debug/@pause");
+            // });
+            
             btnPause.on("click", function(){
                 togglePause();
             });
@@ -301,11 +307,6 @@ define(function(require, exports, module) {
             set enableBreakpoints(v){ 
                 enableBreakpoints = v;
                 toggleBreakpoints(v);
-            },
-            get pauseOnBreaks(){ return pauseOnBreaks; },
-            set pauseOnBreaks(v){ 
-                pauseOnBreaks = v; 
-                togglePause(v);
             },
             
             /**

@@ -1,32 +1,28 @@
-/**
- * variables for Cloud9 IDE
- *
- * @copyright 2010, Ajax.org B.V.
- * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
- */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "settings", "ui", "layout", "util"
+        "DebugPanel", "settings", "ui", "util", "debugger", "callstack"
     ];
     main.provides = ["variables"];
     return main;
 
     function main(options, imports, register) {
-        var Plugin   = imports.Plugin;
-        var settings = imports.settings;
-        var ui       = imports.ui;
-        var layout   = imports.layout;
-        var util     = imports.util;
+        var DebugPanel = imports.DebugPanel;
+        var settings   = imports.settings;
+        var ui         = imports.ui;
+        var callstack  = imports.callstack;
+        var debug      = imports.debugger;
+        var util       = imports.util;
         
         var markup   = require("text!./variables.xml");
-        var Variable = require("./data/variable");
         
         /***** Initialization *****/
         
-        var plugin = new Plugin("Ajax.org", main.consumes);
+        var plugin = new DebugPanel("Ajax.org", main.consumes, {
+            caption: "Scope Variables"
+        });
         var emit   = plugin.getEmitter();
         
-        var activeFrame, cached = {};
+        var activeFrame, dbg, cached = {};
         var model, datagrid; // UI Elements
         
         var loaded = false;
@@ -37,6 +33,55 @@ define(function(require, exports, module) {
             model = new ui.model();
             
             plugin.addElement(model);
+            
+            // Set and clear the dbg variable
+            debug.on("attach", function(e){
+                dbg = e.implementation;
+            });
+            debug.on("detach", function(e){
+                dbg = null;
+            });
+            debug.on("stateChange", function(e){
+                plugin[e.action]();
+            });
+            
+            callstack.on("scopeUpdate", function(e){
+                updateScope(e.scope, e.variables);
+            })
+            
+            // When clicking on a frame in the call stack show it 
+            // in the variables datagrid
+            debug.on("frameActivate", function(e){
+                // @todo reload the clicked frame recursively + keep state
+                loadFrame(e.frame);
+            }, plugin);
+            
+            // Variables
+            plugin.on("expand", function(e){
+                if (e.variable) {
+                    //<a:insert match="[item[@children='true']]" get="{adbg.loadObject(dbg, %[.])}" />
+                    dbg.getProperties(e.variable, function(err, properties){
+                        if (err) return console.error(err);
+                        
+                        updateVariable(e.variable, properties, e.node);
+                        e.expand();
+                    });
+                }
+                // Local scope
+                else if (e.scope.type == 1) {
+                    //updateScope(e.scope);
+                    e.expand();
+                }
+                // Other scopes
+                else {
+                    dbg.getScope(debug.activeFrame, e.scope, function(err, vars){
+                        if (err) return console.error(err);
+                        
+                        updateScope(e.scope, vars);
+                        e.expand();
+                    });
+                }
+            }, plugin);
             
             // restore the variables from the IDE settings
             settings.on("read", function (e) {
@@ -57,7 +102,7 @@ define(function(require, exports, module) {
             drawn = true;
             
             // Create UI elements
-            ui.insertMarkup(options.container, markup, plugin);
+            ui.insertMarkup(options.aml, markup, plugin);
         
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", model);
@@ -101,6 +146,18 @@ define(function(require, exports, module) {
                 var oldValue   = variable.value;
                 
                 variable.value = value;
+                
+                // Set new value
+                dbg.setVariable(e.variable, e.parents, 
+                  e.value, debug.activeFrame, function(err){
+                    if (err) 
+                        return e.undo();
+                        
+                    // Reload properties of the variable
+                    dbg.getProperties(e.variable, function(err, properties){
+                        updateVariable(e.variable, properties, e.node);
+                    });
+                });
                 
                 emit("variableEdit", {
                     value    : value,
@@ -262,6 +319,9 @@ define(function(require, exports, module) {
         
         plugin.on("load", function(){
             load();
+        });
+        plugin.on("draw", function(e){
+            draw(e);
         });
         plugin.on("enable", function(){
             

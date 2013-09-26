@@ -1,15 +1,18 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "c9", "util", "settings", "ui", "tabManager"];
+    main.consumes = [
+        "DebugPanel", "c9", "util", "settings", "ui", "tabManager", "debugger"
+    ];
     main.provides = ["breakpoints"];
     return main;
 
     function main(options, imports, register) {
-        var c9       = imports.c9;
-        var util     = imports.util;
-        var Plugin   = imports.Plugin;
-        var settings = imports.settings;
-        var ui       = imports.ui;
-        var tabs     = imports.tabManager;
+        var c9         = imports.c9;
+        var util       = imports.util;
+        var DebugPanel = imports.DebugPanel;
+        var settings   = imports.settings;
+        var ui         = imports.ui;
+        var tabs       = imports.tabManager;
+        var debug      = imports.debugger;
         
         var markup     = require("text!./breakpoints.xml");
         var html       = require("text!./breakpoints.html");
@@ -18,13 +21,16 @@ define(function(require, exports, module) {
         /***** Initialization *****/
         
         var deps   = main.consumes.slice(0, main.consumes.length - 1);
-        var plugin = new Plugin("Ajax.org", deps);
+        var plugin = new DebugPanel("Ajax.org", deps, {
+            caption: "Breakpoints"
+        });
         var emit   = plugin.getEmitter();
         
         var changed           = false;
         var breakpoints       = [];
         var enableBreakpoints = true;
         
+        var dbg;
         var list, menu, model, hCondition, hInput; // UI Elements
         
         var loaded = false;
@@ -54,6 +60,67 @@ define(function(require, exports, module) {
                 decorateAce(ace);
                 decorateDocument(tab.document);
                 updateDocument(tab.document);
+            });
+            
+            debug.on("attach", function(e){
+                dbg = e.implementation;
+                
+                // Add breakpoints that we potentially got from the server
+                e.breakpoints.forEach(function(bp){
+                    if (bp.serverOnly)
+                        setBreakpoint(bp, true);
+                });
+                
+                // Deactivate breakpoints if user wants to
+                if (!enableBreakpoints)
+                    deactivateAll();
+            });
+            debug.on("detach", function(e){
+                dbg = null;
+            });
+            debug.on("stateChange", function(e){
+                plugin[e.action]();
+            });
+            
+            debug.on("getBreakpoints", function(){ 
+                return breakpoints; 
+            });
+            
+            debug.on("breakpointUpdate", function(e){
+                var bp = e.breakpoint;
+                
+                if (bp.actual) {
+                    // Delete breakpoints that are outside of the doc length
+                    var session = tabs.findTab(bp.path).document.getSession();
+                    if (bp.actual.line >= session.session.getLength()) {
+                        breakpoints.clearBreakpoint(bp);
+                        return;
+                    }
+                }
+                
+                var loc = bp.actual || bp;
+                var bps = findBreakpoints(bp.path, loc.line);
+                if (bps.length > 1) {
+                    var bpi, condition, ignoreCount;
+                    for (var i = 0, l = bps.length; i < l; i++) {
+                        bpi = bps[i];
+                        
+                        if (bpi.condition) condition = bpi.condition;
+                        if (bpi.ignoreCount) ignoreCount = bpi.ignoreCount;
+                        if (bpi != bp)
+                            clearBreakpoint(bpi, false, true);
+                    }
+                    //@todo should this be reset on the server?
+                    bp.condition   = condition;
+                    bp.ignoreCount = ignoreCount;
+                }
+                
+                redrawBreakpoint(bp);
+            }, plugin);
+            
+            // Breakpoints may have already been set
+            breakpoints.breakpoints.forEach(function(bp){
+                updateBreakpoint(bp, "add");
             });
             
             // restore the breakpoints from the IDE settings
@@ -103,7 +170,7 @@ define(function(require, exports, module) {
             drawn = true;
             
             // Create UI elements
-            ui.insertMarkup(options.container, markup, plugin);
+            ui.insertMarkup(options.aml, markup, plugin);
             
             // Create HTML elements
             var nodes = ui.insertHtml(null, html, plugin);
@@ -203,6 +270,29 @@ define(function(require, exports, module) {
         }
         
         /***** Helper Functions *****/
+        
+        // Breakpoints
+        function updateBreakpoint(bp, action){
+            // Give plugins the ability to update a breakpoint before
+            // setting it in the debugger
+            // emit("breakpointsUpdate", e);
+            
+            if (!debug.state || debug.state == "disconnected")
+                return;
+            
+            // There used to be a timeout here.
+            
+            if (action == "enable" || action == "disable" 
+              || action == "condition" || action == "ignoreCount") {
+                dbg.changeBreakpoint(bp);
+            }
+            else if (action == "add") {
+                dbg.setBreakpoint(bp);
+            }
+            else if (action == "remove") {
+                dbg.clearBreakpoint(bp);
+            }
+        }
         
         /**
          * Adds and event listener to this ace instance that draws breakpoints
@@ -450,7 +540,7 @@ define(function(require, exports, module) {
             // Don't call update to enable/disable breakpoints when they are
             // all deactivated
             if (enableBreakpoints || (action != "enable" && action != "disable"))
-                emit("update", {breakpoint: breakpoint, action: action});
+                updateBreakpoint(breakpoint, action);
             
             changed = true;
         }
@@ -585,7 +675,7 @@ define(function(require, exports, module) {
             if (isNaN(line))    line    = null;
             if (isNaN(column)) column = null;
             
-            emit("breakpointShow", {
+            debug.openFile({
                 path   : path,
                 line   : line,
                 column : column
@@ -599,12 +689,8 @@ define(function(require, exports, module) {
             settings.set("user/breakpoints/@active", true);
             
             breakpoints.forEach(function(bp){
-                if (bp.enabled) {
-                    emit("update", {
-                        breakpoint: {id: bp.id, enabled: true}, 
-                        action: "enable"
-                    });
-                }
+                if (bp.enabled)
+                    updateBreakpoint({id: bp.id, enabled: true}, "enable");
             });
             
             list.setAttribute("class", "");
@@ -619,10 +705,7 @@ define(function(require, exports, module) {
             settings.set("user/breakpoints/@active", false);
             
             breakpoints.forEach(function(bp){
-                emit("update", {
-                    breakpoint: {id: bp.id, enabled: false}, 
-                    action: "disable"
-                });
+                updateBreakpoint({id: bp.id, enabled: false}, "disable");
             });
             
             list.setAttribute("class", "listBPDisabled");
@@ -644,6 +727,9 @@ define(function(require, exports, module) {
         plugin.on("load", function(){
             load();
         });
+        plugin.on("draw", function(e){
+            draw(e);
+        });
         plugin.on("enable", function(){
             if (!enableBreakpoints)
                 list.setAttribute("class", "listBPDisabled");
@@ -659,17 +745,7 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event draw Fires when the breakpoints list is drawn
-         * @event update Fires when a breakpoint is updated
-         * @param {Object} e
-         *     path  {String} description
-         *     row   {Number} description
-         * @event breakpointShow Fires when a user clicks on a breakpoint
-         * @param {Object} e
-         *     path   {Number} description
-         *     row    {Number} description
-         *     column {Number} description
+         * 
          **/
         plugin.freezePublicAPI({
             get breakpoints(){ return breakpoints.slice(0); },

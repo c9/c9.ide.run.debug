@@ -6,36 +6,38 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "c9", "util", "settings", "ui", "layout", "tabManager"
+        "DebugPanel", "c9", "util", "settings", "ui", "tabManager",
+        "debugger", "save"
     ];
     main.provides = ["callstack"];
     return main;
 
     function main(options, imports, register) {
-        var c9       = imports.c9;
-        var util     = imports.util;
-        var Plugin   = imports.Plugin;
-        var settings = imports.settings;
-        var ui       = imports.ui;
-        var layout   = imports.layout;
-        var tabs     = imports.tabManager;
+        var c9         = imports.c9;
+        var util       = imports.util;
+        var DebugPanel = imports.DebugPanel;
+        var settings   = imports.settings;
+        var ui         = imports.ui;
+        var save       = imports.save;
+        var debug      = imports.debugger;
+        var tabs       = imports.tabManager;
         
         var Range    = require("ace/range").Range;
-        var Frame    = require("./data/frame");
-        var Source   = require("./data/source");
         var markup   = require("text!./callstack.xml");
         
         /***** Initialization *****/
         
         var deps   = main.consumes.splice(0, main.consumes.length - 1);
-        var plugin = new Plugin("Ajax.org", deps);
+        var plugin = new DebugPanel("Ajax.org", deps, {
+            caption: "Call Stack"
+        });
         var emit   = plugin.getEmitter();
         
         var datagrid, modelSources, modelFrames; // UI Elements
         var sources = [];
         var frames  = [];
         
-        var activeFrame;
+        var activeFrame, dbg;
         
         var loaded = false;
         function load(){
@@ -46,6 +48,102 @@ define(function(require, exports, module) {
             modelFrames  = new ui.model();
             
             plugin.addElement(modelSources, modelFrames);
+            
+            // Set and clear the dbg variable
+            debug.on("attach", function(e){
+                dbg = e.implementation;
+            });
+            debug.on("detach", function(e){
+                dbg = null;
+            });
+            debug.on("stateChange", function(e){
+                plugin[e.action]();
+                if (e.action == "disable")
+                    clearFrames();
+            });
+            
+            debug.on("framesLoad", function(e){
+                function setFrames(frames, frame, force) {
+                    // Load frames into the callstack and if the frames 
+                    // are completely reloaded, set active frame
+                    if (loadFrames(frames) && (force || 
+                      activeFrame == frame || activeFrame == frames[0])) {
+                          
+                        // Set the active frame
+                        activeFrame = frames[0];
+                        emit("frameActivate", { frame : activeFrame });
+                        debug.activeFrame = activeFrame;
+                        
+                        e.frame = activeFrame;
+                        emit("framesLoad", e);
+                        
+                        // Clear the cached states of the variable datagrid
+                        variables.clearCache();
+                    }
+                }
+                
+                // Load frames
+                if (e.frames) 
+                    setFrames(e.frames, e.frame);
+                else { 
+                    dbg.getFrames(function(err, frames){
+                        setFrames(frames, e.frame);
+                    });
+                }
+                
+                // If we're most likely in the current frame, lets update
+                // The callstack and show it in the editor
+                var frame = frames[0];
+                if (frame && e.frame.path == frame.path 
+                  && e.frame.sourceId == frame.sourceId) {
+                    frame.line   = e.frame.line;
+                    frame.column = e.frame.column;
+                    
+                    setFrames(frames, frame, true);
+                }
+                // Otherwise set the current frame as the active one, until
+                // we have fetched all the frames
+                else {
+                    setFrames([e.frame], e.frame, true);
+                }
+            });
+            
+            debug.on("break", function(e){
+                // Show the frame in the editor
+                showDebugFrame(activeFrame);
+            });
+            
+            debug.on("frameActivate", function(e){
+                // This is disabled, because frames should be kept around a bit
+                // in order to update them, for a better UX experience
+                //callstack.activeFrame = e.frame;
+                updateMarker(e.frame);
+            });
+            
+            // Loading new sources
+            debug.on("sources", function(e){
+                loadSources(e.sources);
+            }, plugin);
+            
+            // Adding single new sources when they are compiles
+            debug.on("sourcesCompile", function(e){
+                addSource(e.source);
+            }, plugin);
+            
+            // Set script source when a file is saved
+            save.on("afterSave", function(e) {
+                if (debug.state == "disconnected")
+                    return;
+
+                var script = findSourceByPath(e.path);
+                if (!script)
+                    return;
+    
+                var value = e.document.value;
+                dbg.setScriptSource(script, value, false, function(e) {
+                    // @todo update the UI
+                });
+            }, plugin);
             
             // restore the callstack from the IDE settings
             settings.on("read", function (e) {
@@ -66,7 +164,7 @@ define(function(require, exports, module) {
             drawn = true;
             
             // Create UI elements
-            ui.insertMarkup(options.container, markup, plugin);
+            ui.insertMarkup(options.aml, markup, plugin);
         
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", modelFrames);
@@ -106,9 +204,10 @@ define(function(require, exports, module) {
             // Highlight frame in Ace and Open the file
             if (frame)
                 showDebugFrame(frame);
-            updateMarker(frame);
+            // updateMarker(frame);
                 
-            emit("frameActivate", {frame : activeFrame});
+            emit("frameActivate", { frame : activeFrame });
+            debug.activeFrame = activeFrame;
         }
         
         /***** Helper Functions *****/
@@ -314,16 +413,28 @@ define(function(require, exports, module) {
             if (noRecur)
                 return;
         
-            emit("scopeUpdate", {
-                scope     : frame,
-                variables : frame.variables
-            });
+            // Updating the scopes of a frame
+            if (frame.variables) {
+                emit("scopeUpdate", {
+                    scope     : frame,
+                    variables : frame.variables
+                });
+            }
+            else {
+                dbg.getScope(activeFrame, frame, function(err, vars){
+                    if (err) return console.error(err);
+                    
+                    emit("scopeUpdate", {
+                        scope     : frame,
+                        variables : vars
+                    });
+                });
+            }
         
             // Update scopes if already loaded
             frame.scopes && frame.scopes.forEach(function(scope){
-                if (scope.variables) {
-                    emit("scopeUpdate", {scope: scope});
-                }
+                if (scope.variables)
+                    emit("scopeUpdate", { scope: scope });
             });
         };
         
@@ -374,6 +485,9 @@ define(function(require, exports, module) {
         
         plugin.on("load", function(){
             load();
+        });
+        plugin.on("draw", function(e){
+            draw(e);
         });
         plugin.on("enable", function(){
             

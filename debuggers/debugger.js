@@ -1,32 +1,23 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Panel", "c9", "util", "settings", "ui", "layout", "menus", "save", 
-        "callstack", "breakpoints", "immediate", "variables", "fs",
-        "watches", "run", "panels", "tabManager" //, "quickwatch"
+        "Panel", "settings", "ui", "layout", "immediate", "run", "panels", 
+        "tabManager", "commands" //, "quickwatch"
     ];
     main.provides = ["debugger"];
     return main;
 
     function main(options, imports, register) {
-        var c9       = imports.c9;
-        var util     = imports.util;
-        var Panel    = imports.Panel;
-        var settings = imports.settings;
-        var ui       = imports.ui;
-        var fs       = imports.fs;
-        var menus    = imports.menus;
-        var save     = imports.save;
-        var layout   = imports.layout;
-        var tabs     = imports.tabManager;
-        var panels   = imports.panels;
-        var run      = imports.run;
+        var Panel     = imports.Panel;
+        var settings  = imports.settings;
+        var ui        = imports.ui;
+        var tabs      = imports.tabManager;
+        var panels    = imports.panels;
+        var commands  = imports.commands;
+        var immediate = imports.immediate;
+        var run       = imports.run;
         
-        var callstack   = imports.callstack;
-        var breakpoints = imports.breakpoints;
-        var immediate   = imports.immediate;
-        var watches     = imports.watches;
-        //var quickwatch  = imports.quickwatch;
-        var variables   = imports.variables;
+        var markup = require("text!./buttons.xml");
+        var css    = require("text!./buttons.css");
         
         /***** Initialization *****/
         
@@ -42,9 +33,235 @@ define(function(require, exports, module) {
         var emit   = plugin.getEmitter();
         
         var dbg, debuggers = {}, pauseOnBreaks = 0, state = "disconnected";
-        var running; 
+        var running, activeFrame, sources; 
         
+        var enableBreakpoints;
+        var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
+            lstScripts, btnSuspend, btnBreakpoints, btnPause, btnBpRemove,
+            btnScripts, btnOutput, btnImmediate; // ui elements
+        
+        var loaded = false;
         function load(){
+            if (loaded) return false;
+            loaded = true;
+            
+            settings.on("read", function(){
+                settings.setDefaults("user/debug", [
+                    ["pause", "0"],
+                    ["autoshow", "true"]
+                ]);
+            });
+            
+            // Register this panel on the left-side panels
+            plugin.setCommand({
+                name : "toggledebugger",
+                hint : "show the debugger panel",
+                // bindKey      : { mac: "Command-U", win: "Ctrl-U" }
+            });
+            
+            // Commands
+            
+            commands.addCommand({
+                name    : "resume",
+                group   : "Run & Debug",
+                hint    : "resume the current paused process",
+                bindKey : {mac: "F8", win: "F8"},
+                exec    : function(){
+                    dbg && dbg.resume();
+                }
+            }, plugin);
+            commands.addCommand({
+                name    : "suspend",
+                group   : "Run & Debug",
+                hint    : "suspend the current running process",
+                // bindKey : {mac: "F8", win: "F8"},
+                exec    : function(){
+                    dbg && dbg.suspend();
+                }
+            }, plugin);
+            commands.addCommand({
+                name    : "stepinto",
+                group   : "Run & Debug",
+                hint    : "step into the function that is next on the execution stack",
+                bindKey : {mac: "F11", win: "F11"},
+                exec    : function(){
+                    dbg && dbg.stepInto()
+                }
+            }, plugin);
+            commands.addCommand({
+                name    : "stepover",
+                group   : "Run & Debug",
+                hint    : "step over the current expression on the execution stack",
+                bindKey : {mac: "F10", win: "F10"},
+                exec    : function(){
+                    dbg && dbg.stepOver();
+                }
+            }, plugin);
+            commands.addCommand({
+                name    : "stepout",
+                group   : "Run & Debug",
+                hint    : "step out of the current function scope",
+                bindKey : {mac: "Shift-F11", win: "Shift-F11"},
+                exec    : function(){
+                    dbg && dbg.stepOut();
+                }
+            }, plugin);
+            
+            // function toggleBreakpoints(force){
+            //     enableBreakpoints = force !== undefined
+            //         ? force
+            //         : !enableBreakpoints;
+                
+            //     if (btnBreakpoints) {
+            //         btnBreakpoints.setAttribute("icon", enableBreakpoints 
+            //             ? "toggle_breakpoints2.png" 
+            //             : "toggle_breakpoints1.png");
+            //         btnBreakpoints.setAttribute("tooltip", 
+            //             enableBreakpoints
+            //                 ? "Deactivate Breakpoints"
+            //                 : "Activate Breakpoints"
+            //         );
+            //     }
+                
+            //     emit("breakpointsEnable", {
+            //         value : enableBreakpoints
+            //     });
+            // }
+        
+            // Update button state
+            plugin.on("stateChange", function(e){
+                state = e.state;
+                
+                if (!btnResume)
+                    return;
+    
+                btnResume.$ext.style.display = state == "stopped" 
+                    ? "inline-block" : "none";
+                btnSuspend.$ext.style.display = state == "disconnected" 
+                    || state != "stopped" ? "inline-block" : "none";
+                    
+                btnSuspend.setAttribute("disabled",     state == "disconnected");
+                btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+                btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+                btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+                btnScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+                // lstScripts.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+            });
+        }
+        
+        var drawn;
+        function draw(opts){
+            if (drawn) return;
+            drawn = true;
+            
+            // Import Skin
+            ui.insertSkin({
+                name         : "debugger",
+                data         : require("text!./skin.xml"),
+                "media-path" : options.staticPrefix + "/images/",
+                "icon-path"  : options.staticPrefix + "/icons/"
+            }, plugin);
+            
+            // Create UI elements
+            var bar = opts.aml.appendChild(new ui.bar({
+                "id"    : "winDebugger",
+                "skin"  : "panel-bar",
+                "class" : "debugcontainer"
+            }));
+            plugin.addElement(bar);
+            
+            var scroller = bar.$ext.appendChild(document.createElement("div"));
+            scroller.className = "scroller";
+            
+            // Load CSS
+            ui.insertCss(css, plugin);
+            
+            // Create UI elements
+            var parent = options.aml;
+            ui.insertMarkup(parent, markup, plugin);
+            
+            container = plugin.getElement("hbox");
+            
+            btnResume      = plugin.getElement("btnResume");
+            btnStepOver    = plugin.getElement("btnStepOver");
+            btnStepInto    = plugin.getElement("btnStepInto");
+            btnStepOut     = plugin.getElement("btnStepOut");
+            lstScripts     = plugin.getElement("lstScripts");
+            btnSuspend     = plugin.getElement("btnSuspend");
+            btnBreakpoints = plugin.getElement("btnBreakpoints");
+            btnBpRemove    = plugin.getElement("btnBpRemove");
+            btnPause       = plugin.getElement("btnPause");
+            btnScripts     = plugin.getElement("btnScripts");
+            btnOutput      = plugin.getElement("btnOutput");
+            btnImmediate   = plugin.getElement("btnImmediate");
+            
+            // @todo move this to F8 and toggle between resume
+            // btnSuspend.on("click", function(){
+            //     suspend();
+            // });
+            
+            // btnBreakpoints.on("click", function(){
+            //     toggleBreakpoints();
+            // });
+            
+            // buttons.on("breakpointsRemove", function(e){
+            //     breakpoints.breakpoints.forEach(function(bp){
+            //         breakpoints.clearBreakpoint(bp);
+            //     });
+            // }, plugin);
+            // buttons.on("breakpointsEnable", function(e){
+            //     e.value
+            //         ? breakpoints.activateAll()
+            //         : breakpoints.deactivateAll();
+            // }, plugin);
+            // breakpoints.on("active", function(e){
+            //     buttons.enableBreakpoints = e.value;
+            // }, plugin);
+            
+            // @todo move this to the breakpoints plugin
+            btnBpRemove.on("click", function(){
+                emit("breakpointsRemove");
+            });
+            
+            // settings.on("read", function(){
+            //     buttons.enableBreakpoints = breakpoints.enableBreakpoints;
+            //     buttons.pauseOnBreaks = pauseOnBreaks =
+            //         settings.getNumber("user/debug/@pause");
+            // });
+            
+            btnPause.on("click", function(){
+                togglePause();
+            });
+            
+            btnOutput.on("click", function(){
+                commands.exec("showoutput");
+            });
+            
+            btnImmediate.on("click", function(){
+                commands.exec("showimmediate");
+            });
+            
+            // @todo Move this to the callstack plugin
+            // Load the scripts in the sources dropdown
+            // buttons.getElement("lstScripts", function(lstScripts){
+            //     lstScripts.setModel(callstack.modelSources);
+                
+            //     lstScripts.on("afterselect", function(e){
+            //         callstack.openFile({
+            //             scriptId  : e.selected.getAttribute("id"),
+            //             path      : e.selected.getAttribute("path"),
+            //             generated : true
+            //         });
+            //     }, plugin)
+            // });
+            btnScripts.setAttribute("submenu", lstScripts.parentNode);
+            
+            emit("draw", { html: scroller, aml: bar });
+        }
+        
+        /***** Methods *****/
+        
+        function initializeDebugger(){
             // State Change
             var stateTimer;
             dbg.on("stateChange", function(e){
@@ -65,16 +282,6 @@ define(function(require, exports, module) {
             dbg.on("attach", function(e){
                 e.implementation = dbg;
                 emit("attach", e);
-                
-                // Add breakpoints that we potentially got from the server
-                e.breakpoints.forEach(function(bp){
-                    if (bp.serverOnly)
-                        breakpoints.setBreakpoint(bp, true);
-                });
-                
-                // Deactivate breakpoints if user wants to
-                if (!breakpoints.enableBreakpoints)
-                    breakpoints.deactivateAll();
             }, plugin);
             
             dbg.on("detach", function(e){
@@ -88,65 +295,16 @@ define(function(require, exports, module) {
             
             // When hitting a breakpoint or exception or stepping
             function startDebugging(e){
-                var frame;
-                
                 if (settings.getBool("user/debug/@autoshow"))
                     panels.activate("debugger");
                 
                 // Reload Frames
-                function setFrames(err, frames) {
-                    emit("framesLoad", {frames: frames});
-                    
-                    // Load frames into the callstack and if the frames 
-                    // are completely reloaded, set active frame
-                    if (callstack.loadFrames(frames)
-                      && (callstack.activeFrame == e.frame 
-                      || callstack.activeFrame == frame)) {
-                          
-                        // Set the active frame
-                        callstack.activeFrame = frames[0];
-                        
-                        // Clear the cached states of the variable datagrid
-                        variables.clearCache();
-                    }
-                }
+                emit("framesLoad", e);
                 
                 // Process Exception
                 if (e.exception) {
                     // @todo add this into the ace view?
                 }
-                
-                // Load frames
-                if (e.frames) setFrames(null, e.frames)
-                else dbg.getFrames(setFrames);
-                
-                // If we're most likely in the current frame, lets update
-                // The callstack and show it in the editor
-                frame = callstack.frames[0];
-                if (frame && e.frame.path == frame.path 
-                  && e.frame.sourceId == frame.sourceId) {
-                    var frames = callstack.frames;
-                    
-                    frame.line   = e.frame.line;
-                    frame.column = e.frame.column;
-                    
-                    emit("framesLoad", {frames: frames});
-                    callstack.loadFrames(frames, true);
-                    callstack.activeFrame = frame;
-                }
-                // Otherwise set the current frame as the active one, until
-                // we have fetched all the frames
-                else {
-                    emit("framesLoad", {frames: [e.frame]});
-                    callstack.loadFrames([e.frame]);
-                    callstack.activeFrame = e.frame;
-                }
-                
-                // Update Watchers
-                watches.updateAll();
-                
-                // Show the frame in the editor
-                callstack.showDebugFrame(callstack.activeFrame);
                 
                 emit("break", e);
             }
@@ -165,215 +323,57 @@ define(function(require, exports, module) {
             
             // When a new frame becomes active
             dbg.on("frameActivate", function(e){
-                // This is disabled, because frames should be kept around a bit
-                // in order to update them, for a better UX experience
-                //callstack.activeFrame = e.frame;
-                callstack.updateMarker(e.frame);
+                activeFrame = e.frame;
+                emit("frameActivate", e);
             }, plugin);
             
+            // @todo move to open method
             // Clicking on the call stack
-            callstack.on("beforeOpen", function(e){
-                return emit("beforeOpen", e);
-            }, plugin)
+            // callstack.on("beforeOpen", function(e){
+            //     return emit("beforeOpen", e);
+            // }, plugin)
             
-            callstack.on("open", function(e){
-                function done(err, value){
-                    if (err) return; //@todo util.alert?
+            // @todo move to open method
+            // callstack.on("open", function(e){
+            //     function done(err, value){
+            //         if (err) return; //@todo util.alert?
                     
-                    if (emit("open", { 
-                        path   : e.source.path, 
-                        source : e.source,
-                        value  : value,
-                        done   : e.done,
-                        tab    : e.tab
-                    }) !== false)
-                        e.done(value);
-                }
+            //         if (emit("open", { 
+            //             path   : e.source.path, 
+            //             source : e.source,
+            //             value  : value,
+            //             done   : e.done,
+            //             tab    : e.tab
+            //         }) !== false)
+            //             e.done(value);
+            //     }
                 
-                //!e.generated && 
-                if ((e.source.path || "").charAt(0) == "/") {
-                    fs.readFile(e.source.path, "utf8", done);
-                }
-                else {
-                    dbg.getSource(e.source, done);
-                    e.tab.document.getSession().readOnly = true;
-                }
-            }, plugin)
+            //     //!e.generated && 
+            //     if ((e.source.path || "").charAt(0) == "/") {
+            //         fs.readFile(e.source.path, "utf8", done);
+            //     }
+            //     else {
+            //         dbg.getSource(e.source, done);
+            //         e.tab.document.getSession().readOnly = true;
+            //     }
+            // }, plugin)
             
-            // Updating the scopes of a frame
-            callstack.on("scopeUpdate", function(e){
-                if (e.variables) {
-                    variables.updateScope(e.scope, e.variables);
-                }
-                else {
-                    dbg.getScope(callstack.activeFrame, e.scope, function(err, vars){
-                        if (err) return console.error(err);
-                        
-                        variables.updateScope(e.scope, vars);
-                    });
-                }
-            }, plugin);
-            
-            // Loading new sources
             dbg.on("sources", function(e){
-                callstack.loadSources(e.sources);
+                sources = e.sources;
+                emit("sources", e);
             }, plugin);
             
-            // Adding single new sources when they are compiles
             dbg.on("sourcesCompile", function(e){
-                callstack.addSource(e.source);
-            }, plugin);
-            
-            // When clicking on a frame in the call stack show it 
-            // in the variables datagrid
-            callstack.on("frameActivate", function(e){
-                // @todo reload the clicked frame recursively + keep state
-                variables.loadFrame(e.frame);
-            }, plugin);
-            
-            // Variables
-            variables.on("expand", function(e){
-                if (e.variable) {
-                    //<a:insert match="[item[@children='true']]" get="{adbg.loadObject(dbg, %[.])}" />
-                    dbg.getProperties(e.variable, function(err, properties){
-                        if (err) return console.error(err);
-                        
-                        variables.updateVariable(e.variable, properties, e.node);
-                        e.expand();
-                    });
-                }
-                // Local scope
-                else if (e.scope.type == 1) {
-                    //variables.updateScope(e.scope);
-                    e.expand();
-                }
-                // Other scopes
-                else {
-                    dbg.getScope(callstack.activeFrame, e.scope, function(err, vars){
-                        if (err) return console.error(err);
-                        
-                        variables.updateScope(e.scope, vars);
-                        e.expand();
-                    });
-                }
-            }, plugin);
-            
-            // Editor variables of the current frame
-            variables.on("variableEdit", function(e){
-                // Set new value
-                dbg.setVariable(e.variable, e.parents, 
-                  e.value, callstack.activeFrame, function(err){
-                    if (err) 
-                        return e.undo();
-                        
-                    // Reload properties of the variable
-                    dbg.getProperties(e.variable, function(err, properties){
-                        variables.updateVariable(e.variable, properties, e.node);
-                    });
-                });
-            }, plugin);
-            
-            // Editing watches in the current or global frame
-            watches.on("setWatch", function(e){
-                // Execute expression
-                if (e.isNew) {
-                    dbg.evaluate(e.name, callstack.activeFrame, 
-                      !callstack.activeFrame, true, function(err, variable){
-                        if (err) 
-                            return e.error(err.message);
-                        
-                        e.variable.json = variable.json;
-
-                        watches.updateVariable(e.variable, 
-                            e.variable.properties || [], e.node);
-                    })
-                }
-                // Set new value of a property
-                else {
-                    dbg.setVariable(e.variable, e.parents, 
-                      e.value, callstack.activeFrame, function(err){
-                        if (err) 
-                            return e.undo();
-                            
-                        // Reload properties of the variable
-                        dbg.getProperties(e.variable, function(err, properties){
-                            watches.updateVariable(e.variable, properties, e.node);
-                        });
-                    });
-                }
-            }, plugin);
-            
-            // Breakpoints
-            function updateBreakpoint(e){
-                // Give plugins the ability to update a breakpoint before
-                // setting it in the debugger
-                emit("breakpointsUpdate", e);
-                
-                if (!state || state == "disconnected")
-                    return;
-                
-                var bp = e.breakpoint;
-                // There used to be a timeout here.
-                
-                if (e.action == "enable" || e.action == "disable" 
-                  || e.action == "condition" || e.action == "ignoreCount") {
-                    dbg.changeBreakpoint(bp);
-                }
-                else if (e.action == "add") {
-                    dbg.setBreakpoint(bp);
-                }
-                else if (e.action == "remove") {
-                    dbg.clearBreakpoint(bp);
-                }
-            }
-            // Breakpoints may have already been set
-            breakpoints.breakpoints.forEach(function(bp){
-                updateBreakpoint({breakpoint: bp, action: "add"});
-            });
-            // Listen for updates
-            breakpoints.on("update", updateBreakpoint, plugin);
-            
-            // Open a file at the right position when clicking on a breakpoint
-            breakpoints.on("breakpointShow", function(e){
-                callstack.openFile(e);
+                sources.push(e.source);
+                emit("sourcesCompile", e);
             }, plugin);
             
             dbg.on("breakpointUpdate", function(e){
-                var bp = e.breakpoint;
-                
-                if (bp.actual) {
-                    // Delete breakpoints that are outside of the doc length
-                    var session = tabs.findTab(bp.path).document.getSession();
-                    if (bp.actual.line >= session.session.getLength()) {
-                        breakpoints.clearBreakpoint(bp);
-                        return;
-                    }
-                }
-                
-                emit("breakpointsUpdate", {
-                    breakpoint : bp, 
+                emit("breakpointUpdate", {
+                    breakpoint : e.breakpoint, 
                     action     : "add", 
                     force      : true
                 });
-                
-                var loc = bp.actual || bp;
-                var bps = breakpoints.findBreakpoints(bp.path, loc.line);
-                if (bps.length > 1) {
-                    var bpi, condition, ignoreCount;
-                    for (var i = 0, l = bps.length; i < l; i++) {
-                        bpi = bps[i];
-                        
-                        if (bpi.condition) condition = bpi.condition;
-                        if (bpi.ignoreCount) ignoreCount = bpi.ignoreCount;
-                        if (bpi != bp)
-                            breakpoints.clearBreakpoint(bpi, false, true);
-                    }
-                    //@todo should this be reset on the server?
-                    bp.condition   = condition;
-                    bp.ignoreCount = ignoreCount;
-                }
-                
-                breakpoints.redrawBreakpoint(bp);
             }, plugin);
 
             // Immediate 
@@ -406,84 +406,37 @@ define(function(require, exports, module) {
             
             // Quickwatch
             //@todo
-            
-            // Set script source when a file is saved
-            save.on("afterSave", function(e) {
-                if (state == "disconnected")
-                    return;
-
-                var script = callstack.findSourceByPath(e.path);
-                if (!script)
-                    return;
-    
-                var value = e.document.value;
-                dbg.setScriptSource(script, value, false, function(e) {
-                    // @todo update the UI
-                });
-            }, plugin);
-        }
-        
-        var drawn;
-        function draw(opts){
-            if (drawn) return;
-            drawn = true;
-            
-            // Import Skin
-            ui.insertSkin({
-                name         : "debugger",
-                data         : require("text!./skin.xml"),
-                "media-path" : options.staticPrefix + "/images/",
-                "icon-path"  : options.staticPrefix + "/icons/"
-            }, plugin);
-            
-            // Create UI elements
-            var bar = opts.aml.appendChild(new ui.bar({
-                "id"    : "winDebugger",
-                "skin"  : "panel-bar",
-                "class" : "debugcontainer"
-            }));
-            plugin.addElement(bar);
-            
-            var scroller = bar.$ext.appendChild(document.createElement("div"));
-            scroller.className = "scroller";
-            
-            emit("draw", { html: scroller, aml: bar });
-            
-            // var captions = ["Watch Expressions", "Call Stack", "Scope Variables", "Breakpoints"];
-            // [watches, callstack, variables, breakpoints].forEach(function(c, i){
-            //     var frame = ui.frame({ 
-            //         htmlNode    : scroller,
-            //         buttons     : "min",
-            //         activetitle : "min",
-            //         caption     : captions[i]
-            //     });
-            //     // bar.appendChild(frame);
-            //     c.draw({container: frame});
-            // });
         }
         
         function updatePanels(action, runstate){
             state = running != run.STOPPED ? runstate : "disconnected";
-            emit("stateChange", { state: state });
-            
-            watches[action]();
-            
-            callstack[action](); 
-            if (action == "disable")
-                callstack.clearFrames();
-                
-            // buttons.state = state;
-            
-            variables[action]();
-            breakpoints[action]();
-            
-            immediate[action]("debugger"); // @todo
-            
-            if (action == "disable")
-                watches.updateAll();
+            emit("stateChange", { state: state, action: action });
         }
         
-        /***** Methods *****/
+        function togglePause(force){
+            pauseOnBreaks = force !== undefined
+                ? force
+                : (pauseOnBreaks > 1 ? 0 : pauseOnBreaks + 1);
+
+            if (btnPause) {
+                btnPause.setAttribute("class", "pause" + pauseOnBreaks);
+                btnPause.setAttribute("tooltip", 
+                    pauseOnBreaks === 0
+                        ? "Don't pause on exceptions"
+                        : (pauseOnBreaks == 1
+                            ? "Pause on all exceptions"
+                            : "Pause on uncaught exceptions")
+                );
+            }
+            
+            dbg.setBreakBehavior(
+                pauseOnBreaks === 1 ? "uncaught" : "all",
+                pauseOnBreaks === 0 ? false : true
+            );
+            
+            pauseOnBreaks = pauseOnBreaks;
+            settings.set("user/debug/@pause", pauseOnBreaks);
+        }
         
         function registerDebugger(type, debug){
             debuggers[type] = debug;
@@ -524,7 +477,7 @@ define(function(require, exports, module) {
                 }
                 
                 // Attach all events necessary
-                load();
+                initializeDebugger();
             }
             
             if (process.running == process.STARTED)
@@ -549,7 +502,7 @@ define(function(require, exports, module) {
                 return;
             
             // Attach the debugger to the running process
-            dbg.attach(runner, breakpoints.breakpoints, callback);
+            dbg.attach(runner, emit("getBreakpoints"), callback);
         }
         
         function stop(){
@@ -562,33 +515,12 @@ define(function(require, exports, module) {
             
             if (settings.getBool("user/debug/@autoshow"))
                 panels.deactivate("debugger");
-            
-            // // Remove all the set events
-            // plugin.cleanUp(true);
-            
-            // dbg = null;
         }
         
         /***** Lifecycle *****/
         
         plugin.on("load", function(){
-            settings.on("read", function(){
-                settings.setDefaults("user/debug", [
-                    ["pause", "0"],
-                    ["autoshow", "true"]
-                ]);
-                
-                buttons.enableBreakpoints = breakpoints.enableBreakpoints;
-                buttons.pauseOnBreaks = pauseOnBreaks =
-                    settings.getNumber("user/debug/@pause");
-            });
-            
-            // Register this panel on the left-side panels
-            plugin.setCommand({
-                name : "toggledebugger",
-                hint : "show the debugger panel",
-                // bindKey      : { mac: "Command-U", win: "Ctrl-U" }
-            });
+            load();
         });
         plugin.on("draw", function(e){
             draw(e);
@@ -600,6 +532,7 @@ define(function(require, exports, module) {
             
         });
         plugin.on("unload", function(){
+            loaded = false;
             drawn  = false;
         });
         
@@ -665,8 +598,11 @@ define(function(require, exports, module) {
              * frame represents the scope at which the debugger is stopped.
              * @property {debugger.Frame} activeFrame
              */
-            get activeFrame(){ return callstack.activeFrame; },
-            set activeFrame(frame){ callstack.activeFrame = frame; },
+            get activeFrame(){ return activeFrame; },
+            set activeFrame(frame){ 
+                activeFrame = frame; 
+                emit("frameActivate", { frame: frame });
+            },
             /**
              * A list of sources that are available from the debugger. These
              * can be files that are loaded in the runtime as well as code that
@@ -674,7 +610,7 @@ define(function(require, exports, module) {
              * @property {debugger.Source[]} sources
              * @readonly
              */
-            get sources(){ return callstack.sources; },
+            get sources(){ return sources; },
             /**
              * Retrieves if the debugger will break on exceptions
              * @property {Boolean} breakOnExceptions
@@ -687,6 +623,22 @@ define(function(require, exports, module) {
              * @readonly
              */
             get breakOnUncaughtExceptions(){ return dbg.breakOnUncaughtExceptions; },
+            /**
+             * 
+             */
+            get pauseOnBreaks(){ return pauseOnBreaks; },
+            set pauseOnBreaks(v){ 
+                pauseOnBreaks = v; 
+                togglePause(v);
+            },
+            /**
+             * 
+             */
+            get enableBreakpoints(){ return enableBreakpoints; },
+            set enableBreakpoints(v){ 
+                enableBreakpoints = v;
+                toggleBreakpoints(v);
+            },
             
             _events : [
                 /**
@@ -873,7 +825,9 @@ define(function(require, exports, module) {
              * Removes a breakpoint from a line in a source file.
              * @param {debugger.Breakpoint} breakpoint  The breakpoint to remove.
              */
-            clearBreakpoint : breakpoints.clearBreakpoint
+            clearBreakpoint : breakpoints.clearBreakpoint,
+            
+            openFile : openFile
         });
         
         register(null, {

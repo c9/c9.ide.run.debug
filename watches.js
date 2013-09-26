@@ -6,31 +6,32 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "settings", "ui", "layout", "util"
+        "DebugPanel", "settings", "ui", "util", "debugger"
     ];
     main.provides = ["watches"];
     return main;
 
     function main(options, imports, register) {
-        var Plugin   = imports.Plugin;
-        var settings = imports.settings;
-        var ui       = imports.ui;
-        var layout   = imports.layout;
-        var util     = imports.util;
+        var DebugPanel = imports.DebugPanel;
+        var settings   = imports.settings;
+        var ui         = imports.ui;
+        var debug      = imports.debugger;
+        var util       = imports.util;
         
         var markup   = require("text!./watches.xml");
         var Variable = require("./data/variable");
         
         /***** Initialization *****/
         
-        var plugin = new Plugin("Ajax.org", main.consumes);
+        var plugin = new DebugPanel("Ajax.org", main.consumes, {
+            caption: "Watch Expressions"
+        });
         var emit   = plugin.getEmitter();
         
         var count   = 0;
         var watches = [];
+        var dbg;
         var model, datagrid; // UI Elements
-        
-        plugin.__defineGetter__("watches", function(){ return watches; });
         
         var loaded = false;
         function load(){
@@ -40,6 +41,24 @@ define(function(require, exports, module) {
             model = new ui.model();
             
             plugin.addElement(model);
+            
+            // Set and clear the dbg variable
+            debug.on("attach", function(e){
+                dbg = e.implementation;
+            });
+            debug.on("detach", function(e){
+                dbg = null;
+            });
+            debug.on("stateChange", function(e){
+                plugin[e.action]();
+                if (e.action == "disable")
+                    updateAll();
+            });
+            
+            debug.on("framesLoad", function(e){
+                // Update Watchers
+                updateAll();
+            });
             
             // restore the variables from the IDE settings
             settings.on("read", function (e) {
@@ -64,7 +83,7 @@ define(function(require, exports, module) {
             drawn = true;
             
             // Create UI elements
-            ui.insertMarkup(options.container, markup, plugin);
+            ui.insertMarkup(options.aml, markup, plugin);
         
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", model);
@@ -112,7 +131,7 @@ define(function(require, exports, module) {
                         newNode = ui.xmldb.appendChild(model.data, newNode, model.data.firstChild);
                     model.appendXml(newNode); //apf hack
                     
-                    var variable = new Variable({
+                    variable = new Variable({
                         name  : name,
                         value : value,
                         ref   : node.getAttribute("ref")
@@ -132,6 +151,44 @@ define(function(require, exports, module) {
                     }
                 }
                 
+                // Editing watches in the current or global frame
+                // Execute expression
+                if (isNew) {
+                    dbg.evaluate(name, debug.activeFrame, 
+                      !debug.activeFrame, true, function(err, variable){
+                        if (err) 
+                            return error(err.message);
+                        
+                        variable.json = variable.json;
+
+                        updateVariable(variable, 
+                            variable.properties || [], node);
+                    })
+                }
+                // Set new value of a property
+                else {
+                    dbg.setVariable(variable, parents, 
+                      value, debug.activeFrame, function(err){
+                        if (err) 
+                            return undo();
+                            
+                        // Reload properties of the variable
+                        dbg.getProperties(variable, function(err, properties){
+                            updateVariable(variable, properties, node);
+                        });
+                    });
+                }
+                
+                function error(message){
+                    variable.value = message;
+                    updateVariable(variable, [], e.node, true);
+                }
+                
+                function undo(){
+                    variable.value = oldValue;
+                    apf.xmldb.setAttribute(node, "value", oldValue);
+                }
+                
                 emit("setWatch", {
                     name     : name,
                     value    : value,
@@ -139,14 +196,8 @@ define(function(require, exports, module) {
                     isNew    : isNew,
                     variable : variable,
                     parents  : parents,
-                    error    : function(message){
-                        variable.value = message;
-                        updateVariable(variable, [], e.node, true);
-                    },
-                    undo     : function(){
-                        variable.value = oldValue;
-                        apf.xmldb.setAttribute(node, "value", oldValue);
-                    }
+                    error    : error,
+                    undo     : undo
                 });
             });
             
@@ -291,6 +342,9 @@ define(function(require, exports, module) {
         plugin.on("load", function(){
             load();
         });
+        plugin.on("draw", function(e){
+            draw(e);
+        });
         plugin.on("enable", function(){
             
         });
@@ -312,6 +366,8 @@ define(function(require, exports, module) {
          *     oldpath  {String} description
          **/
         plugin.freezePublicAPI({
+            get watches(){ return watches; },
+            
             /**
              * 
              */
