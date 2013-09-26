@@ -468,7 +468,7 @@ define(function(require, exports, module) {
                     return;
     
                 var value = e.document.value;
-                dbg.setScriptSource(script.id, value, false, function(e) {
+                dbg.setScriptSource(script, value, false, function(e) {
                     // @todo update the UI
                 });
             }, plugin);
@@ -886,13 +886,13 @@ define(function(require, exports, module) {
             
             /**
              * Evaluates an expression in a frame or in global space.
-             * @param {String}          expression         The expression.
-             * @param {debugger.Frame}  frame              The stack frame which serves as the contenxt of the expression.
-             * @param {Boolean}         global             Specifies whether to execute the expression in global space.
-             * @param {Boolean}         disableBreak       Specifies whether to disabled breaking when executing this expression.
-             * @param {Function}        callback           Called after the expression has executed.
-             * @param {Error}           callback.err       The error if any error occured.
-             * @param {Variable}        callback.variable  The result of the expression.
+             * @param {String}            expression         The expression.
+             * @param {debugger.Frame}    frame              The stack frame which serves as the contenxt of the expression.
+             * @param {Boolean}           global             Specifies whether to execute the expression in global space.
+             * @param {Boolean}           disableBreak       Specifies whether to disabled breaking when executing this expression.
+             * @param {Function}          callback           Called after the expression has executed.
+             * @param {Error}             callback.err       The error if any error occured.
+             * @param {debugger.Variable} callback.variable  The result of the expression.
              */
             evaluate : function(expression, frame, global, disableBreak, callback){ 
                 dbg.evaluate(expression, frame, global, disableBreak, callback); 

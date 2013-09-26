@@ -671,12 +671,12 @@ define(function(require, exports, module) {
             });
         }
         
-        function setScriptSource(scriptId, newSource, previewOnly, callback) {
+        function setScriptSource(script, newSource, previewOnly, callback) {
             var NODE_PREFIX = "(function (exports, require, module, __filename, __dirname) { ";
             var NODE_POSTFIX = "\n});";
             newSource = NODE_PREFIX + newSource + NODE_POSTFIX;
             
-            v8dbg.changelive(scriptId, newSource, previewOnly, function(e) {
+            v8dbg.changelive(script.id, newSource, previewOnly, function(e) {
                 callback(e);
             });
         };
@@ -731,7 +731,7 @@ define(function(require, exports, module) {
                 plugin.on("sourcesCompile", function wait(e){
                     if (e.source.path.indexOf(path) > -1) {
                         plugin.off("sources.compile", wait);
-                        setBreakpoint(bp, callback);
+                        setBreakpoint(null, bp, callback);
                     }
                 });
                 return false;
@@ -744,7 +744,7 @@ define(function(require, exports, module) {
                         bp.actual = info.actual_locations[0];
                         emit("breakpointUpdate", {breakpoint: bp});
                     }
-                    callback && callback(bp, info);
+                    callback && callback(null, bp, info);
                 });
             
             return true;
@@ -753,7 +753,7 @@ define(function(require, exports, module) {
         function changeBreakpoint(bp, callback){
             v8dbg.changebreakpoint(bp.id, bp.enabled, 
                 bp.condition, bp.ignoreCount, function(info){
-                    callback && callback(bp, info);
+                    callback && callback(null, bp, info);
                 });
         }
         
@@ -835,7 +835,7 @@ define(function(require, exports, module) {
          * 
          * This interface is defined to be as stateless as possible. By 
          * implementing these methods and events you'll be able to hook your
-         * debugger seemlessly into the Cloud9 debugger UI.
+         * debugger seamlessly into the Cloud9 debugger UI.
          * 
          * See also {@link debugger#registerDebugger}.
          * 
@@ -843,57 +843,75 @@ define(function(require, exports, module) {
          */
         plugin.freezePublicAPI({
             /**
-             * @property state {null|"running"|"stopped"} state of the debugged process
-             *    null      process doesn't exist
-             *   "stopped"  paused on breakpoint
-             *   "running"
+             * @property state {null|"running"|"stopped"} state of the debugger process
+             * <table>
+             * <tr><td>Value</td><td>      Description</td></tr>
+             * <tr><td>null</td><td>       process doesn't exist</td></tr>
+             * <tr><td>"stopped"</td><td>  paused on breakpoint</td></tr>
+             * <tr><td>"running"</td><td>  process is running</td></tr>
+             * </table>
+             * @readonly
              */
             get state(){ return state; },
+            /**
+             * Whether the debugger will break when it encounters any exception.
+             * This includes exceptions in try/catch blocks.
+             * @property {Boolean} breakOnExceptions
+             * @readonly
+             */
             get breakOnExceptions(){ return breakOnExceptions; },
+            /**
+             * Whether the debugger will break when it encounters an uncaught 
+             * exception.
+             * @property {Boolean} breakOnUncaughtExceptions
+             * @readonly
+             */
             get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
             
             _events : [
                 /**
-                 * Fires 
+                 * Fires when the debugger hits a breakpoint.
                  * @event break
-                 * @param {Object}          e
-                 * @param {debugger.Frame}  e.frame
+                 * @param {Object}           e
+                 * @param {debugger.Frame}   e.frame        The frame where the debugger has breaked at.
+                 * @param {debugger.Frame[]} [e.frames]     The callstack frames.
                  */
                 "break",
                 /**
-                 * Fires 
+                 * Fires when the {@link #state} property changes
                  * @event stateChange
                  * @param {Object}          e
-                 * @param {debugger.Frame}  e.state
+                 * @param {debugger.Frame}  e.state  The new value of the state property.
                  */
                 "stateChange",
                 /**
-                 * Fires 
+                 * Fires when the debugger hits an exception.
                  * @event exception
                  * @param {Object}          e
-                 * @param {debugger.Frame}  e.frame
-                 * @param {Error}           e.exception
+                 * @param {debugger.Frame}  e.frame      The frame where the debugger has breaked at.
+                 * @param {Error}           e.exception  The exception that the debugger breaked at.
                  */
                 "exception",
                 /**
-                 * Fires 
+                 * Fires when a frame becomes active. This happens when the debugger
+                 * hits a breakpoint, or when it starts running again.
                  * @event frameActivate
                  * @param {Object}          e
-                 * @param {debugger.Frame}  e.frame
+                 * @param {debugger.Frame/null}  e.frame  The current frame or null if there is no active frame.
                  */
                 "frameActivate",
                 /**
-                 * Fires 
+                 * Fires when the result of the {@link #getFrames} call comes in.
                  * @event getFrames
-                 * @param {Object}          e
-                 * @param {debugger.Frame}  e.frames
+                 * @param {Object}            e
+                 * @param {debugger.Frame[]}  e.frames  The frames that were retrieved.
                  */
                 "getFrames",
                 /**
-                 * Fires 
+                 * Fires when the result of the {@link #getSources} call comes in.
                  * @event sources
                  * @param {Object}            e
-                 * @param {debugger.Source[]} e.sources
+                 * @param {debugger.Source[]} e.sources  The sources that were retrieved.
                  */
                 "sources",
                 /**
@@ -908,136 +926,171 @@ define(function(require, exports, module) {
             ],
             
             /**
-             * Attaches the debugger to the started debugee instance
-             * @param runner The type of the running process
-             * @param breakpoints The set of breakpoints that should be set from the start
+             * Attaches the debugger to the started process.
+             * @param {Object}                runner        A runner as specified by {@link run#run}.
+             * @param {debugger.Breakpoint[]} breakpoints   The set of breakpoints that should be set from the start
              */
             attach : attach,
             
             /**
-             * Detaches the debugger, clears the active frame data
-             * and resets the debug UI
+             * Detaches the debugger from the started process.
              */
             detach : detach,
             
             /**
-             * Loads all the active sources from the debugee instance
+             * Loads all the active sources from the process
              * 
-             * scriptid: script.id,
-                scriptname: script.name || "anonymous",
-                path: getLocalScriptPath(script),
-                text: strip(script.text || "anonymous"),
-                lineoffset: script.lineOffset,
-                debug: "true"
+             * @param {Function}          callback          Called when the sources are retrieved.
+             * @param {Error}             callback.err      The error object if an error occured.
+             * @param {debugger.Source[]} callback.sources  A list of the active sources.
+             * @fires sources
              */
             getSources : getSources,
             
             /**
-             * Loads a specific source from the active sources in the debugee instance
-             * @param source APF node to extract request attributes from
+             * Retrieves the contents of a source file
+             * @param {debugger.Source} source             The source to retrieve the contents for
+             * @param {Function}        callback           Called when the contents is retrieved
+             * @param {Error}           callback.err       The error object if an error occured.
+             * @param {String}          callback.contents  The contents of the source file
              */
             getSource : getSource,
             
             /**
-             * Returns the debug stack trace representing the current state of the
-             * debugger instance - mainly including the stack frames and references
-             * to the frame source
+             * Retrieves the current stack of frames (aka "the call stack") 
+             * from the debugger.
+             * @param {Function}          callback          Called when the frame are retrieved.
+             * @param {Error}             callback.err      The error object if an error occured.
+             * @param {debugger.Frame[]}  callback.frames   A list of frames, where index 0 is the frame where the debugger has breaked in.
+             * @fires getFrames
              */
             getFrames : getFrames,
             
             /**
-             * Loads a stack frame to the UI
-             * @param frame the stack frame object to load
+             * Retrieves the variables from a scope.
+             * @param {debugger.Frame}      frame               The frame to which the scope is related.
+             * @param {debugger.Scope}      scope               The scope from which to load the variables.
+             * @param {Function}            callback            Called when the variables are loaded
+             * @param {Error}               callback.err        The error object if an error occured.
+             * @param {debugger.Variable[]} callback.variables  A list of variables defined in the `scope`.
+             * @param {debugger.Scope}      callback.scope      The scope to which these variables belong
+             * @param {debugger.Frame}      callback.frame      The frame related to the scope.
              */
             getScope : getScope,
             
             /**
-             * Loads an object with its properties using its handle
-             * @param item APF node for the object to load to extract the handle from
+             * Retrieves and sets the properties of a variable.
+             * @param {debugger.Variable}   variable             The variable for which to retrieve the properties.
+             * @param {Function}            callback             Called when the properties are loaded
+             * @param {Error}               callback.err         The error object if an error occured.
+             * @param {debugger.Variable[]} callback.properties  A list of properties of the variable.
+             * @param {debugger.Variable}   callback.variable    The variable to which the properties belong.
              */
             getProperties : getProperties,
             
             /**
-             * 
+             * Step into the next statement.
              */
             stepInto : stepInto,
             
             /**
-             * 
+             * Step over the next statement.
              */
             stepOver : stepOver,
             
             /**
-             * 
+             * Step out of the current statement.
              */
             stepOut : stepOut,
             
             /**
-             * Continue instance execution after a suspend caused by
-             * "break", "exception" events or "suspend" request
-             * @param stepaction <"in", "next" or "out">
-             * @param stepcount <number of steps (default 1)>
+             * Continues execution of a process after it has hit a breakpoint.
              */
             resume : resume,
             
             /**
-             * Suspends execution of the debugee instance
+             * Pauses the execution of a process at the next statement.
              */
             suspend : suspend,
             
             /**
-             * Lookup multiple generic objects using their handles
-             * (can be VM objects or sources)
-             * @param handles the array of handles to lookup for
-             * @param includeSource boolean whether to include the source
-             * when source objects are returned
-             */
-            lookup : lookup,
-            
-            /**
-             * Evaluate an expression string in a specific frame
-             * @param expression string
-             * @param frame the stack frame object
-             * @param global boolean
-             * @param disableBreak boolean
+             * Evaluates an expression in a frame or in global space.
+             * @param {String}            expression         The expression.
+             * @param {debugger.Frame}    frame              The stack frame which serves as the contenxt of the expression.
+             * @param {Boolean}           global             Specifies whether to execute the expression in global space.
+             * @param {Boolean}           disableBreak       Specifies whether to disabled breaking when executing this expression.
+             * @param {Function}          callback           Called after the expression has executed.
+             * @param {Error}             callback.err       The error if any error occured.
+             * @param {debugger.Variable} callback.variable  The result of the expression.
              */
             evaluate : evaluate,
             
             /**
              * Change a live running source to the latest code state
-             * @param sourceId the scriptid attribute of the target source
-             * @param newSource string of the new source code
-             * @param previewOnly boolean
+             * @param {debugger.Source} source        The source file to update.
+             * @param {String}          value         The new contents of the source file.
+             * @param {Boolean}         previewOnly   
+             * @param {Function}        callback      Called after the expression has executed.
+             * @param {Error}           callback.err  The error if any error occured.
              */
             setScriptSource : setScriptSource,
             
             /**
-             * 
+             * Adds a breakpoint to a line in a source file.
+             * @param {debugger.Breakpoint} breakpoint           The breakpoint to add.
+             * @param {Function}            callback             Called after the expression has executed.
+             * @param {Error}               callback.err         The error if any error occured.
+             * @param {debugger.Breakpoint} callback.breakpoint  The added breakpoint
+             * @param {Object}              callback.data        Additional debugger specific information.
              */
             setBreakpoint : setBreakpoint,
             
             /**
-             * 
+             * Updates properties of a breakpoint
+             * @param {debugger.Breakpoint} breakpoint  The breakpoint to update.
+             * @param {Function}            callback             Called after the expression has executed.
+             * @param {Error}               callback.err         The error if any error occured.
+             * @param {debugger.Breakpoint} callback.breakpoint  The updated breakpoint
              */
             changeBreakpoint : changeBreakpoint,
             
             /**
-             * 
+             * Removes a breakpoint from a line in a source file.
+             * @param {debugger.Breakpoint} breakpoint  The breakpoint to remove.
+             * @param {Function}            callback             Called after the expression has executed.
+             * @param {Error}               callback.err         The error if any error occured.
+             * @param {debugger.Breakpoint} callback.breakpoint  The removed breakpoint
              */
             clearBreakpoint : clearBreakpoint,
             
             /**
-             * 
+             * Retrieves a list of all the breakpoints that are set in the 
+             * debugger.
+             * @param {Function}              callback              Called when the breakpoints are retrieved.
+             * @param {Error}                 callback.err          The error if any error occured.
+             * @param {debugger.Breakpoint[]} callback.breakpoints  A list of breakpoints
              */
             listBreakpoints : listBreakpoints,
             
             /**
-             * 
+             * Sets the value of a variable.
+             * @param {debugger.Variable}   variable       The variable to set the value of.
+             * @param {debugger.Variable[]} parents        The parent variables (i.e. the objects of which the variable is the property).
+             * @param {Mixed}               value          The new value of the variable.
+             * @param {debugger.Frame}      frame          The frame to which the variable belongs.
+             * @param {Function}            callback
+             * @param {Function}            callback       Called when the breakpoints are retrieved.
+             * @param {Error}               callback.err   The error if any error occured.
+             * @param {Object}              callback.data  Additional debugger specific information.
              */
             setVariable : setVariable,
             
             /**
-             * 
+             * Defines how the debugger deals with exceptions.
+             * @param {"all"/"uncaught"} type          Specifies which errors to break on.
+             * @param {Boolean}          enabled       Specifies whether to enable breaking on exceptions.
+             * @param {Function}         callback      Called after the setting is changed.
+             * @param {Error}            callback.err  The error if any error occured.
              */
             setBreakBehavior : setBreakBehavior
         });
