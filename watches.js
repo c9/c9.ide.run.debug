@@ -1,9 +1,3 @@
-/**
- * variables for Cloud9 IDE
- *
- * @copyright 2010, Ajax.org B.V.
- * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
- */
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "util", "debugger"
@@ -142,54 +136,7 @@ define(function(require, exports, module) {
                     }
                 }
                 
-                // Editing watches in the current or global frame
-                // Execute expression
-                if (isNew) {
-                    dbg.evaluate(name, debug.activeFrame, 
-                      !debug.activeFrame, true, function(err, variable){
-                        if (err) 
-                            return error(err.message);
-                        
-                        variable.json = variable.json;
-
-                        updateVariable(variable, 
-                            variable.properties || [], node);
-                    })
-                }
-                // Set new value of a property
-                else {
-                    dbg.setVariable(variable, parents, 
-                      value, debug.activeFrame, function(err){
-                        if (err) 
-                            return undo();
-                            
-                        // Reload properties of the variable
-                        dbg.getProperties(variable, function(err, properties){
-                            updateVariable(variable, properties, node);
-                        });
-                    });
-                }
-                
-                function error(message){
-                    variable.value = message;
-                    updateVariable(variable, [], e.node, true);
-                }
-                
-                function undo(){
-                    variable.value = oldValue;
-                    apf.xmldb.setAttribute(node, "value", oldValue);
-                }
-                
-                emit("setWatch", {
-                    name     : name,
-                    value    : value,
-                    node     : node,
-                    isNew    : isNew,
-                    variable : variable,
-                    parents  : parents,
-                    error    : error,
-                    undo     : undo
-                });
+                setWatch(variable, value, isNew, oldValue, node, parents);
             });
             
             datagrid.on("beforeEdit", function(e){
@@ -229,25 +176,72 @@ define(function(require, exports, module) {
         
         /***** Methods *****/
         
+        function setWatch(variable, value, isNew, oldValue, node, parents){
+            // Editing watches in the current or global frame
+            // Execute expression
+            if (isNew) {
+                dbg.evaluate(name, debug.activeFrame, 
+                  !debug.activeFrame, true, function(err, variable){
+                    if (err) {
+                        variable.value = err.message;
+                        updateVariable(variable, [], node, true);
+                        return;
+                    }
+                        
+                    variable.json = variable.json;
+
+                    updateVariable(variable, 
+                        variable.properties || [], node);
+                })
+            }
+            // Set new value of a property
+            else {
+                dbg.setVariable(variable, parents, 
+                  value, debug.activeFrame, function(err){
+                    if (err) {
+                        variable.value = oldValue;
+                        apf.xmldb.setAttribute(node, "value", oldValue);
+                        return;
+                    }
+                        
+                    // Reload properties of the variable
+                    dbg.getProperties(variable, function(err, properties){
+                        updateVariable(variable, properties, node);
+                    });
+                });
+            }
+            
+            emit("setWatch", {
+                name     : name,
+                value    : value,
+                node     : node,
+                isNew    : isNew,
+                variable : variable,
+                parents  : parents
+            });
+        }
+        
         function updateAll(){
             watches.forEach(function(variable){
                 var node = findVariableXml(variable);
                 if (!node) return;
                 
-                emit("setWatch", {
-                    name     : variable.name,
-                    node     : node,
-                    isNew    : true,
-                    variable : variable,
-                    parents  : [],
-                    error    : function(message){
-                        variable.value      = message;
-                        variable.properties = null;
+                setWatch(variable, undefined, true, null, node, []);
+                
+                // emit("setWatch", {
+                //     name     : variable.name,
+                //     node     : node,
+                //     isNew    : true,
+                //     variable : variable,
+                //     parents  : [],
+                //     error    : function(message){
+                //         variable.value      = message;
+                //         variable.properties = null;
                         
-                        updateVariable(variable, [], node, true);
-                    },
-                    undo     : function(){}
-                });
+                //         updateVariable(variable, [], node, true);
+                //     },
+                //     undo     : function(){}
+                // });
             });
         }
         
@@ -341,22 +335,25 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
-         *     node     {XMLNode} description
-         *     oldpath  {String} description
+         * The watch expression panel for the {@link debugger Cloud9 debugger}.
+         * 
+         * This panel allows a user to add small expressions that are evaluated
+         * continuously, displaying the result of the expression in the UI. This
+         * allows a user to monitor what is going on while stepping through the
+         * code.
+         * 
+         * @singleton
+         * @extends DebugPanel
          **/
         plugin.freezePublicAPI({
+            /**
+             * A list of variables that are watched.
+             * @param {debugger.Variable[]} watches  The list of variables watched.
+             */
             get watches(){ return watches; },
             
             /**
-             * 
-             */
-            updateVariable : updateVariable,
-            
-            /**
-             * 
+             * Re-evaluate all watch expressions.
              */
             updateAll : updateAll
         });

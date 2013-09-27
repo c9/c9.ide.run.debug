@@ -1,22 +1,13 @@
-/**
- * Callstack for Cloud9 IDE
- *
- * @copyright 2010, Ajax.org B.V.
- * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
- */
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "c9", "util", "settings", "ui", "tabManager",
-        "debugger", "save"
+        "DebugPanel", "util", "ui", "tabManager", "debugger", "save"
     ];
     main.provides = ["callstack"];
     return main;
 
     function main(options, imports, register) {
-        var c9         = imports.c9;
         var util       = imports.util;
         var DebugPanel = imports.DebugPanel;
-        var settings   = imports.settings;
         var ui         = imports.ui;
         var save       = imports.save;
         var debug      = imports.debugger;
@@ -436,34 +427,50 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event afterfilesave Fires after a file is saved
-         * @param {Object} e
-         *     node     {XMLNode} description
-         *     oldpath  {String} description
+         * The call stack panel for the {@link debugger Cloud9 debugger}.
+         * 
+         * This panel allows a user to inspect the call stack and jump to the
+         * different items in the stack.
+         * 
+         * @singleton
+         * @extends DebugPanel
          **/
         plugin.freezePublicAPI({
+            /**
+             * When the debugger has hit a breakpoint or an exception, it breaks
+             * and shows the active frame in the callstack panel. The active
+             * frame represents the scope at which the debugger is stopped.
+             * @property {debugger.Frame} activeFrame
+             */
             get activeFrame(){ return activeFrame; },
             set activeFrame(frame){ setActiveFrame(frame); },
-            
+            /**
+             * A list of sources that are available from the debugger. These
+             * can be files that are loaded in the runtime as well as code that
+             * is injected by a script or by the runtime itself.
+             * @property {debugger.Source[]} sources
+             * @readonly
+             */
             get sources(){ return sources; },
-            
+            /**
+             * A list (or stack) of frames that make up the call stack. The
+             * frames are in order and the index 0 contains the frame where
+             * the debugger is breaked on.
+             * @property {debugger.Frame[]} frames
+             * @readonly
+             */
             get frames(){ return frames; },
             
             /**
-             * 
+             * Updates all frames in the call stack UI.
              */
             updateAll : updateAll,
             
             /**
-             * 
+             * Updates a specific frame in the call stack UI
+             * @param {debugger.Frame} frame  The frame to update.
              */
-            updateFrame : updateFrameXml,
-            
-            /**
-             * 
-             */
-            updateMarkers : updateMarker
+            updateFrame : updateFrameXml
         });
         
         register(null, {

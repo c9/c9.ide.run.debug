@@ -27,6 +27,8 @@ define(function(require, exports, module) {
         var breakOnExceptions         = false;
         var breakOnUncaughtExceptions = false;
         
+        var TYPE = "v8";
+        
         var v8dbg, v8ds, state, activeFrame, sources;
         
         var scopeTypes = {
@@ -47,11 +49,11 @@ define(function(require, exports, module) {
             if (loaded) return false;
             loaded = true;
             
-            debug.registerDebugger("v8", plugin);
+            debug.registerDebugger(TYPE, plugin);
         }
         
         function unload(){
-            debug.unregisterDebugger("v8", plugin);
+            debug.unregisterDebugger(TYPE, plugin);
             loaded = false;
         }
         
@@ -843,7 +845,14 @@ define(function(require, exports, module) {
          */
         plugin.freezePublicAPI({
             /**
-             * @property state {null|"running"|"stopped"} state of the debugger process
+             * The type of the debugger implementation. This is the identifier 
+             * with which the runner selects the debugger implementation.
+             * @property {String} type
+             * @readonly
+             */
+            type : TYPE,
+            /**
+             * @property {null|"running"|"stopped"} state  The state of the debugger process
              * <table>
              * <tr><td>Value</td><td>      Description</td></tr>
              * <tr><td>null</td><td>       process doesn't exist</td></tr>

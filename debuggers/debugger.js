@@ -33,9 +33,8 @@ define(function(require, exports, module) {
         var emit   = plugin.getEmitter();
         
         var dbg, debuggers = {}, pauseOnBreaks = 0, state = "disconnected";
-        var running, activeFrame, sources, breakpoints = [];
+        var running, activeFrame, sources;
         
-        var enableBreakpoints;
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
         
@@ -271,9 +270,7 @@ define(function(require, exports, module) {
             
             dbg.on("breakpointUpdate", function(e){
                 emit("breakpointUpdate", {
-                    breakpoint : e.breakpoint, 
-                    action     : "add", 
-                    force      : true
+                    breakpoint : e.breakpoint
                 });
             }, plugin);
 
@@ -562,6 +559,9 @@ define(function(require, exports, module) {
          * * {@link variables}
          * * {@link watches}
          * 
+         * You can create your own debug panel using the {@link DebugPanel}
+         * base class.
+         * 
          * #### Remarks
          * 
          * * The debugger also works together with the {@link immediate Immediate Panel}.
@@ -703,7 +703,63 @@ define(function(require, exports, module) {
                  * @param {Function}        e.done.value  The value of the source file
                  * @param {Tab}             e.tab         The created tab for the source file.
                  */
-                "open"
+                "open",
+                /**
+                 * Fires when the panels are being drawn.
+                 * @event drawPanels
+                 * @param {Object}      e       
+                 * @param {HTMLElement} e.html  The html container for the panel.
+                 * @param {AMLElement}  e.aml   The aml container for the panel.
+                 * @private
+                 */
+                "drawPanels",
+                /**
+                 * Fires when the state of the debugger changes.
+                 * @event stateChange
+                 * @param {Object} e
+                 * @param {"disconnected"|"running"|"stopped"} e.state  The state of the debugger.
+                 * <table>
+                 * <tr><td>Value</td><td>           Description</td></tr>
+                 * <tr><td>"disconnected"</td><td>  Not connected to a process</td></tr>
+                 * <tr><td>"stopped"</td><td>       paused on breakpoint</td></tr>
+                 * <tr><td>"running"</td><td>       process is running</td></tr>
+                 * </table>
+                 */
+                "stateChange",
+                /**
+                 * Fires when the active frame changes. See also {@link #activeFrame}.
+                 * @event frameActivate
+                 * @param {Object}         e
+                 * @param {debugger.Frame} e.frame  The frame that is currently active.
+                 */
+                "frameActivate",
+                /**
+                 * Fires when a new list of sources comes in from the debugger.
+                 * @event sources
+                 * @param {Object}            e
+                 * @param {debugger.Source[]} e.sources  The list of sources
+                 */
+                "sources",
+                /**
+                 * Fires when a new source file is compiled.
+                 * @event sourcesCompile
+                 * @param {Object}          e
+                 * @param {debugger.Source} e.source  The compiled source file.
+                 */
+                "sourcesCompile",
+                /**
+                 * Fires when a breakpoint is updated (for instance with location info).
+                 * @event breakpointUpdate
+                 * @param {Object}              e
+                 * @param {debugger.Breakpoint} e.breakpoint  The breakpoint that is updated.
+                 */
+                "breakpointUpdate",
+                /**
+                 * Fires when the debugger needs a list of breakpoints.
+                 * @event getBreakpoints
+                 * @private
+                 */
+                "getBreakpoints"
             ],
             
             /**

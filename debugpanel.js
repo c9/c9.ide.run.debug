@@ -20,8 +20,6 @@ define(function(require, module, exports) {
             plugin.on("load", function(){
                 // Draw panel when debugger is drawn
                 debug.on("drawPanels", draw, plugin);
-                
-                
             });
             
             function draw(e){
@@ -31,6 +29,7 @@ define(function(require, module, exports) {
                     activetitle : "min",
                     caption     : caption
                 });
+                plugin.addElement(amlFrame);
                 
                 emit("draw", { aml: amlFrame, html: amlFrame.$int });
             }
@@ -51,6 +50,40 @@ define(function(require, module, exports) {
             plugin.freezePublicAPI.baseclass();
             
             /**
+             * Debug panel base class for the {@link debugger Cloud9 debugger}.
+             * 
+             * A debug panel is a section of the debugger that allows users to
+             * interact with the debugger. Debuggers in Cloud9 are pluggable
+             * and there are many different debuggers available as a 
+             * {@link debugger.implementation debugger implementation}.
+             * 
+             * The debugger UI is re-used for all these debugger 
+             * implementations. Panels can decide for which debugger they should
+             * be shown:
+             * 
+             *     var debug = imports.debugger;
+             *     
+             *     debug.on("attach", function(e){
+             *         if (e.implementation.type == "html5")
+             *             plugin.show();
+             *         else
+             *             plugin.hide();
+             *     });
+             * 
+             * Implementing your own debug panel takes a new DebugPanel() object 
+             * rather than a new Plugin() object. Here's a short example:
+             * 
+             *     var plugin = new DebugPanel("(Company) Name", main.consumes, {
+             *         caption  : "Cool Caption"
+             *     });
+             *     var emit = plugin.getEmitter();
+             * 
+             *     plugin.on("draw", function(e){
+             *         e.html.innerHTML = "Hello World!";
+             *     });
+             *     
+             *     plugin.freezePublicAPI({
+             *     });
              * 
              * @class DebugPanel
              * @extends Plugin
@@ -61,6 +94,8 @@ define(function(require, module, exports) {
              * @param {String}   developer   The name of the developer of the plugin
              * @param {String[]} deps        A list of dependencies for this 
              *   plugin. In most cases it's a reference to `main.consumes`.
+             * @param {Object}   options     The options for the debug panel
+             * @param {String}   options.caption  The caption of the frame.
              */
             plugin.freezePublicAPI({
                 /**
@@ -74,16 +109,23 @@ define(function(require, module, exports) {
                 get aml(){ return amlFrame; },
                 
                 _events : [
-                    
+                    /**
+                     * Fired when the panel container is drawn.
+                     * @event draw
+                     * @param {Object}      e
+                     * @param {HTMLElement} e.html  The html container.
+                     * @param {AMLElement}  e.aml   The aml container.
+                     */
+                    "draw"
                 ],
                     
                 /**
-                 * 
+                 * Shows the panel.
                  */
                 show : show,
                 
                 /**
-                 * 
+                 * Hides the panel.
                  */
                 hide : hide
             });

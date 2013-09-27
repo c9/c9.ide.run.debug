@@ -1,13 +1,12 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "settings", "ui", "util", "debugger", "callstack"
+        "DebugPanel", "ui", "util", "debugger", "callstack"
     ];
     main.provides = ["variables"];
     return main;
 
     function main(options, imports, register) {
         var DebugPanel = imports.DebugPanel;
-        var settings   = imports.settings;
         var ui         = imports.ui;
         var callstack  = imports.callstack;
         var debug      = imports.debugger;
@@ -320,25 +319,25 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
+         * The local variables and scopes panel for the 
+         * {@link debugger Cloud9 debugger}.
+         * 
+         * This panel displays the local variables and scopes to the user. A
+         * user can expand variables and scopes to inspect properties and 
+         * variables and edit them.
+         * 
+         * @singleton
+         * @extends DebugPanel
          **/
         plugin.freezePublicAPI({
             /**
-             * 
+             * Sets the frame that the variables and scopes are displayed for.
+             * @param {debugger.Frame} frame  The frame to display the variables and scopes from.
              */
             loadFrame : loadFrame,
             
             /**
-             * 
-             */
-            updateScope : updateScope,
-            
-            /**
-             * 
-             */
-            updateVariable : updateVariable,
-            
-            /**
-             * 
+             * Clears the variable/scope cache
              */
             clearCache : clearCache
         });

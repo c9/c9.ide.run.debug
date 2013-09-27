@@ -785,16 +785,27 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
+         * The breakpoints panel for the {@link debugger Cloud9 debugger}.
          * 
+         * This panel shows a list of all the breakpoints and allows the user
+         * to remove, disable and enable the breakpoints.
+         * 
+         * @singleton
+         * @extends DebugPanel
          **/
         plugin.freezePublicAPI({
             /**
-             * 
+             * A list of breakpoints that are set.
+             * @property {debugger.Breakpoint[]} breakpoints
+             * @readonly
              */
             get breakpoints(){ return breakpoints.slice(0); },
             
             /**
-             * 
+             * Sets or retrieves whether the debugger should break when it hits
+             * a breakpoint.
+             * @property {Boolean} enableBreakpoints
+             * @readonly
              */
             get enableBreakpoints(){ return enableBreakpoints; },
             set enableBreakpoints(v){ 
@@ -803,44 +814,41 @@ define(function(require, exports, module) {
             },
             
             /**
-             * 
+             * Sets the condition expression of a breakpoint.
+             * @param {debugger.Breakpoint} breakpoint The breakpoint to set the condition on.
+             * @param {String}              condition  An expression that needs to be true for the debugger to break on the breakpoint.
              */
             setCondition : setCondition,
             
             /**
-             * 
+             * Flags a breakpoint to not be ignored when the debugger hits it.
+             * @param {debugger.Breakpoint} breakpoint The breakpoint to enable.
              */
             enableBreakpoint : enableBreakpoint,
             
             /**
-             * 
+             * Flags a breakpoint to be ignored when the debugger hits it.
+             * @param {debugger.Breakpoint} breakpoint The breakpoint to disable.
              */
             disableBreakpoint : disableBreakpoint,
             
             /**
-             * 
+             * Displays a breakpoint in the ace editor.
+             * @param {debugger.Breakpoint} breakpoint The breakpoint to display.
              */
             gotoBreakpoint : gotoBreakpoint,
             
             /**
-             * 
+             * Adds a breakpoint to the list of breakpoints.
+             * @param {debugger.Breakpoint} breakpoint The breakpoint to add.
              */
             setBreakpoint : setBreakpoint,
             
             /**
-             * 
+             * Removes a breakpoint from the list of breakpoints.
+             * @param {debugger.Breakpoint} breakpoint The breakpoint to remove.
              */
             clearBreakpoint : clearBreakpoint,
-            
-            /**
-             * 
-             */
-            activateAll : activateAll,
-            
-            /**
-             * 
-             */
-            deactivateAll : deactivateAll
         });
         
         register(null, {
