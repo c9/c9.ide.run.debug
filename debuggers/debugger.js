@@ -602,6 +602,7 @@ define(function(require, exports, module) {
          *     });
          *
          * @singleton
+         * @extends Panel
          */
         plugin.freezePublicAPI({
             /**
