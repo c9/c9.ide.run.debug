@@ -47,7 +47,7 @@
  * Finds a {@link debugger.Scope} object related to this frame.
  * @method findScope
  * @param {Number} index  The index of the scope to find.
- * @return {Scope}
+ * @return {debugger.Scope}
  */
 /**
  * Finds a {@link debugger.Variable} object related to this frame.
@@ -57,7 +57,7 @@
  * @param {String} name     The name of the variable to find.
  * @param {Array}  parents  Pass an empty array to receive all the parent 
  *   scopes/variables that lead to the variable that is found.
- * @return {Variable}
+ * @return {debugger.Variable}
  */
 define(function(require, exports, module) {
     

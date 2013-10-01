@@ -910,7 +910,7 @@ define(function(require, exports, module) {
                  */
                 "frameActivate",
                 /**
-                 * Fires when the result of the {@link #getFrames} call comes in.
+                 * Fires when the result of the {@link #method-getFrames} call comes in.
                  * @event getFrames
                  * @param {Object}            e
                  * @param {debugger.Frame[]}  e.frames  The frames that were retrieved.

@@ -27,7 +27,7 @@
  * @param {String} name     The name of the variable to find.
  * @param {Array}  parents  Pass an empty array to receive all the parent 
  *   scopes/variables that lead to the variable that is found.
- * @return {Variable}
+ * @return {debugger.Variable}
  */
 define(function(require, exports, module) {
     

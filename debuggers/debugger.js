@@ -554,7 +554,6 @@ define(function(require, exports, module) {
          * The default debug panels are:
          * 
          * * {@link breakpoints}
-         * * {@link buttons}
          * * {@link callstack}
          * * {@link variables}
          * * {@link watches}
@@ -688,7 +687,7 @@ define(function(require, exports, module) {
                  * @cancellable
                  * @param {Object}          e
                  * @param {debugger.Source} e.source     The source file to open.
-                 * @param {Object}          e.state      The state object that is passed to the {@link tabManager#open} method.
+                 * @param {Object}          e.state      The state object that is passed to the {@link tabManager#method-open} method.
                  * @param {Boolean}         e.generated  Specifies whether the file is a generated file.
                  */
                 "beforeOpen",
@@ -878,7 +877,7 @@ define(function(require, exports, module) {
              * @param {Number}          [row]         The row (zero bound) to scroll to.
              * @param {Number}          [column]      The column (zero bound) to scroll to.
              * @param {String}          [path]        The path of the file to open
-             * @param {debugger.Script} [script]      The source file to open
+             * @param {debugger.Source} [script]      The source file to open
              * @param {String}          [scriptId]    The script id of the file to open
              * @param {Boolean}         [generated]   
              */

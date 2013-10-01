@@ -102,7 +102,7 @@ define(function(require, module, exports) {
                  * The APF UI element that is presenting the pane in the UI.
                  * This property is here for internal reasons only. *Do not 
                  * depend on this property in your plugin.*
-                 * @property {AmlElement} aml
+                 * @property {AMLElement} aml
                  * @private
                  * @readonly
                  */
