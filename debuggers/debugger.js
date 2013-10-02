@@ -847,7 +847,7 @@ define(function(require, exports, module) {
             /**
              * Evaluates an expression in a frame or in global space.
              * @param {String}            expression         The expression.
-             * @param {debugger.Frame}    frame              The stack frame which serves as the contenxt of the expression.
+             * @param {debugger.Frame}    frame              The stack frame which serves as the context of the expression.
              * @param {Boolean}           global             Specifies whether to execute the expression in global space.
              * @param {Boolean}           disableBreak       Specifies whether to disabled breaking when executing this expression.
              * @param {Function}          callback           Called after the expression has executed.
