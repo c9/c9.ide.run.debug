@@ -171,8 +171,6 @@ define(function(require, exports, module) {
                 if (e.keyCode == 13 && datagrid.$selected && !justEdited)
                     datagrid.$dblclick(datagrid.$selected.firstChild)
             });
-            
-            emit("draw");
         }
         
         /***** Methods *****/
@@ -318,9 +316,7 @@ define(function(require, exports, module) {
         
         plugin.on("load", function(){
             load();
-        });
-        plugin.on("draw", function(e){
-            draw(e);
+            plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
             

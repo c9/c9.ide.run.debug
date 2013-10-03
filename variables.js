@@ -177,8 +177,6 @@ define(function(require, exports, module) {
             datagrid.on("editorCreate", function(e){
                 var tb = e.editor;
             });
-            
-            emit("draw");
         }
         
         /***** Methods *****/
@@ -301,9 +299,7 @@ define(function(require, exports, module) {
         
         plugin.on("load", function(){
             load();
-        });
-        plugin.on("draw", function(e){
-            draw(e);
+            plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
             

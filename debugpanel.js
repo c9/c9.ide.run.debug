@@ -19,11 +19,8 @@ define(function(require, module, exports) {
             var amlFrame;
             
             plugin.on("load", function(){
-                // Force to be executed last
-                plugin.once("load", function(){
-                    // Draw panel when debugger is drawn
-                    debug.on("drawPanels", draw, plugin);
-                });
+                // Draw panel when debugger is drawn
+                debug.on("drawPanels", draw, plugin);
             });
             
             function draw(e){
@@ -36,7 +33,7 @@ define(function(require, module, exports) {
                 ui.insertByIndex(e.html, amlFrame.$ext, index, false);
                 plugin.addElement(amlFrame);
                 
-                emit("draw", { aml: amlFrame, html: amlFrame.$int });
+                emit("draw", { aml: amlFrame, html: amlFrame.$int }, true);
             }
             
             /***** Methods *****/

@@ -146,7 +146,7 @@ define(function(require, exports, module) {
             datagrid.setAttribute("model", modelFrames);
             
             // Update markers when a document becomes available
-            tabs.on("tabAfterActivateFocus", function(e) {
+            tabs.on("tabAfterActivateSync", function(e) {
                 updateMarker(activeFrame);
             });
             
@@ -209,8 +209,6 @@ define(function(require, exports, module) {
             
             // Set context menu to the button
             button.setAttribute("submenu", menu);
-            
-            emit("draw");
         }
         
         function setActiveFrame(frame, fromDG) {
@@ -432,9 +430,7 @@ define(function(require, exports, module) {
         
         plugin.on("load", function(){
             load();
-        });
-        plugin.on("draw", function(e){
-            draw(e);
+            plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
             if (drawn) {

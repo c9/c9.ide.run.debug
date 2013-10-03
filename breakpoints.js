@@ -292,8 +292,6 @@ define(function(require, exports, module) {
                     clearBreakpoint(bp);
                 });
             });
-            
-            emit("draw");
         }
         
         /***** Helper Functions *****/
@@ -767,9 +765,7 @@ define(function(require, exports, module) {
         
         plugin.on("load", function(){
             load();
-        });
-        plugin.on("draw", function(e){
-            draw(e);
+            plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
             if (!enableBreakpoints)
