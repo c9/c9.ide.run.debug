@@ -18,7 +18,8 @@ define(function(require, exports, module) {
         /***** Initialization *****/
         
         var plugin = new DebugPanel("Ajax.org", main.consumes, {
-            caption: "Watch Expressions"
+            caption : "Watch Expressions",
+            index   : 100
         });
         var emit   = plugin.getEmitter();
         

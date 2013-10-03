@@ -22,7 +22,8 @@ define(function(require, exports, module) {
         
         var deps   = main.consumes.slice(0, main.consumes.length - 1);
         var plugin = new DebugPanel("Ajax.org", deps, {
-            caption: "Breakpoints"
+            caption : "Breakpoints",
+            index   : 400
         });
         var emit   = plugin.getEmitter();
         

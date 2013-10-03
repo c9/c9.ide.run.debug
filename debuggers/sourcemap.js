@@ -211,6 +211,7 @@ define(function(require, exports, module) {
             // Update new frames with cached data
             debug.on("framesLoad", function(e){
                 var frames = e.frames;
+                if (!frames) return;
                 
                 frames.forEach(function(frame){
                     if (!frame.sourcemap && typeof generated[frame.path] == "string") {

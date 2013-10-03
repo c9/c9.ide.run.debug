@@ -15,11 +15,15 @@ define(function(require, module, exports) {
             emit.setMaxListeners(1000);
             
             var caption = options.caption;
+            var index   = options.index || 100;
             var amlFrame;
             
             plugin.on("load", function(){
-                // Draw panel when debugger is drawn
-                debug.on("drawPanels", draw, plugin);
+                // Force to be executed last
+                plugin.once("load", function(){
+                    // Draw panel when debugger is drawn
+                    debug.on("drawPanels", draw, plugin);
+                });
             });
             
             function draw(e){
@@ -29,6 +33,7 @@ define(function(require, module, exports) {
                     activetitle : "min",
                     caption     : caption
                 });
+                ui.insertByIndex(e.html, amlFrame.$ext, index, false);
                 plugin.addElement(amlFrame);
                 
                 emit("draw", { aml: amlFrame, html: amlFrame.$int });

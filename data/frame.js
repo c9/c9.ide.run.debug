@@ -14,6 +14,9 @@
  * @property {Number} index  The index of this frame (in a stack trace).
  */
 /**
+ * @property {Boolean} istop  Specifies whether this frame is the frame where the debugger is stopped at.
+ */
+/**
  * @property {String} name  The name of this frame.
  */
 /**
@@ -72,7 +75,7 @@ define(function(require, exports, module) {
     Frame.prototype = new Data(
         [
             "id", "index", "name", "column", "ref", "line", 
-            "path", "sourceId", "sourcemap"
+            "path", "sourceId", "sourcemap", "istop"
         ], 
         ["variables", "scopes"]
     );

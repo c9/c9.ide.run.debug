@@ -20,7 +20,8 @@ define(function(require, exports, module) {
         
         var deps   = main.consumes.splice(0, main.consumes.length - 1);
         var plugin = new DebugPanel("Ajax.org", deps, {
-            caption: "Call Stack"
+            caption : "Call Stack",
+            index   : 200
         });
         var emit   = plugin.getEmitter();
         
@@ -37,7 +38,6 @@ define(function(require, exports, module) {
             
             modelSources = new ui.model();
             modelFrames  = new ui.model();
-            
             plugin.addElement(modelSources, modelFrames);
             
             // Set and clear the dbg variable
@@ -141,12 +141,12 @@ define(function(require, exports, module) {
             
             // Create UI elements
             ui.insertMarkup(options.aml, markup, plugin);
-        
+            
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", modelFrames);
             
             // Update markers when a document becomes available
-            tabs.on("tabAfterActivate", function(e) {
+            tabs.on("tabAfterActivateFocus", function(e) {
                 updateMarker(activeFrame);
             });
             
@@ -161,17 +161,26 @@ define(function(require, exports, module) {
             
             var hbox = debug.getElement("hbox");
             menu = hbox.ownerDocument.documentElement.appendChild(new ui.menu({
+                style : "top: 56px;"
+                    + "left: 803px;"
+                    + "opacity: 1;"
+                    + "border: 0px;"
+                    + "padding: 0px;"
+                    + "background-color: transparent;"
+                    + "margin: -3px 0px 0px;"
+                    + "box-shadow: none;",
                 childNodes : [
                     new ui.list({
                       id            : "lstScripts",
-                      margin        : "3 0 0 4",
+                      margin        : "3 -2 0 0",
+                      style         : "position:relative",
                       skin          : "list_dark",
                       maxitems      : "10",
                       disabled      : "true" ,
                       each          : "[source]",
                       caption       : "[@name]",
                       autoselect    : "false",
-                      icon          : "debugger/file_obj.gif" ,
+                      icon          : "scripts.png" ,
                       onafterselect : "this.parentNode.hide()",
                     })
                 ]
@@ -242,17 +251,33 @@ define(function(require, exports, module) {
             session.removeGutterDecoration(session[markerName].row, type);
             session[markerName] = null;
         }
+        
+        function removeMarkerFromSession(session){
+            session.$stackMarker && removeMarker(session, "stack");
+            session.$stepMarker && removeMarker(session, "step");
+        }
 
         function updateMarker(frame) {
-            var tab   = tabs.focussedTab;
-            var editor = tab && tab.editor;
+            // Remove from all active sessions, when there is no active frame.
+            if (!frame) {
+                tabs.getPanes().forEach(function(pane){
+                    var tab = pane.getTab();
+                    if (tab && tab.editor && tab.editor.type == "ace") {
+                        var session = tab.document.getSession().session;
+                        removeMarkerFromSession(session);
+                    }
+                });
+                return;
+            }
+            
+            // Otherwise find the active session and set the marker
+            var tab    = frame && tabs.findTab(frame.path);
+            var editor = tab && tab.isActive() && tab.editor;
             if (!editor || editor.type != "ace")
                 return;
                 
             var session = tab.document.getSession().session;
-
-            session.$stackMarker && removeMarker(session, "stack");
-            session.$stepMarker && removeMarker(session, "step");
+            removeMarkerFromSession(session);
 
             if (!frame)
                 return;
@@ -412,12 +437,16 @@ define(function(require, exports, module) {
             draw(e);
         });
         plugin.on("enable", function(){
-            menu.enable();
-            button.enable();
+            if (drawn) {
+                menu.enable();
+                button.enable();
+            }
         });
         plugin.on("disable", function(){
-            menu.disable();
-            button.disable();
+            if (drawn) {
+                menu.disable();
+                button.disable();
+            }
         });
         plugin.on("unload", function(){
             loaded = false;

@@ -32,8 +32,11 @@ define(function(require, exports, module) {
         });
         var emit   = plugin.getEmitter();
         
-        var dbg, debuggers = {}, pauseOnBreaks = 0, state = "disconnected";
-        var running, activeFrame, sources;
+        var debuggers     = {};
+        var pauseOnBreaks = 0;
+        var state         = "disconnected";
+        var sources       = [];
+        var running, activeFrame, dbg;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
@@ -172,24 +175,30 @@ define(function(require, exports, module) {
             plugin.on("stateChange", function(e){
                 state = e.state;
                 
-                if (!btnResume)
-                    return;
-    
-                btnResume.$ext.style.display = state == "stopped" 
-                    ? "inline-block" : "none";
-                btnSuspend.$ext.style.display = state == "disconnected" 
-                    || state != "stopped" ? "inline-block" : "none";
-                    
-                btnSuspend.setAttribute("disabled",     state == "disconnected");
-                btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-                btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-                btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+                updateButtonState(state);
             }, plugin);
             
-            emit("drawPanels", { html: scroller, aml: bar });
+            updateButtonState(state);
+            
+            emit("drawPanels", { html: scroller, aml: bar }, true);
         }
         
         /***** Methods *****/
+        
+        function updateButtonState(state){
+            if (!drawn)
+                return;
+            
+            btnResume.$ext.style.display = state == "stopped" 
+                ? "inline-block" : "none";
+            btnSuspend.$ext.style.display = state == "disconnected" 
+                || state != "stopped" ? "inline-block" : "none";
+                
+            btnSuspend.setAttribute("disabled",     state == "disconnected");
+            btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+            btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
+            btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+        }
         
         function initializeDebugger(){
             // State Change
@@ -216,9 +225,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("detach", function(e){
-                // buttons.state = "detached";
-                state = "disconnected";
-                emit("stateChange", { state: state });
+                updateButtonState("detached");
                 
                 //@todo
                 emit("detach", e);
@@ -259,7 +266,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("sources", function(e){
-                sources = e.sources;
+                sources = sources.concat(e.sources);
                 emit("sources", e);
             }, plugin);
             
@@ -403,9 +410,11 @@ define(function(require, exports, module) {
                     : -1,
                 document   : {
                     title  : path.substr(path.lastIndexOf("/") + 1),
+                    meta   : {
+                        ignoreState : isFileFromWorkspace ? 0 : 1
+                    },
                     ace    : {
                         scriptId    : scriptId,
-                        debug       : isFileFromWorkspace ? 0 : 1,
                         lineoffset  : 0
                     }
                 }
@@ -436,7 +445,7 @@ define(function(require, exports, module) {
                             //     row    : row,
                             //     column : column
                             // });
-                            // done();
+                            done();
                         }
                         
                         if (emit("open", {
@@ -494,12 +503,13 @@ define(function(require, exports, module) {
             else {
                 process.on("started", function(){
                     running = run.STARTED;
-                    // buttons.state = state;
+                    // updateButtonState(state);
                 }, plugin);
             }
             process.on("stopped", function(){
                 running = run.STOPPED;
-                // buttons.state = "disconnected";
+                stop();
+                // updateButtonState("disconnected");
             }, plugin);
             
             // Hook for plugins to delay or cancel debugger attaching
@@ -615,6 +625,12 @@ define(function(require, exports, module) {
                 activeFrame = frame; 
                 emit("frameActivate", { frame: frame });
             },
+            /**
+             * The state of the debugger
+             * @property {"running"|"stopped"|"disconnected"} sources
+             * @readonly
+             */
+            get state(){ return state; },
             /**
              * A list of sources that are available from the debugger. These
              * can be files that are loaded in the runtime as well as code that

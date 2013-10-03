@@ -17,7 +17,8 @@ define(function(require, exports, module) {
         /***** Initialization *****/
         
         var plugin = new DebugPanel("Ajax.org", main.consumes, {
-            caption: "Scope Variables"
+            caption : "Scope Variables",
+            index   : 300
         });
         var emit   = plugin.getEmitter();
         
@@ -30,7 +31,6 @@ define(function(require, exports, module) {
             loaded = true;
             
             model = new ui.model();
-            
             plugin.addElement(model);
             
             // Set and clear the dbg variable

@@ -29,7 +29,7 @@ define(function(require, exports, module) {
         
         var TYPE = "v8";
         
-        var v8dbg, v8ds, state, activeFrame, sources;
+        var v8dbg, v8ds, state, activeFrame, sources, attached = false;
         
         var scopeTypes = {
             "0" : "global",
@@ -66,9 +66,13 @@ define(function(require, exports, module) {
             getSources(function(err, sources) {
                 getFrames(function(err, frames) {
                     updateBreakpoints(breakpoints, function(err, breakpoints) {
-                        handleDebugBreak(breakpoints, function() {
+                        handleDebugBreak(breakpoints, function(){
+                            attached = true;
                             emit("attach", { breakpoints: breakpoints });
-                            
+                        }, 
+                        function() {
+                            // This check is for when the process is not 
+                            // started with debug-brk
                             if (activeFrame) {
                                 onChangeFrame(activeFrame);
                                 emit("break", {
@@ -76,8 +80,8 @@ define(function(require, exports, module) {
                                     frames : frames
                                 });
                             }
-                            onChangeRunning();
                             
+                            onChangeRunning();
                             callback();
                         });
                     });
@@ -143,18 +147,21 @@ define(function(require, exports, module) {
         /**
          * Detects a break on a frame or a known breakpoint, otherwise resumes
          */
-        function handleDebugBreak(breakpoints, callback) {
+        function handleDebugBreak(breakpoints, attach, callback) {
             var frame = activeFrame;
-            if (!v8dbg) { //!frame || 
-                console.warn("NO DBG");
+            if (!v8dbg) {
+                console.error("No debugger is set");
+                attach();
                 return callback();
             }
             
             var bp = breakpoints[0];
             
             // If there's no breakpoint set
-            if (!bp)
+            if (!bp) {
+                attach();
                 return resume(callback);
+            }
             
             // Check for a serverOnly breakpoint on line 0
             // this bp, is automatically created by v8 to stop on break
@@ -168,9 +175,11 @@ define(function(require, exports, module) {
             function checkEval(err, variable){
                 if (err || isTruthy(variable)) {
                     onChangeFrame(null);
+                    attach();
                     resume(callback);
                 }
                 else {
+                    attach();
                     callback();
                 }
             }
@@ -189,6 +198,7 @@ define(function(require, exports, module) {
                             evaluate(bpi.condition, frame, false, true, checkEval);
                         }
                         else {
+                            attach();
                             callback();
                         }
                         return;
@@ -198,6 +208,7 @@ define(function(require, exports, module) {
             
             // Resume the process
             onChangeFrame(null);
+            attach();
             resume(callback);
         }
         
@@ -410,18 +421,19 @@ define(function(require, exports, module) {
                 line     : data.sourceLine,
                 script   : strip(data.script.name),
                 path     : getLocalScriptPath(data.script),
-                sourceId : data.script.id
+                sourceId : data.script.id,
+                istop    : true
             });
         }
     
         function onBreak(e) {
-            var bps = e.data && e.data.breakpoints;
-            if (bps && bps.length === 1 && bps[0] === 1)
+            if (!attached) 
                 return;
             
             // @todo update breakpoint text?
             
             var frame = createFrameFromBreak(e.data);
+            onChangeFrame(frame);
             emit("break", {
                 frame : frame
             });
@@ -542,6 +554,7 @@ define(function(require, exports, module) {
             
             v8ds.detach();
             
+            onChangeFrame(null);
             onChangeRunning();
             
             if (v8dbg) {
@@ -552,8 +565,9 @@ define(function(require, exports, module) {
                 v8dbg.removeEventListener("afterCompile", onAfterCompile);
             }
             
-            v8ds  = null;
-            v8dbg = null;
+            v8ds     = null;
+            v8dbg    = null;
+            attached = false;
             
             emit("detach");
         }
@@ -600,7 +614,8 @@ define(function(require, exports, module) {
                     }) || [];
         
                     var topFrame = frames[0];
-                    topFrame && (topFrame.istop = true);
+                    if (topFrame)
+                        topFrame.istop = true;
                     onChangeFrame(topFrame, silent);
                 }
                 else {
