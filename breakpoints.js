@@ -468,7 +468,10 @@ define(function(require, exports, module) {
             if (session.hasBreakpoints)
                 return;
 
-            if (!session.session) debugger;            
+            // A file was loaded that doesn't exists and is already destroyed
+            if (!session.session) 
+                return;
+                
             session.session.on("change", function(e) {
                 var breakpoints = session.session.$breakpoints;
                 
