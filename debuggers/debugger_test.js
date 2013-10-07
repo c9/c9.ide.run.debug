@@ -125,7 +125,7 @@ require([
         
         // Mock plugins
         {
-            consumes : ["apf", "ui"],
+            consumes : ["apf", "ui", "Plugin"],
             provides : [
                 "commands", "watcher", "anims", "save", "preferences", 
                 "panels", "layout", "menus", "clipboard"
