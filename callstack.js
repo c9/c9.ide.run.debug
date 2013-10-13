@@ -105,7 +105,7 @@ define(function(require, exports, module) {
                 // This is disabled, because frames should be kept around a bit
                 // in order to update them, for a better UX experience
                 //callstack.activeFrame = e.frame;
-                updateMarker(e.frame);
+                updateMarker(e.frame, true);
             });
             
             // Loading new sources
@@ -255,7 +255,7 @@ define(function(require, exports, module) {
             session.$stepMarker && removeMarker(session, "step");
         }
 
-        function updateMarker(frame) {
+        function updateMarker(frame, scrollToLine) {
             // Remove from all active sessions, when there is no active frame.
             if (!frame) {
                 tabs.getPanes().forEach(function(pane){
@@ -285,8 +285,12 @@ define(function(require, exports, module) {
             var row       = frame.line;
             
             if (frame.istop) {
-                if (path == framePath)
+                if (path == framePath) {
                     addMarker(session, "step", row);
+                    
+                    if (scrollToLine)
+                        tab.editor.ace.scrollToLine(row, true, true);
+                }
             }
             else {
                 if (path == framePath)
