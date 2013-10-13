@@ -244,9 +244,9 @@ define(function(require, exports, module) {
                     clearBreakpoint(findBreakpoint(list.selected));
                 }
                 else if (e.value == "remove-all") {
-                    breakpoints.forEach(function(bp){
-                        clearBreakpoint(bp);
-                    });
+                    for (var i = breakpoints.length - 1; i >= 0; i--) {
+                        clearBreakpoint(breakpoints[i]);
+                    }
                 }
                 else if (e.value == "deactivate") {
                     if (enableBreakpoints)
@@ -288,16 +288,16 @@ define(function(require, exports, module) {
             });
             
             btnBpRemove.on("click", function(){
-                breakpoints.forEach(function(bp){
-                    clearBreakpoint(bp);
-                });
+                for (var i = breakpoints.length - 1; i >= 0; i--) {
+                    clearBreakpoint(breakpoints[i]);
+                }
             });
         }
         
         /***** Helper Functions *****/
         
         function toggleBreakpoints(force){
-            enableBreakpoints = force !== undefined
+            var enable = force !== undefined
                 ? force
                 : !enableBreakpoints;
             
@@ -312,7 +312,7 @@ define(function(require, exports, module) {
                 );
             }
             
-            if (enableBreakpoints)
+            if (enable)
                 activateAll();
             else
                 deactivateAll();
