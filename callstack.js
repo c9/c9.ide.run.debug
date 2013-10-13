@@ -227,9 +227,11 @@ define(function(require, exports, module) {
             }
             
             // Highlight frame in Ace and Open the file
-            if (frame)
-                debug.showDebugFrame(frame);
-            // updateMarker(frame);
+            if (frame) {
+                debug.showDebugFrame(frame, function(){
+                    updateMarker(frame);
+                });
+            }
                 
             emit("frameActivate", { frame : activeFrame });
             debug.activeFrame = activeFrame;

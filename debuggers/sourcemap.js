@@ -196,12 +196,13 @@ define(function(require, exports, module) {
                         
                         updateFrames();
                     }
-                    else {
+                    else if (source) {
                         e.state.value = source;
                     }
                     
                     tabs.open(e.state, function(err, tab, done){
-                        if (err) return; //@todo util.alert??
+                        if (err) return e.callback(err); //@todo util.alert??
+                        e.callback(null, tab);
                     });
                 });
                 

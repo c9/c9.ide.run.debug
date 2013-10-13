@@ -355,25 +355,25 @@ define(function(require, exports, module) {
                 delete debuggers[type];
         }
         
-        function showDebugFrame(frame) {
+        function showDebugFrame(frame, callback) {
             openFile({
                 scriptId : frame.sourceId,
                 line     : frame.line - 1,
                 column   : frame.column,
                 text     : frame.name,
                 path     : frame.path
-            });
+            }, callback);
         }
     
-        function showDebugFile(script, row, column) {
+        function showDebugFile(script, row, column, callback) {
             openFile({
                 scriptId : script.id,
                 line     : row, 
                 column   : column
-            });
+            }, callback);
         }
     
-        function openFile(options) {
+        function openFile(options, callback) {
             var row      = options.line + 1;
             var column   = options.column;
             var path     = options.path;
@@ -429,7 +429,8 @@ define(function(require, exports, module) {
             if (emit("beforeOpen", {
                 source    : source,
                 state     : state,
-                generated : options.generated
+                generated : options.generated,
+                callback  : callback || function(){}
             }) === false)
                 return;
 
@@ -446,6 +447,7 @@ define(function(require, exports, module) {
                             //     column : column
                             // });
                             done();
+                            callback && callback(null, tab);
                         }
                         
                         if (emit("open", {
