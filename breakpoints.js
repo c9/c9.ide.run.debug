@@ -541,45 +541,6 @@ define(function(require, exports, module) {
             session.session._emit("changeBreakpoint", {});
         }
 
-//        function updateBreakpointModel(session) {
-//            updating = true;
-//            var path = session.c9doc.getNode().getAttribute("path");
-//            var breakpoints = session.$breakpoints;
-//            var caption = path;
-//            var tofind = ide.davPrefix;
-//            if (path.indexOf(tofind) == 0)
-//                caption = path.substring(tofind.length + 1);
-//    
-//            var bpList = model.queryNodes("breakpoint[@path=" + util.escapeXpathString(path) + "]");
-//            for (var i = bpList.length; i--; ) {
-//                apf.xmldb.removeNode(bpList[i]);
-//            }
-//    
-//            breakpoints.forEach(function(breakpoint, row) {
-//                if (!breakpoint)
-//                    return;
-//                model.appendXml(apf.n("<breakpoint/>")
-//                    .attr("path", path)
-//                    .attr("line", row)
-//                    .attr("text", caption + ":" + (+row + 1))
-//                    .attr("lineoffset", 0)
-//                    .attr("content", session.getLine(row))
-//                    .attr("enabled", breakpoint.indexOf("disabled") == -1)
-//                    .node()
-//                );
-//            });
-//    
-//            updating = false;
-//        }
-
-//        function updateOpenFiles() {
-//            tabs.getTabs().forEach(function(tab){
-//                if (tab.editor.type == "ace") {
-//                    updateDocument(tab.document);
-//                }
-//            });
-//        }
-
         function updateBreakpoint(breakpoint, action){
             //This can be optimized, currently rereading everything
             var tab = tabs.findTab(breakpoint.path);
@@ -594,6 +555,7 @@ define(function(require, exports, module) {
                 updateBreakpointAtDebugger(breakpoint, action);
             
             changed = true;
+            settings.save();
         }
         
         /***** Methods *****/
@@ -713,7 +675,7 @@ define(function(require, exports, module) {
             if (bp instanceof Breakpoint) {
                 var loc = bp.actual || bp;
                 path   = bp.path;
-                line   = loc.line;
+                line   = loc.line - 1;
                 column = loc.column;
             }
             else if (typeof bp == "object") {
@@ -723,7 +685,7 @@ define(function(require, exports, module) {
                 path = bp;
             }
             
-            if (isNaN(line))    line    = null;
+            if (isNaN(line))   line   = null;
             if (isNaN(column)) column = null;
             
             debug.openFile({
