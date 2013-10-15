@@ -164,7 +164,7 @@ define(function(require, exports, module) {
                 });
             });
             
-            datagrid.on("beforeEdit", function(e){
+            datagrid.on("before.edit", function(e){
                 // Don't allow setting the value of scopes
                 if (datagrid.selected.localName == "scope")
                     return false;
@@ -174,7 +174,7 @@ define(function(require, exports, module) {
                     return false;
             });
             
-            datagrid.on("editorCreate", function(e){
+            datagrid.on("editor.create", function(e){
                 var tb = e.editor;
             });
         }
