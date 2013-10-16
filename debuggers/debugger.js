@@ -467,8 +467,13 @@ define(function(require, exports, module) {
             });
         }
         
-        function debug(process, callback){
+        function debug(process, reconnect, callback){
             var err;
+            
+            if (typeof reconnect == "function") {
+                callback  = reconnect;
+                reconnect = null;
+            }
             
             var runner = process.runner;
             if (runner instanceof Array)
@@ -505,13 +510,12 @@ define(function(require, exports, module) {
             else {
                 process.on("started", function(){
                     running = run.STARTED;
-                    // updateButtonState(state);
                 }, plugin);
             }
+            
             process.on("stopped", function(){
                 running = run.STOPPED;
                 stop();
-                // updateButtonState("disconnected");
             }, plugin);
             
             // Hook for plugins to delay or cancel debugger attaching
@@ -523,7 +527,7 @@ define(function(require, exports, module) {
                 return;
             
             // Attach the debugger to the running process
-            dbg.attach(runner, emit("getBreakpoints"), callback);
+            dbg.attach(runner, emit("getBreakpoints"), reconnect, callback);
         }
         
         function stop(){

@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "c9", "debugger", "net"];
+    main.consumes = ["Plugin", "debugger", "net", "proc"];
     main.provides = ["v8debugger"];
     return main;
     
     function main(options, imports, register) {
-        var c9       = imports.c9;
         var Plugin   = imports.Plugin;
         var net      = imports.net;
+        var proc     = imports.proc;
         var debug    = imports["debugger"];
         
         var Frame           = require("../../data/frame");
@@ -460,9 +460,14 @@ define(function(require, exports, module) {
     
         /***** Socket *****/
         
-        function Socket(port) {
+        function Socket(port, reconnect) {
             var emit    = this.getEmitter();
             var state, stream;
+            
+            var PROXY = require("text!../netproxy.js")
+                .replace(/\/\/.*/g, "")
+                .replace(/[\n\r]/g, "")
+                .replace(/\{PORT\}/, port);
             
             this.__defineGetter__("state", function(){ return state; });
             
@@ -470,10 +475,36 @@ define(function(require, exports, module) {
                 if (state) 
                     return;
                 
-                net.connect(port, {}, function(err, s){
-                    if (err) {
+                if (reconnect)
+                    connectToPort();
+                else {
+                    proc.spawn("node", {
+                        args: ["-e", PROXY]
+                    }, function(err, process){
+                        if (err)
+                            return emit("error", err);
+                        
+                        process.stdout.once("data", function(data){
+                            connectToPort();
+                        });
+                            
+                        process.stderr.once("data", function(data){
+                            // Perhaps there's alrady a proxy running
+                            connectToPort();
+                        });
+                        
+                        // Make sure the process keeps running
+                        process.unref();
+                    });
+                }
+                
+                state = "connecting";
+            }
+            
+            function connectToPort(){
+                net.connect(port + 1, {}, function(err, s){
+                    if (err)
                         return emit("error", err);
-                    }
                     
                     stream = s;
                     stream.on("data", function(data) {
@@ -486,12 +517,13 @@ define(function(require, exports, module) {
                         emit("error", err);
                     });
                     
+                    if (reconnect)
+                        emit("data", "");
+                    
                     state = "connected";
                     emit("connect");
                 });
-                
-                state = "connecting";
-            };
+            }
         
             function close(err) {
                 stream && stream.end();
@@ -527,11 +559,11 @@ define(function(require, exports, module) {
         
         /***** Methods *****/
         
-        function attach(runner, breakpoints, callback) {
+        function attach(runner, breakpoints, state, callback) {
             if (v8ds)
                 v8ds.detach();
             
-            v8ds = new V8DebuggerService(new Socket(runner.debugport));
+            v8ds = new V8DebuggerService(new Socket(runner.debugport, state));
             v8ds.attach(0, function(err){
                 if (err) return callback(err);
 
