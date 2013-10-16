@@ -1,12 +1,11 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "debugger", "net", "proc"];
+    main.consumes = ["Plugin", "debugger", "ext"];
     main.provides = ["v8debugger"];
     return main;
     
     function main(options, imports, register) {
         var Plugin   = imports.Plugin;
-        var net      = imports.net;
-        var proc     = imports.proc;
+        var ext      = imports.ext;
         var debug    = imports["debugger"];
         
         var Frame           = require("../../data/frame");
@@ -464,76 +463,70 @@ define(function(require, exports, module) {
             var emit    = this.getEmitter();
             var state, stream;
             
-            var PROXY = require("text!../netproxy.js")
-                .replace(/\/\/.*/g, "")
-                .replace(/[\n\r]/g, "")
-                .replace(/\{PORT\}/, port);
+            var SERVICE = require("text!../netservice.js");
+            var net;
             
             this.__defineGetter__("state", function(){ return state; });
             
             function connect() {
-                if (state) 
+                if (state === "connected") 
                     return;
                 
-                if (reconnect)
-                    connectToPort();
-                else {
-                    proc.spawn("node", {
-                        args: ["-e", PROXY]
-                    }, function(err, process){
+                if (net) {
+                    net.connect(port, function(err, meta){
+                        stream = meta.stream;
+                        
+                        stream.on("data", function(data) {
+                            emit("data", data);
+                        });
+                        stream.on("end", function(err){
+                            emit("end", err);
+                        });
+                        stream.on("error", function(err){
+                            emit("error", err);
+                        });
+                        
+                        if (reconnect)
+                            emit("data", "");
+                        
+                        state = "connected";
+                        emit("connect");
+                    });
+                }
+                else if (reconnect) {
+                    ext.fetchRemoteApi("debugger", function(err, api){
                         if (err)
                             return emit("error", err);
                         
-                        process.stdout.once("data", function(data){
-                            connectToPort();
-                        });
-                            
-                        process.stderr.once("data", function(data){
-                            // Perhaps there's alrady a proxy running
-                            connectToPort();
-                        });
+                        net = api;
+                        connect();
+                    });
+                }
+                else {
+                    ext.loadRemotePlugin("debugger", {
+                        code     : SERVICE,
+                        redefine : true
+                    }, function(err, api){
+                        if (err)
+                            return emit("error", err);
                         
-                        // Make sure the process keeps running
-                        process.unref();
+                        net = api;
+                        connect();
                     });
                 }
                 
                 state = "connecting";
             }
             
-            function connectToPort(){
-                net.connect(port + 1, {}, function(err, s){
-                    if (err)
-                        return emit("error", err);
-                    
-                    stream = s;
-                    stream.on("data", function(data) {
-                        emit("data", data);
-                    });
-                    stream.on("end", function(err){
-                        emit("end", err);
-                    });
-                    stream.on("error", function(err){
-                        emit("error", err);
-                    });
-                    
-                    if (reconnect)
-                        emit("data", "");
-                    
-                    state = "connected";
-                    emit("connect");
-                });
-            }
-        
             function close(err) {
-                stream && stream.end();
+                net && net.close();
                 state = null;
                 emit("end", err);
-            };
+            }
         
             function send(msg) {
-                stream.write(msg, "utf8");
-            };
+                net && net.write(msg, "utf8");
+            }
 
             // Backward compatibility
             this.addEventListener  = this.on;
