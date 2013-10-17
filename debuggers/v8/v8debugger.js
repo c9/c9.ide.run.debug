@@ -186,7 +186,7 @@ define(function(require, exports, module) {
             
             // @todo this is probably a timing issue
             if (frame) {
-                var test = {path: frame.path, line: 0};
+                var test = { path: frame.path, line: frame.line };
                 for (var bpi, i = 0, l = breakpoints.length; i < l; i++) {
                     if ((bpi = breakpoints[i]).equals(test)) {
                         // If it's not enabled let's continue
