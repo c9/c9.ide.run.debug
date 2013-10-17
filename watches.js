@@ -110,7 +110,7 @@ define(function(require, exports, module) {
                 
                 // If we've filled a new watch remove the new attribute
                 if (isNew) {
-                    apf.xmldb.setAttribute(node, "new", "");
+                    apf.xmldb.removeAttribute(node, "new");
                     
                     var newNode = apf.getXml("<variable new='new' name='' "
                         + "value='' ref='new" + (count++) + "' />");
@@ -127,7 +127,7 @@ define(function(require, exports, module) {
                 else {
                     variable = findVariable(node, null, parents);
                     
-                    if (changed == value) {
+                    if (changed == "value") {
                         oldValue = variable.value
                         variable.value = value;
                     }
@@ -176,6 +176,9 @@ define(function(require, exports, module) {
         /***** Methods *****/
         
         function setWatch(variable, value, isNew, oldValue, node, parents){
+            if (!dbg)
+                return; // We've apparently already disconnected.
+            
             // Editing watches in the current or global frame
             // Execute expression
             if (isNew) {
