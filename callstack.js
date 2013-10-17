@@ -57,7 +57,7 @@ define(function(require, exports, module) {
                 function setFrames(frames, frame, force) {
                     // Load frames into the callstack and if the frames 
                     // are completely reloaded, set active frame
-                    if (loadFrames(frames) && (force || 
+                    if (loadFrames(frames) && (force || !activeFrame ||
                       activeFrame == frame || activeFrame == frames[0])) {
                           
                         // Set the active frame
