@@ -138,29 +138,30 @@ define(function(require, exports, module) {
                 
                 variable.value = value;
                 
+                function undo(){
+                    variable.value = oldValue;
+                    apf.xmldb.setAttribute(node, "value", oldValue);
+                }
+                
                 // Set new value
-                dbg.setVariable(e.variable, e.parents, 
-                  e.value, debug.activeFrame, function(err){
+                dbg.setVariable(variable, parents, 
+                  value, debug.activeFrame, function(err){
                     if (err) 
                         return e.undo();
                         
                     // Reload properties of the variable
-                    dbg.getProperties(e.variable, function(err, properties){
-                        updateVariable(e.variable, properties, e.node);
+                    dbg.getProperties(variable, function(err, properties){
+                        updateVariable(variable, properties, node);
+                        
+                        emit("variableEdit", {
+                            value    : value,
+                            oldValue : oldValue,
+                            node     : node,
+                            variable : variable,
+                            frame    : activeFrame,
+                            parents  : parents
+                        });
                     });
-                });
-                
-                emit("variableEdit", {
-                    value    : value,
-                    oldValue : oldValue,
-                    node     : node,
-                    variable : variable,
-                    frame    : activeFrame,
-                    parents  : parents,
-                    undo     : function(){
-                        variable.value = oldValue;
-                        apf.xmldb.setAttribute(node, "value", oldValue);
-                    }
                 });
             });
             
