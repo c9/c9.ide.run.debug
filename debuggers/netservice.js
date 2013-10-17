@@ -17,7 +17,6 @@ module.exports = function (vfs, register) {
             client.setEncoding("utf8")
             
             client.on("data", function(data){
-                console.log("RECEIVING:", data)
                 stream.emit("data", data);
             });
             
