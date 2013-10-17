@@ -179,15 +179,15 @@ define(function(require, exports, module) {
             // Editing watches in the current or global frame
             // Execute expression
             if (isNew) {
-                dbg.evaluate(name, debug.activeFrame, 
-                  !debug.activeFrame, true, function(err, variable){
+                dbg.evaluate(variable.name, debug.activeFrame, 
+                  !debug.activeFrame, true, function(err, serverVariable){
                     if (err) {
                         variable.value = err.message;
                         updateVariable(variable, [], node, true);
                         return;
                     }
                         
-                    variable.json = variable.json;
+                    variable.json = serverVariable.json;
 
                     updateVariable(variable, 
                         variable.properties || [], node);
