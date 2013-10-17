@@ -790,9 +790,10 @@ define(function(require, exports, module) {
              * 
              * *N.B.: There can only be one debugger attached at the same time.*
              * 
-             * @param {Object}   runnner        The runner as specified in {@link run#run}.
-             * @param {Function} callback       Called when the debugger is attached.
-             * @param {Error}    callback.err   Error object with information on an error if one occured.
+             * @param {run.Process} process        The process that will be debugger.
+             * @param {Boolean}     [reconnect]    Specifies whether the debugger should reconnect to an existing debug session.
+             * @param {Function}    callback       Called when the debugger is attached.
+             * @param {Error}       callback.err   Error object with information on an error if one occured.
              */
             debug : debug,
             
