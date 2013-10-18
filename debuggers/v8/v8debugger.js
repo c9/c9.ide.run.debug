@@ -737,7 +737,10 @@ define(function(require, exports, module) {
         };
         
         function evaluate(expression, frame, global, disableBreak, callback) {
-            v8dbg.evaluate(expression, frame, global, disableBreak, function(body, refs, error){
+            var frameIndex = frame && typeof frame == "object" ? frame.index : frame;
+            
+            v8dbg.evaluate(expression, frameIndex, global, 
+              disableBreak, function(body, refs, error){
                 var name = expression.trim();
                 if (error) {
                     var err = new Error(error.message);
@@ -852,7 +855,7 @@ define(function(require, exports, module) {
                 variable.children   = info.children == "true";
                 variable.type       = info.type;
                 variable.ref        = info.ref;
-                variable.value      = formatType(info);
+                variable.value      = info.value;
                 variable.properties = [];
                 
                 callback(err, info);

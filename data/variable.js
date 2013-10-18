@@ -62,8 +62,10 @@ define(function(require, exports, module) {
         
         var vars = this.data.properties || [];
         for (var i = 0, l = vars.length; i < l; i++) {
-            if (vars[i].ref == ref || vars[i].name == name)
+            if (vars[i].ref == ref || vars[i].name == name) {
+                parents && parents.push(this);
                 return vars[i];
+            }
             else if (vars[i].properties) {
                 var result = vars[i].findVariable(ref, name, parents);
                 if (result) {

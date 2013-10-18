@@ -125,7 +125,7 @@ define(function(require, exports, module) {
                     watches.push(variable);
                 }
                 else {
-                    variable = findVariable(node, null, parents);
+                    variable = findVariable(node, parents);
                     
                     if (changed == "value") {
                         oldValue = variable.value
