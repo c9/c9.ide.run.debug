@@ -442,12 +442,14 @@ define(function(require, exports, module) {
             if (drawn) {
                 menu.enable();
                 button.enable();
+                datagrid.enable();
             }
         });
         plugin.on("disable", function(){
             if (drawn) {
                 menu.disable();
                 button.disable();
+                datagrid.disable();
             }
         });
         plugin.on("unload", function(){

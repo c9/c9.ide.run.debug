@@ -166,6 +166,9 @@ define(function(require, exports, module) {
             });
             
             datagrid.on("before.edit", function(e){
+                if (!plugin.enabled)
+                    return false;
+                
                 // Don't allow setting the value of scopes
                 if (datagrid.selected.localName == "scope")
                     return false;
@@ -303,10 +306,10 @@ define(function(require, exports, module) {
             plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
-            
+            drawn && datagrid.enable();
         });
         plugin.on("disable", function(){
-            
+            drawn && datagrid.disable();
         });
         plugin.on("unload", function(){
             loaded = false;

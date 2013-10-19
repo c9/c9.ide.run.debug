@@ -295,6 +295,7 @@
             
             .blackdg .empty{
                 padding: 5px 5px 8px 5px;
+                cursor : default;
             }
     
             /*.blackdg {*/

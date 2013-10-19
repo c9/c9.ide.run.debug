@@ -141,6 +141,9 @@ define(function(require, exports, module) {
             });
             
             datagrid.on("before.edit", function(e){
+                if (!plugin.enabled)
+                    return false;
+                
                 // Don't allow setting the value of new variables
                 if (e.heading.caption == "Value" 
                   && datagrid.selected.getAttribute("ref").substr(0,3) == "new") {
@@ -165,6 +168,12 @@ define(function(require, exports, module) {
                         setTimeout(function(){ justEdited = false }, 500);
                     }
                 });
+            });
+            
+            datagrid.on("keydown", function(e){
+                if (String.fromCharCode(e.keyCode).match(/\w/) 
+                  && datagrid.$selected && !justEdited)
+                    datagrid.$dblclick(datagrid.$selected.firstChild)
             });
             
             datagrid.on("keyup", function(e){
@@ -322,10 +331,10 @@ define(function(require, exports, module) {
             plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
-            
+            drawn && datagrid.enable();
         });
         plugin.on("disable", function(){
-            
+            drawn && datagrid.disable();
         });
         plugin.on("unload", function(){
             loaded = false;
