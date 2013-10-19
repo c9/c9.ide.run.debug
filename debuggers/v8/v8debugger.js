@@ -870,8 +870,8 @@ define(function(require, exports, module) {
             }
             
             // If it's a local variable set it directly
-            if (parents.length == 1)
-                setLocalVariable(variable, value, scopeNumber, frameIndex, callback);
+            if (parents.length == (typeof scopeNumber == "number" ? 1 : 0))
+                setLocalVariable(variable, value, scopeNumber || 0, frameIndex, callback);
             // Otherwise set a variable or property
             else
                 setAnyVariable(variable, parents[0], value, callback);
