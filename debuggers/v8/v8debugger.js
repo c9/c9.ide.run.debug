@@ -830,27 +830,6 @@ define(function(require, exports, module) {
             });
         }
         
-        // DebuggerAgent.nodeVersionHasSetVariableValue = function(version) {
-        //   var match = /^v(\d+)\.(\d+)\.(\d+)$/.exec(version);
-        //   if (!match) return false;
-        //   return match[1] > 0 || // v1+
-        //     (match[2] == 10 && match[3] >= 12) || // v0.10.12+
-        //     (match[2] == 11 && match[3] >= 2) ||  // v0.11.2+
-        //     (match[2] >= 12); // v0.12+
-        // };
-        
-        // this._debuggerClient.evaluateGlobal('process.version', function(err, version) {
-        //   if (!DebuggerAgent.nodeVersionHasSetVariableValue(version)) {
-        //     done(
-        //       'V8 engine in node version ' + version +
-        //       ' does not support setting variable value from debugger.\n' +
-        //       ' Please upgrade to version v0.10.12 (stable) or v0.11.2 (unstable)' +
-        //       ' or newer.');
-        //   } else {
-        //     this._doSetVariableValue(params, done);
-        //   }
-        // }.bind(this));
-        
         function setVariable(variable, parents, value, frame, callback){
             // Get variable name
             var names = [], scopeNumber, frameIndex = frame.index;
@@ -896,27 +875,6 @@ define(function(require, exports, module) {
             // Otherwise set a variable or property
             else
                 setAnyVariable(variable, parents[0], value, callback);
-            
-            // var name = names.shift() + (names.length
-            //     ? '["' + names.join('"]["') + '"]'
-            //     : "");
-            
-            // // Define expression
-            // var expression = name + " = " + value;
-            
-            // // Execute expression to set variable
-            // evaluate(expression, frameIndex, null, true, function(err, info){ 
-            //     if (err)
-            //         return callback(err);
-                
-            //     variable.children   = info.children == "true";
-            //     variable.type       = info.type;
-            //     variable.ref        = info.ref;
-            //     variable.value      = info.value;
-            //     variable.properties = [];
-                
-            //     callback(err, info);
-            // });
         }
         
         function setLocalVariable(variable, value, scopeNumber, frameIndex, callback) {
