@@ -12,6 +12,7 @@ define(function(require, exports, module) {
         var debug      = imports.debugger;
         var util       = imports.util;
         
+        var keys     = require("ace/lib/keys");
         var markup   = require("text!./watches.xml");
         var Variable = require("./data/variable");
         
@@ -171,7 +172,7 @@ define(function(require, exports, module) {
             });
             
             datagrid.on("keydown", function(e){
-                if (String.fromCharCode(e.keyCode).match(/\w/) 
+                if (keys[e.keyCode] && keys[e.keyCode].length == 1
                   && datagrid.$selected && !justEdited)
                     datagrid.$dblclick(datagrid.$selected.firstChild)
             });
