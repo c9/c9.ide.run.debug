@@ -101,10 +101,10 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         msg.arguments = {
             inlineRefs: !!inlineRefs
         };
-        if (fromFrame)
+        if (typeof fromFrame == "number")
             msg.arguments.fromFrame = fromFrame;
 
-        if (toFrame)
+        if (typeof toFrame == "number")
             msg.arguments.toFrame = toFrame;
 
         if (typeof(bottom) === "boolean")
@@ -152,18 +152,16 @@ var V8Debugger = module.exports = function(tabId, v8service) {
 
         var msg = new V8Message("request");
         msg.command = "evaluate";
-        msg.arguments = {
-            expression : expression
-        };
-        if (frame) {
+        msg.arguments = { expression : expression };
+        
+        if (typeof frame == "number")
             msg.arguments.frame = frame;
-        }
-        if (global) {
+        
+        if (global)
             msg.arguments.global = global;
-        }
-        if (disableBreak) {
+        
+        if (disableBreak)
             msg.arguments.disable_break = disableBreak;
-        }
 
         /* evaluation always take place on one single frame, but we need additional variables
          * that are not there, because the v8 debugger only passes variables to the frame that
@@ -201,6 +199,27 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         });
     };
     
+    this.simpleevaluate = function(expression, frame, global, additionalContext, callback) {
+        var _self = this;
+
+        var msg = new V8Message("request");
+        msg.command = "evaluate";
+        msg.arguments = { expression : expression };
+        
+        if (typeof frame == "number")
+            msg.arguments.frame = frame;
+        
+        if (global)
+            msg.arguments.global = global;
+        
+        msg.arguments.disable_break = true;
+        
+        if (additionalContext)
+            msg.arguments.additional_context = additionalContext;
+            
+        _self.$send(msg, callback);
+    }
+    
     this.setexceptionbreak = function(type, enabled, callback) {
         var msg = new V8Message("request");
         msg.command = "setexceptionbreak";
@@ -208,6 +227,32 @@ var V8Debugger = module.exports = function(tabId, v8service) {
             type: type,
             enabled: enabled
         };
+        this.$send(msg, callback);
+    };
+    
+    this.setvariablevalue = function(name, type, scopeNumber, frameIndex, callback) {
+        var msg = new V8Message("request");
+        msg.command = "setVariableValue";
+        
+        var value;
+        if (type == "undefined")
+            value = { type: type };
+        else if (type == "null")
+            value = { value: null };
+        else if (type.charAt(0) == "\"")
+            value = { value: JSON.parse(type) };
+        else
+            value = { value: type };
+        
+        msg.arguments = {
+            name: name,
+            scope: {
+              number: scopeNumber,
+              frameNumber: frameIndex
+            },
+            newValue: value
+        };
+
         this.$send(msg, callback);
     };
 
@@ -222,13 +267,13 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         };
 
         if (column)
-            msg.column = column;
+            msg.arguments.column = column;
 
         if (condition)
-            msg.condition = condition;
+            msg.arguments.condition = condition;
 
         if (ignoreCount)
-            msg.ignoreCount = ignoreCount;
+            msg.arguments.ignoreCount = ignoreCount;
 
         this.$send(msg, callback);
     };
@@ -242,10 +287,10 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         };
 
         if (condition)
-            msg.condition = condition;
+            msg.arguments.condition = condition;
 
         if (ignoreCount)
-            msg.ignoreCount = ignoreCount;
+            msg.arguments.ignoreCount = ignoreCount;
 
         this.$send(msg, callback);
     };
@@ -287,8 +332,6 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         if (callback)
             this.$pending[msg.seq] = callback;
             
-        msg.runner = "node";
-        
         this.$service.debuggerCommand(this.tabId, msg.stringify());
     };
 

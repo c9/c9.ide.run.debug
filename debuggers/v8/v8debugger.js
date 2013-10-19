@@ -830,35 +830,131 @@ define(function(require, exports, module) {
             });
         }
         
+        // DebuggerAgent.nodeVersionHasSetVariableValue = function(version) {
+        //   var match = /^v(\d+)\.(\d+)\.(\d+)$/.exec(version);
+        //   if (!match) return false;
+        //   return match[1] > 0 || // v1+
+        //     (match[2] == 10 && match[3] >= 12) || // v0.10.12+
+        //     (match[2] == 11 && match[3] >= 2) ||  // v0.11.2+
+        //     (match[2] >= 12); // v0.12+
+        // };
+        
+        // this._debuggerClient.evaluateGlobal('process.version', function(err, version) {
+        //   if (!DebuggerAgent.nodeVersionHasSetVariableValue(version)) {
+        //     done(
+        //       'V8 engine in node version ' + version +
+        //       ' does not support setting variable value from debugger.\n' +
+        //       ' Please upgrade to version v0.10.12 (stable) or v0.11.2 (unstable)' +
+        //       ' or newer.');
+        //   } else {
+        //     this._doSetVariableValue(params, done);
+        //   }
+        // }.bind(this));
+        
         function setVariable(variable, parents, value, frame, callback){
             // Get variable name
-            var names = [];
+            var names = [], scopeNumber, frameIndex = frame.index;
             parents.reverse().forEach(function(p){
                 // Assuming scopes are accessible
                 if (p.tagName == "variable")
                     names.push(p.name.replace(/"/g, '\\"'));
+                else if (p.tagName == "scope")
+                    scopeNumber = p.index;
             });
             names.push(variable.name);
             
-            var name = names.shift() + (names.length
-                ? '["' + names.join('"]["') + '"]'
-                : "");
-            
-            // Define expression
-            var expression = name + " = " + value + ";";
-            
-            // Execute expression to set variable
-            evaluate(expression, frame, null, true, function(err, info){ 
+            function handler(err, body){
                 if (err)
                     return callback(err);
                 
-                variable.children   = info.children == "true";
-                variable.type       = info.type;
-                variable.ref        = info.ref;
-                variable.value      = info.value;
-                variable.properties = [];
+                variable.value = formatType(body);
+                variable.type = body.type;
+                variable.ref = body.handle;
+                variable.properties = body.properties;
+                variable.children = (body.properties || "").length ? true : false;
+                    
+//              @todo - and make this consistent with getProperties
+//                if (body.constructorFunction)
+//                    value.contructor = body.constructorFunction.ref;
+//                if (body.prototypeObject)
+//                    value.prototype = body.prototypeObject.ref;
                 
-                callback(err, info);
+                if (variable.children) {
+                    lookup(body.properties, false, function(err, properties){
+                        variable.properties = properties;
+                        callback(null, variable);
+                    });
+                }
+                else {
+                    callback(null, variable);
+                }
+            }
+            
+            // If it's a local variable set it directly
+            if (parents.length == 1)
+                setLocalVariable(variable, value, scopeNumber, frameIndex, callback);
+            // Otherwise set a variable or property
+            else
+                setAnyVariable(variable, parents[0], value, callback);
+            
+            // var name = names.shift() + (names.length
+            //     ? '["' + names.join('"]["') + '"]'
+            //     : "");
+            
+            // // Define expression
+            // var expression = name + " = " + value;
+            
+            // // Execute expression to set variable
+            // evaluate(expression, frameIndex, null, true, function(err, info){ 
+            //     if (err)
+            //         return callback(err);
+                
+            //     variable.children   = info.children == "true";
+            //     variable.type       = info.type;
+            //     variable.ref        = info.ref;
+            //     variable.value      = info.value;
+            //     variable.properties = [];
+                
+            //     callback(err, info);
+            // });
+        }
+        
+        function setLocalVariable(variable, value, scopeNumber, frameIndex, callback) {
+            v8dbg.setvariablevalue(variable.name, value, scopeNumber, frameIndex, 
+              function(body, refs, error){
+                // lookup([variable.ref], false, function(err, properties){
+                //     variable.properties = properties;
+                //     callback(null, variable);
+                // });
+                
+                if (error) {
+                    var err = new Error(error.message);
+                    err.name  = error.name;
+                    err.stack = error.stack;
+                    return callback(err);
+                }
+                
+                callback(null, body.newValue);
+            });
+        }
+        
+        function setAnyVariable(variable, parent, value, callback){
+            var expression = "(function(a, b) { this[a] = b; })"
+                + ".call(__cloud9_debugger_self__, \""
+                + variable.name + "\", " + value + ")";
+            
+            v8dbg.simpleevaluate(expression, null, true, [{
+                name   : "__cloud9_debugger_self__",
+                handle : parent.ref
+            }], function(body, refs, error){
+                if (error) {
+                    var err = new Error(error.message);
+                    err.name  = error.name;
+                    err.stack = error.stack;
+                    return callback(err);
+                }
+                
+                callback(null, body);
             })
         }
         
