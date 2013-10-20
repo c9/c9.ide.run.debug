@@ -917,6 +917,18 @@ define(function(require, exports, module) {
             })
         }
         
+        function serializeVariable(variable, callback){
+            var expr = "(function(fn){ return fn.toString() })"
+                + "(__cloud9_debugger_self__)";
+                
+            v8dbg.simpleevaluate(expr, null, true, [{
+                name   : "__cloud9_debugger_self__",
+                handle : variable.ref
+            }], function(body, refs, error){
+                callback(body.value);
+            });
+        }
+        
         function setBreakBehavior(type, enabled, callback){
             breakOnExceptions = enabled ? type == "all" : false;
             breakOnUncaughtExceptions = enabled ? type == "uncaught" : false;
@@ -1204,6 +1216,11 @@ define(function(require, exports, module) {
              * @param {Object}              callback.data  Additional debugger specific information.
              */
             setVariable : setVariable,
+            
+            /**
+             * 
+             */
+            serializeVariable : serializeVariable,
             
             /**
              * Defines how the debugger deals with exceptions.
