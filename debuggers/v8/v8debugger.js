@@ -850,7 +850,7 @@ define(function(require, exports, module) {
                 variable.value = formatType(body);
                 variable.type = body.type;
                 variable.ref = body.handle;
-                variable.properties = body.properties;
+                variable.properties = body.properties || [];
                 variable.children = (body.properties || "").length ? true : false;
                     
 //              @todo - and make this consistent with getProperties
@@ -872,10 +872,10 @@ define(function(require, exports, module) {
             
             // If it's a local variable set it directly
             if (parents.length == (typeof scopeNumber == "number" ? 1 : 0))
-                setLocalVariable(variable, value, scopeNumber || 0, frameIndex, callback);
+                setLocalVariable(variable, value, scopeNumber || 0, frameIndex, handler);
             // Otherwise set a variable or property
             else
-                setAnyVariable(variable, parents[0], value, callback);
+                setAnyVariable(variable, parents[0], value, handler);
         }
         
         function setLocalVariable(variable, value, scopeNumber, frameIndex, callback) {

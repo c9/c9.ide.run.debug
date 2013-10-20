@@ -150,8 +150,8 @@ define(function(require, exports, module) {
                         return e.undo();
                         
                     // Reload properties of the variable
-                    dbg.getProperties(variable, function(err, properties){
-                        updateVariable(variable, properties, node);
+                    // dbg.getProperties(variable, function(err, properties){
+                        updateVariable(variable, variable.properties, node);
                         
                         emit("variableEdit", {
                             value    : value,
@@ -161,7 +161,7 @@ define(function(require, exports, module) {
                             frame    : activeFrame,
                             parents  : parents
                         });
-                    });
+                    // });
                 });
             });
             
@@ -189,8 +189,9 @@ define(function(require, exports, module) {
             if (frame == activeFrame)
                 return;
 
-            if (!frame)
+            if (!frame) {
                 model.clear();
+            }
             else {
                 if (cached[frame.id])
                     model.load(cached[frame.id]);
@@ -267,6 +268,7 @@ define(function(require, exports, module) {
             // Update xml node
             node.setAttribute("ref", variable.ref);
             node.setAttribute("value", variable.value);
+            node.setAttribute("children", variable.children ? "true" : "false");
             apf.xmldb.setAttribute(node, "type", variable.type);
             
             if (node.childNodes.length 
