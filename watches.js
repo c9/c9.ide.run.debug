@@ -26,6 +26,7 @@ define(function(require, exports, module) {
         
         var count   = 0;
         var watches = [];
+        var dirty   = false;
         var dbg;
         var model, datagrid; // UI Elements
         
@@ -41,6 +42,7 @@ define(function(require, exports, module) {
             // Set and clear the dbg variable
             debug.on("attach", function(e){
                 dbg = e.implementation;
+                updateAll();
             });
             debug.on("detach", function(e){
                 dbg = null;
@@ -57,10 +59,29 @@ define(function(require, exports, module) {
             });
             
             // restore the variables from the IDE settings
-            settings.on("read", function (e) {
-                var watches = settings.getJson("user/watches") || [];
+            settings.on("read", function (e){
+                (settings.getJson("state/watches") || []).forEach(function(name){
+                    watches.push(new Variable({ 
+                        name : name, 
+                        ref  : "fromsettings" + count++ 
+                    }))
+                });
+                
                 model.load("<watches>" + watches.join("") 
-                    + "<variable new='new' name='' value='' ref='new" + (count++) + "'/></watches>");
+                    + "<variable new='new' name='' value='' ref='new" 
+                    + (count++) + "'/></watches>");
+                
+                if (dbg)
+                    updateAll();
+            });
+            
+            settings.on("write", function (e){
+                if (dirty) {
+                    settings.setJson("state/watches", watches.map(function(w){ 
+                        return w.name;
+                    }));
+                    dirty = false;
+                }
             });
         }
 
@@ -124,6 +145,9 @@ define(function(require, exports, module) {
                         ref   : node.getAttribute("ref")
                     });
                     watches.push(variable);
+                    
+                    dirty = true;
+                    settings.save();
                 }
                 else {
                     variable = findVariable(node, parents);
@@ -131,6 +155,9 @@ define(function(require, exports, module) {
                     if (changed == "value") {
                         oldValue = variable.value
                         variable.value = value;
+                        
+                        dirty = true;
+                        settings.save();
                     }
                     else {
                         variable.name = name;
