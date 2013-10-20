@@ -49,8 +49,8 @@ define(function(require, exports, module) {
             });
             debug.on("stateChange", function(e){
                 plugin[e.action]();
-                // if (e.action == "enable")
-                //     updateAll();
+                if (e.action == "enable")
+                    updateAll();
             });
             
             debug.on("framesLoad", function(e){
