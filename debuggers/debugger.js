@@ -190,15 +190,17 @@ define(function(require, exports, module) {
             if (!drawn)
                 return;
             
+            var notConnected = state == "disconnected" || state == "away";
+            
             btnResume.$ext.style.display = state == "stopped" 
                 ? "inline-block" : "none";
-            btnSuspend.$ext.style.display = state == "disconnected" 
+            btnSuspend.$ext.style.display = notConnected 
                 || state != "stopped" ? "inline-block" : "none";
                 
-            btnSuspend.setAttribute("disabled",     state == "disconnected");
-            btnStepOver.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-            btnStepInto.setAttribute("disabled",    state == "disconnected" || state != "stopped");
-            btnStepOut.setAttribute("disabled",     state == "disconnected" || state != "stopped");
+            btnSuspend.setAttribute("disabled",  notConnected);
+            btnStepOver.setAttribute("disabled", notConnected || state != "stopped");
+            btnStepInto.setAttribute("disabled", notConnected || state != "stopped");
+            btnStepOut.setAttribute("disabled",  notConnected || state != "stopped");
         }
         
         function initializeDebugger(){
@@ -515,10 +517,11 @@ define(function(require, exports, module) {
             }
             
             process.on("away", function(){
-                
+                updatePanels("disable", "away");
             });
             
             process.on("back", function(){
+                updatePanels("enable", running);
                 debug(process, true, function(){});
             });
             

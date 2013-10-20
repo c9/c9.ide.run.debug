@@ -49,8 +49,8 @@ define(function(require, exports, module) {
             });
             debug.on("stateChange", function(e){
                 plugin[e.action]();
-                if (e.action == "disable")
-                    updateAll();
+                // if (e.action == "enable")
+                //     updateAll();
             });
             
             debug.on("framesLoad", function(e){
@@ -360,10 +360,10 @@ define(function(require, exports, module) {
             plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
-            drawn && datagrid.enable();
+            
         });
         plugin.on("disable", function(){
-            drawn && datagrid.disable();
+            
         });
         plugin.on("unload", function(){
             loaded = false;

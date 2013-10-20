@@ -273,13 +273,17 @@
             .blackdg .records .row span{
                 overflow : hidden;
             }
+            .blackdgDisabled .records .row span{
+                opacity : 0.5;
+            }
             /*.blackdg .row:nth-child(4n-1) span{*/
             /*    background : rgba(255,255,255,0.05);*/
             /*}*/
             .blackdg .row span.colsel{
                 background : rgba(0,0,0,0.15);
             }
-            .blackdg .records .selected span{
+            .blackdg .records .selected span,
+            .blackdgDisabled .records .selected span{
                 background-color : rgb(56,56,56);
                 vertical-align : top;
             }

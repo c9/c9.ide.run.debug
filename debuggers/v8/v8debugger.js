@@ -538,7 +538,7 @@ define(function(require, exports, module) {
             };
         
             function send(msg) {
-                stream.write(msg, "utf8");
+                stream && stream.write(msg, "utf8");
             };
 
             // Backward compatibility
