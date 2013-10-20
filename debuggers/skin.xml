@@ -399,16 +399,21 @@
                 cursor : pointer;
                 font-family : Arial, Tahoma;
                 font-size : 12px;
-                padding : 2px 0 0 0;
+                padding : 3px 0 0 0;
             }
     
             .listBP .content div{
-                font-family : Courier New;
-                padding : 0 0 0 0;
-                font-size : 12px;
-                white-space : nowrap;
-                overflow : hidden;
-                color      : rgba(255,255,255,0.6);
+                font-family: Monaco;
+                padding: 3px 0 0 0;
+                font-size: 10px;
+                white-space: nowrap;
+                overflow: hidden;
+                color: rgba(157, 189, 30, 1);
+                text-overflow: ellipsis;
+            }
+            
+            .listBP .bpItem:hover .content div{
+                color : #f1f1f1;
             }
     
             .listBP .checkbox {
@@ -449,7 +454,7 @@
                 height              : 19px;
                 position            : absolute;
                 right               : 2px;
-                top                 : 5px;
+                top                 : 3px;
                 background-image    : url(icons/remove_breakpoints.png);
                 background-repeat   : no-repeat;
                 background-position : 0 0;

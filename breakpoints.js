@@ -18,6 +18,8 @@ define(function(require, exports, module) {
         var html       = require("text!./breakpoints.html");
         var Breakpoint = require("./data/breakpoint");
         
+        var basename   = require("path").basename;
+        
         /***** Initialization *****/
         
         var deps   = main.consumes.slice(0, main.consumes.length - 1);
@@ -374,9 +376,7 @@ define(function(require, exports, module) {
                 var enabled   = true;
                 
                 function createBreakpoint(condition){
-                    var caption = path.indexOf(c9.davPrefix) > -1
-                        ? path.substring(path.indexOf(c9.davPrefix) + c9.davPrefix.length)
-                        : path;
+                    var caption = basename(path);
                     var lineContents = session.getLine(line);
                     
                     return setBreakpoint({

@@ -792,7 +792,7 @@ define(function(require, exports, module) {
                         setBreakpoint(null, bp, callback);
                     }
                 });
-                return false;
+                return callback(new Error("Source not available yet. Queuing request."));
             }
 
             v8dbg.setbreakpoint("scriptId", scriptId, line, column, bp.enabled, 
