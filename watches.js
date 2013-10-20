@@ -195,7 +195,8 @@ define(function(require, exports, module) {
                 dbg.evaluate(variable.name, debug.activeFrame, 
                   !debug.activeFrame, true, function(err, serverVariable){
                     if (err) {
-                        variable.value = err.message;
+                        variable.value      = err.message;
+                        variable.properties = null
                         updateVariable(variable, [], node, true);
                         return;
                     }

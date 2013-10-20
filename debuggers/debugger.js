@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Panel", "settings", "ui", "layout", "immediate", "run", "panels", 
-        "tabManager", "commands" //, "quickwatch"
+        "tabManager", "commands", "c9" //, "quickwatch"
     ];
     main.provides = ["debugger"];
     return main;
@@ -10,6 +10,7 @@ define(function(require, exports, module) {
         var Panel     = imports.Panel;
         var settings  = imports.settings;
         var ui        = imports.ui;
+        var c9        = imports.c9;
         var tabs      = imports.tabManager;
         var panels    = imports.panels;
         var commands  = imports.commands;
@@ -512,6 +513,14 @@ define(function(require, exports, module) {
                     running = run.STARTED;
                 }, plugin);
             }
+            
+            process.on("away", function(){
+                
+            });
+            
+            process.on("back", function(){
+                debug(process, true, function(){});
+            });
             
             process.on("stopped", function(){
                 running = run.STOPPED;
