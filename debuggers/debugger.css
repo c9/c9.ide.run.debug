@@ -145,3 +145,6 @@
 .liveinspect .return{
     border-bottom : 0;
 }
+.liveinspect .immediate .null{
+    color : rgb(200,200,200);
+}
