@@ -384,22 +384,25 @@ define(function(require, exports, module) {
             });
             
             if (value.prototypeObject)
-                variable.prototype = new Variable({ 
-                    name : "prototype", 
-                    type : "object",
-                    ref  : value.prototypeObject.ref
+                variable.prototype = new Variable({
+                    tagName : "prototype",
+                    name    : "prototype", 
+                    type    : "object",
+                    ref     : value.prototypeObject.ref
                 });
             if (value.protoObject)
                 variable.proto = new Variable({ 
-                    name : "prototype", 
-                    type : "object",
-                    ref  : value.protoObject.ref
+                    tagName : "proto",
+                    name    : "proto", 
+                    type    : "object",
+                    ref     : value.protoObject.ref
                 });
             if (value.constructorFunction)
-                variable.constructor = new Variable({ 
-                    name : "constructor", 
-                    type : "function",
-                    ref  : value.protoObject.ref
+                variable.constructorFunction = new Variable({ 
+                    tagName : "constructor", 
+                    name    : "constructor", 
+                    type    : "function",
+                    ref     : value.constructorFunction.ref
                 });
             return variable;
         }

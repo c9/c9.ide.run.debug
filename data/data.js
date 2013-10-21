@@ -22,12 +22,13 @@
  */
 define(function(require, exports, module) {
     
-    function Data(props, sets){
-        this.$props = props || [];
-        this.$sets  = sets || [];
+    function Data(props, sets, singletons){
+        this.$props  = props || [];
+        this.$sets   = sets || [];
+        this.$single = singletons || [];
         
         var _self = this;
-        this.$props.concat(this.$sets).forEach(function(prop){
+        this.$props.concat(this.$sets).concat(this.$single).forEach(function(prop){
             _self.__defineGetter__(prop, function(){ 
                 return this.data[prop];
             });
@@ -47,16 +48,23 @@ define(function(require, exports, module) {
                         + apf.escapeXML(_self.data[prop]) + '"');
             });
             
-            if (this.$sets.length) {
-                str += ">";
-                this.$sets.forEach(function(prop){
-                    if (_self.data[prop])
-                        str += _self.data[prop].join("");
-                });
-                str += "</" + this.tagName + ">";
-            }
-            else {
+            if (!this.$sets.length && !this.$single.length)
                  str += " />";
+            else {
+                str += ">";
+                if (this.$sets.length) {
+                    this.$sets.forEach(function(prop){
+                        if (_self.data[prop])
+                            str += _self.data[prop].join("");
+                    });
+                }
+                if (this.$single.length) {
+                    this.$single.forEach(function(prop){
+                        if (_self.data[prop])
+                            str += _self.data[prop].toString();
+                    });
+                }
+                str += "</" + this.tagName + ">";
             }
             
             return str;
