@@ -385,18 +385,25 @@
                 position: relative;
                 background-color: #fafbfc;
                 cursor: default;
-                padding    : 3px;
                 color      : rgba(255,255,255,0.8);
             }
     
             .listBP .bpItem{
                 padding    : 2px 2px 2px 22px;
                 position : relative;
+                border-bottom: 1px solid rgb(41, 41, 41);
+                border-top: 1px solid rgba(71, 71, 71, 0.5);
+            }
+            .listBP .bpItem:first-child{
+                border-top-color : transparent;
+            }
+            .listBP .bpItem:last-child{
+                border-bottom-color : transparent;
             }
             .listBP .bpItem:hover{
                 background-color: #748512;
                 color: #f1f1f1;
-                border-radius : 3px;
+                border-top: 1px solid rgba(255,2552,255, 0.14);
             }
     
             .listBP .content{
