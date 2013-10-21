@@ -126,7 +126,7 @@
 }
 
 .liveinspect {
-    box-shadow: 0 0 13px 0px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 5px 13px 0px rgba(0, 0, 0, 0.7);
     z-index : 100000;
     background-color: rgb(42, 43, 35);
     position: absolute;
@@ -134,8 +134,8 @@
     padding: 1px 6px 1px 1px;
     font-size: 11px;
     font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin : 1px 0 0 -1px;
+    border: 1px solid rgba(235, 255, 0, 0.1);
+    margin : 0 0 0 -1px;
     max-height : 150px;
     overflow : auto;
     max-width : 800px;
