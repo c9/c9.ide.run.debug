@@ -490,7 +490,7 @@ define(function(require, exports, module) {
         function onChangeFrame(frame, silent) {
             activeFrame = frame;
             if (!silent)
-                emit("frameActivate", {frame: frame});
+                emit("frameActivate", { frame: frame });
         }
     
         /***** Socket *****/
@@ -683,14 +683,12 @@ define(function(require, exports, module) {
                     var topFrame = frames[0];
                     if (topFrame)
                         topFrame.istop = true;
-                    onChangeFrame(topFrame, silent);
                 }
                 else {
                     frames = [];
-                    onChangeFrame(null, silent);
                 }
                 
-                emit("getFrames", {frames: frames});
+                emit("getFrames", { frames: frames });
                 callback(null, frames);
             });
         }

@@ -48,9 +48,11 @@ define(function(require, exports, module) {
                 dbg = null;
             });
             debug.on("stateChange", function(e){
-                plugin[e.action]();
-                if (e.action == "enable" && activeFrame)
+                if (!plugin.enabled && e.action == "enable" && activeFrame)
                     debug.activeFrame = activeFrame;
+                    
+                plugin[e.action]();
+                
                 if (e.action == "disable" && e.state != "away")
                     clearFrames();
             });
@@ -291,9 +293,15 @@ define(function(require, exports, module) {
             if (frame.istop) {
                 if (path == framePath) {
                     addMarker(session, "step", row);
-                    
-                    if (scrollToLine)
-                        tab.editor.ace.scrollToLine(row, true, true);
+                    console.log(row);
+                    if (scrollToLine) {
+                        var ace = tab.editor.ace;
+                        var renderer = ace.renderer;
+                        if (row < renderer.getFirstFullyVisibleRow() 
+                          || row > renderer.getLastFullyVisibleRow()) {
+                            ace.scrollToLine(row, true, true);
+                        }
+                    }
                 }
             }
             else {
