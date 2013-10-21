@@ -516,19 +516,23 @@ define(function(require, exports, module) {
                 }, plugin);
             }
             
-            process.on("away", function(){
-                updatePanels("disable", "away");
-            });
-            
-            process.on("back", function(){
-                updatePanels("enable", running);
-                debug(process, true, function(){});
-            });
-            
-            process.on("stopped", function(){
-                running = run.STOPPED;
-                stop();
-            }, plugin);
+            if (!process.meta.$debugger) {
+                process.on("away", function(){
+                    updatePanels("disable", "away");
+                });
+                
+                process.on("back", function(){
+                    updatePanels("enable", running);
+                    debug(process, true, function(){});
+                });
+                
+                process.on("stopped", function(){
+                    running = run.STOPPED;
+                    stop();
+                }, plugin);
+                
+                process.meta.$debugger = true;
+            }
             
             // Hook for plugins to delay or cancel debugger attaching
             // Whoever cancels is responible for calling the callback
