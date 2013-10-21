@@ -1,0 +1,14 @@
+<a:application xmlns:a="http://ajax.org/2005/aml">
+    <a:bar id="winLiveInspect"
+      modal     = "false" 
+      center    = "false"
+      width     = "450"
+      height    = "200"
+      visible   = "false"
+      skinset   = "inlinedg" 
+      skin      = "bar-liveinspect"
+      resizable = "true"
+    >
+      
+    </a:bar>
+</a:application>
