@@ -49,6 +49,8 @@ define(function(require, exports, module) {
             });
             debug.on("stateChange", function(e){
                 plugin[e.action]();
+                if (e.action == "enable" && activeFrame)
+                    debug.activeFrame = activeFrame;
                 if (e.action == "disable" && e.state != "away")
                     clearFrames();
             });
