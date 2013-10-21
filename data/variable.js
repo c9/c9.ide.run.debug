@@ -52,7 +52,7 @@ define(function(require, exports, module) {
     }
     
     Variable.prototype = new Data(
-        ["name", "value", "type", "ref", "scope", "children", "error"],
+        ["name", "value", "type", "ref", "scope", "children", "error", "prototype", "proto", "constructor"],
         ["properties"]
     );
     
