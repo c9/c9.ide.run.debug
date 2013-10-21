@@ -71,9 +71,11 @@ define(function(require, exports, module) {
             // bind mouse events to all open editors
             ace.on("create", function(e){
                 var editor = e.editor;
-                var ace = editor.ace;
+                var ace    = editor.ace;
 
-                ace.on("mousemove", onEditorMouseMove);
+                ace.on("mousemove", function(e){
+                    onEditorMouseMove(e, editor.pane);
+                });
                 ace.on("mousedown", onEditorClick);
                 ace.on("changeSelection", onEditorClick);
             }, plugin);
@@ -257,10 +259,10 @@ define(function(require, exports, module) {
          * Determine whether the current file is the current frame where the
          * debugger is in.
          */
-        function isCurrentFrame(){
+        function isCurrentFrame(pane){
             var frame = callstack.activeFrame;
             var tab   = frame && (tab = tabManager.findTab(frame.path)) 
-                && tab.isActive();
+                && pane.activeTab == tab;
             if (!tab)
                 return false;
     
@@ -274,7 +276,7 @@ define(function(require, exports, module) {
         /**
          * onMouseMove handler that is being used to show / hide the inline quick watch
          */
-        function onEditorMouseMove (ev) {
+        function onEditorMouseMove (ev, pane) {
             if (activeTimeout) {
                 clearTimeout(activeTimeout);
                 activeTimeout = null;
@@ -286,7 +288,7 @@ define(function(require, exports, module) {
             activeTimeout = setTimeout(function () {
                 activeTimeout = null;
                 
-                if (!isCurrentFrame())
+                if (!isCurrentFrame(pane))
                     return hide();
 
                 var pos = ev.getDocumentPosition();
