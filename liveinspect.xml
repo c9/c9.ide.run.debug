@@ -2,13 +2,8 @@
     <a:bar id="winLiveInspect"
       modal     = "false" 
       center    = "false"
-      width     = "450"
-      height    = "200"
       visible   = "false"
-      skinset   = "inlinedg" 
-      skin      = "bar-liveinspect"
-      resizable = "true"
-    >
+      class     = "liveinspect immediate">
       
     </a:bar>
 </a:application>
