@@ -83,21 +83,21 @@ define(function(require, exports, module) {
                     });
                 }
                 
-                // If we're most likely in the current frame, lets update
-                // The callstack and show it in the editor
-                var frame = frames[0];
-                if (frame && e.frame.path == frame.path 
-                  && e.frame.sourceId == frame.sourceId) {
-                    frame.line   = e.frame.line;
-                    frame.column = e.frame.column;
+                // // If we're most likely in the current frame, lets update
+                // // The callstack and show it in the editor
+                // var frame = frames[0];
+                // if (frame && e.frame.path == frame.path 
+                //   && e.frame.sourceId == frame.sourceId) {
+                //     frame.line   = e.frame.line;
+                //     frame.column = e.frame.column;
                     
-                    setFrames(frames, frame, true);
-                }
-                // Otherwise set the current frame as the active one, until
-                // we have fetched all the frames
-                else {
-                    setFrames([e.frame], e.frame, true);
-                }
+                //     setFrames(frames, frame, true);
+                // }
+                // // Otherwise set the current frame as the active one, until
+                // // we have fetched all the frames
+                // else {
+                //     setFrames([e.frame], e.frame, true);
+                // }
             });
             
             debug.on("break", function(e){

@@ -113,6 +113,14 @@ define(function(require, exports, module) {
                 return false;
             });
             
+            datagrid.on("afterremove", function(e){
+                var idx = watches.indexOf(findVariable(e.args[0].args[0]));
+                watches.splice(idx, 1);
+                
+                dirty = true;
+                settings.save();
+            });
+            
             var justEdited = false;
             
             datagrid.on("afterchange", function(e){
