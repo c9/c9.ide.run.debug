@@ -295,7 +295,7 @@ define(function(require, exports, module) {
                 if (pos.column == ev.editor.session.getLine(pos.row).length)
                     return hide();
 
-                worker.emit("inspect", { data: { row: pos.row, col: pos.col } });
+                worker.emit("inspect", { data: { row: pos.row, column: pos.column } });
 
                 // hide it, and set left / top so it gets positioned right when showing again
                 if (!marker || !marker.range.contains(pos.row, pos.column))
