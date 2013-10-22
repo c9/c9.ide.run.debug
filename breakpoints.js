@@ -634,9 +634,9 @@ define(function(require, exports, module) {
                     return;
 
                 rows[((bp.actual || bp).line)] 
-                    = " ace_breakpoint "
-                        + (bp.condition ? "condition" : "")
-                        + (bp.enabled ? "" : "disabled ");
+                    = " ace_breakpoint"
+                        + (bp.condition ? " condition" : "")
+                        + (bp.enabled ? "" : " disabled ");
             });
 
             session.session.$breakpoints = rows;
