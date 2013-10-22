@@ -61,8 +61,9 @@ define(function(require, exports, module) {
                 function setFrames(frames, frame, force) {
                     // Load frames into the callstack and if the frames 
                     // are completely reloaded, set active frame
-                    if (loadFrames(frames) && (force || !activeFrame ||
-                      activeFrame == frame || activeFrame == frames[0])) {
+                    if (loadFrames(frames, false, force) && (force 
+                      || !activeFrame || activeFrame == frame 
+                      || activeFrame == frames[0])) {
                           
                         // Set the active frame
                         activeFrame = frames[0];
@@ -76,28 +77,28 @@ define(function(require, exports, module) {
                 
                 // Load frames
                 if (e.frames) 
-                    setFrames(e.frames, e.frame);
-                else { 
-                    dbg.getFrames(function(err, frames){
-                        setFrames(frames, e.frame);
-                    });
-                }
+                    return setFrames(e.frames, e.frame, true);
                 
-                // // If we're most likely in the current frame, lets update
-                // // The callstack and show it in the editor
-                // var frame = frames[0];
-                // if (frame && e.frame.path == frame.path 
-                //   && e.frame.sourceId == frame.sourceId) {
-                //     frame.line   = e.frame.line;
-                //     frame.column = e.frame.column;
+                // If we don't have the frames yet, lets fetch them
+                dbg.getFrames(function(err, frames){
+                    setFrames(frames, e.frame);
+                });
+                
+                // If we're most likely in the current frame, lets update
+                // The callstack and show it in the editor
+                var frame = frames[0];
+                if (frame && e.frame.path == frame.path 
+                  && e.frame.sourceId == frame.sourceId) {
+                    frame.line   = e.frame.line;
+                    frame.column = e.frame.column;
                     
-                //     setFrames(frames, frame, true);
-                // }
-                // // Otherwise set the current frame as the active one, until
-                // // we have fetched all the frames
-                // else {
-                //     setFrames([e.frame], e.frame, true);
-                // }
+                    setFrames(frames, frame, true);
+                }
+                // Otherwise set the current frame as the active one, until
+                // we have fetched all the frames
+                else {
+                    setFrames([e.frame], e.frame, true);
+                }
             });
             
             debug.on("break", function(e){
@@ -293,7 +294,7 @@ define(function(require, exports, module) {
             if (frame.istop) {
                 if (path == framePath) {
                     addMarker(session, "step", row);
-                    console.log(row);
+                    
                     if (scrollToLine) {
                         var ace = tab.editor.ace;
                         var renderer = ace.renderer;
@@ -399,9 +400,9 @@ define(function(require, exports, module) {
             });
         };
         
-        function loadFrames(input, noRecur){
+        function loadFrames(input, noRecur, force){
             // If we're in the same frameset, lets just update the frames
-            if (input.length && input.length == frames.length 
+            if (!force && input.length && input.length == frames.length 
               && frames[0].equals(input[0])) {
                 for (var i = 0, l = input.length; i < l; i++)                                                                        
                     updateFrameXml(input[i], noRecur);

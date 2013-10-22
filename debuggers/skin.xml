@@ -284,7 +284,7 @@
             }
             .blackdg .records .selected span,
             .blackdgDisabled .records .selected span{
-                background-color : rgb(56,56,56);
+                background-color : rgb(61, 61, 61);
                 vertical-align : top;
             }
             .blackdgFocus .records .selected span{
