@@ -1,21 +1,19 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "c9", "util", "settings", "ui", "tabManager", "debugger"
+        "DebugPanel", "util", "settings", "ui", "tabManager", "debugger", "ace"
     ];
     main.provides = ["breakpoints"];
     return main;
 
     function main(options, imports, register) {
-        var c9         = imports.c9;
         var util       = imports.util;
         var DebugPanel = imports.DebugPanel;
         var settings   = imports.settings;
         var ui         = imports.ui;
+        var ace        = imports.ace;
         var tabs       = imports.tabManager;
         var debug      = imports.debugger;
         
-        var markup     = require("text!./breakpoints.xml");
-        var html       = require("text!./breakpoints.html");
         var Breakpoint = require("./data/breakpoint");
         
         var basename   = require("path").basename;
@@ -35,7 +33,8 @@ define(function(require, exports, module) {
         
         var dbg;
         var list, menu, model, hCondition, hInput; // UI Elements
-        var btnBreakpoints, btnBpRemove;
+        var btnBreakpoints, btnBpRemove, codebox;
+        var conditionBreakpoint;
         
         var loaded = false;
         function load(){
@@ -167,6 +166,34 @@ define(function(require, exports, module) {
                 
                 changed = false;
             });
+            
+            // right click context item in ace gutter
+            ace.getElement("menuGutter", function(menu) {
+                ui.insertByIndex(menu, new ui.item({
+                    caption : "Add Breakpoint",
+                    onclick : function(){
+                        
+                    }
+                }), 200, plugin);
+                ui.insertByIndex(menu, new ui.item({
+                    caption : "Add Conditional Breakpoint",
+                    onclick : function(){
+                        
+                    }
+                }), 300, plugin);
+                ui.insertByIndex(menu, new ui.item({
+                    caption : "Remove Breakpoint",
+                    onclick : function(){
+                        
+                    }
+                }), 400, plugin);
+                ui.insertByIndex(menu, new ui.item({
+                    caption : "Edit Breakpoint",
+                    onclick : function(){
+                        
+                    }
+                }), 500, plugin);
+            });
         }
 
         var drawn;
@@ -175,18 +202,8 @@ define(function(require, exports, module) {
             drawn = true;
             
             // Create UI elements
+            var markup = require("text!./breakpoints.xml");
             ui.insertMarkup(options.aml, markup, plugin);
-            
-            // Create HTML elements
-            var nodes = ui.insertHtml(null, html, plugin);
-            hCondition = nodes[0];
-            hInput     = hCondition.getElementsByTagName("input")[0];
-            hInput.onblur = function(){
-                hCondition.style.display = "none";
-            }
-            hInput.onmousedown = function(e){
-                apf.stopEvent(e);
-            }
             
             list = plugin.getElement("list");
             list.setAttribute("model", model);
@@ -299,6 +316,43 @@ define(function(require, exports, module) {
             });
         }
         
+        var drawnCondition;
+        function drawCondition(){
+            if (drawnCondition) return;
+            drawnCondition = true;
+            
+            // Create HTML elements
+            var html   = require("text!./breakpoints.html");
+            hCondition = ui.insertHtml(null, html, plugin)[0];
+            
+            hInput = hCondition.querySelector(".input");
+            codebox = new apf.codebox({
+                skin        : "simplebox",
+                "class"     : "dark",
+                focusselect : "true",
+                htmlNode    : hInput,
+                "initial-message": "Your Expression"
+            })
+            
+            codebox.ace.commands.addCommands([
+                {
+                    bindKey : "ESC",
+                    exec    : function(){ hCondition.style.display = "none"; }
+                }, {
+                    bindKey : "Enter",
+                    exec    : function(){ 
+                        setCondition(conditionBreakpoint, codebox.getValue());
+                        hCondition.style.display = "none";
+                    }
+                },
+            ]);
+            
+            apf.addEventListener("movefocus", function(e){
+                if (e.toElement != codebox)
+                    hCondition.style.display = "none";
+            });
+        }
+        
         /***** Helper Functions *****/
         
         function toggleBreakpoints(force){
@@ -397,12 +451,12 @@ define(function(require, exports, module) {
                 }
                 // Toggle disabled/enabled
                 else if (e.getShiftKey()) {
-                    enabled = className && className.indexOf("disabled") == -1;
+                    enabled = className && className.indexOf("disabled") > -1;
                     removed = false;
                 } 
                 // Toggle add/remove
                 else {
-                    removed = className ? true : false;
+                    removed = !className || className.indexOf("disabled") > -1 ? false : true;
                     enabled = true;
                 }
     
@@ -422,8 +476,10 @@ define(function(require, exports, module) {
         }
         
         function showConditionDialog(ace, createBreakpoint, path, line, breakpoint){
+            drawCondition();
+            
             // Attach dialog to ace
-            ace.container.appendChild(hCondition);
+            ace.container.parentNode.appendChild(hCondition);
             hCondition.style.display = "block";
             
             // Set left
@@ -435,10 +491,10 @@ define(function(require, exports, module) {
                 row    : line+1,
                 column : 0
             }, true);
-            hCondition.style.top = (pos.top + 2) + "px"; // line position
+            hCondition.style.top = (pos.top + 3) + "px"; // line position
             
             // Set current value
-            hInput.value = breakpoint.condition ||  "";
+            codebox.setValue(breakpoint.condition ||  "")
             
             var node = hCondition.getElementsByTagName("div")[0].firstChild;
             node.nodeValue = node.nodeValue.replace(/\d+/, line + 1);
@@ -446,21 +502,9 @@ define(function(require, exports, module) {
             if (!breakpoint)
                 breakpoint = createBreakpoint();
             
-            hInput.onkeydown = function(e){
-                if (e.keyCode == 27) {
-                    hCondition.style.display = "none";
-                    apf.stopEvent(e);
-                }
-                else if (e.keyCode == 13) {
-                    setCondition(breakpoint, hInput.value);
-                    hCondition.style.display = "none";
-                    
-                    apf.stopEvent(e);
-                }
-                
-            };
+            conditionBreakpoint = breakpoint;
             
-            hInput.focus();
+            setTimeout(function(){ codebox.focus(); });
         }
         
         /**
@@ -745,6 +789,7 @@ define(function(require, exports, module) {
         plugin.on("unload", function(){
             loaded = false;
             drawn  = false;
+            drawnCondition = false;
         });
         
         /***** Register and define API *****/

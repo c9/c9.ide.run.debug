@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Panel", "settings", "ui", "layout", "immediate", "run", "panels", 
-        "tabManager", "commands", "c9" //, "quickwatch"
+        "tabManager", "commands", "ace" //, "quickwatch"
     ];
     main.provides = ["debugger"];
     return main;
@@ -10,11 +10,10 @@ define(function(require, exports, module) {
         var Panel     = imports.Panel;
         var settings  = imports.settings;
         var ui        = imports.ui;
-        var c9        = imports.c9;
+        var ace       = imports.ace;
         var tabs      = imports.tabManager;
         var panels    = imports.panels;
         var commands  = imports.commands;
-        var immediate = imports.immediate;
         var run       = imports.run;
         
         var markup = require("text!./debugger.xml");
@@ -111,6 +110,19 @@ define(function(require, exports, module) {
                     dbg && dbg.stepOut();
                 }
             }, plugin);
+            
+            // right click context item in ace gutter
+            ace.getElement("menuGutter", function(menu) {
+                ui.insertByIndex(menu, new ui.item({
+                    caption : "Continue to Here",
+                    onclick : function(){
+                        
+                    }
+                }), 100, plugin);
+            });
+            
+            // Load CSS
+            ui.insertCss(css, plugin);
         }
         
         var drawn;
@@ -136,9 +148,6 @@ define(function(require, exports, module) {
             
             var scroller = bar.$ext.appendChild(document.createElement("div"));
             scroller.className = "scroller";
-            
-            // Load CSS
-            ui.insertCss(css, plugin);
             
             // Create UI elements
             var parent = bar;
@@ -283,37 +292,6 @@ define(function(require, exports, module) {
                     breakpoint : e.breakpoint
                 });
             }, plugin);
-
-            // Immediate 
-            // immediate.addType("Debugger (current frame)", "debug-frame", plugin);
-            // immediate.addType("Debugger (global)", "debug-global", plugin);
-
-            // immediate.on("evaluate", function(e){
-            //     if (e.type.substr(0, 5) == "debug") {
-            //         var global = e.type.indexOf("global") > -1;
-                    
-            //         dbg.evaluate(e.expression, null, global, false, 
-            //             function(err, value, body, refs){
-            //                 if (err) 
-            //                     e.output.error(err.message, err.stack);
-            //                 else {
-            //                     // @todo expand this do display types, etc.
-            //                     //       probably best to move that into immediate
-            //                     e.output.log(value.value);
-            //                 }
-                            
-            //                 watches.updateAll();
-            //                 if (!global)
-            //                     callstack.updateAll();
-                            
-            //                 e.done();
-            //             }
-            //         )
-            //     }
-            // }, plugin);
-            
-            // Quickwatch
-            //@todo
         }
         
         function updatePanels(action, runstate){
