@@ -211,9 +211,10 @@ define(function(require, exports, module) {
                             
                             tab.document.value = value;
                             
-                            if (tab.isActive())
+                            if (tab.isActive() && jump) {
                                 tab.document.editor
-                                    .scrollTo(jump.row, jump.column, jump.select);
+                                  .scrollTo(jump.row, jump.column, jump.select);
+                            }
                             
                             done();
                             e.callback(null, tab);

@@ -171,7 +171,7 @@ define(function(require, exports, module) {
          * onDocumentMove handler to clear the timeout
          */
         function onDocumentMouseMove (ev) {
-            if (!container.visible)
+            if (!activeTimeout)
                 return;
     
             // see whether we hover over the editor or the quickwatch window
