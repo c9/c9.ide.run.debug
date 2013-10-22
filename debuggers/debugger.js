@@ -513,7 +513,7 @@ define(function(require, exports, module) {
                 });
                 
                 process.on("back", function(){
-                    updatePanels("enable", running);
+                    updatePanels("enable", dbg.state);
                     debug(process, true, function(){});
                 });
                 

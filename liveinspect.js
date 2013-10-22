@@ -243,6 +243,9 @@ define(function(require, exports, module) {
                 session : { repl: { onWidgetChanged : function(){
                     
                 }}},
+                setError : function(){
+                    hide();
+                },
                 setWaiting : function(show){
                     if (!show)
                         done();
