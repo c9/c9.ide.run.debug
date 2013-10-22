@@ -6,8 +6,6 @@ define(function(require, exports, module) {
     main.provides = ["liveinspect"];
     return main;
 
-    // @todo on scroll hide container
-
     function main(options, imports, register) {
         var Plugin     = imports.Plugin;
         var ui         = imports.ui;
@@ -78,6 +76,7 @@ define(function(require, exports, module) {
                 });
                 ace.on("mousedown", onEditorClick);
                 ace.on("changeSelection", onEditorClick);
+                ace.on("mousewheel", onEditorClick);
             }, plugin);
         }
         
@@ -205,8 +204,8 @@ define(function(require, exports, module) {
         /**
          * When clicking in the editor window, hide live inspect
          */
-        function onEditorClick (ev) {
-            hide(ev.editor);
+        function onEditorClick() {
+            hide();
         };
     
         /**
@@ -270,10 +269,12 @@ define(function(require, exports, module) {
                 var ace    = tab.document.editor.ace;
                 var coords = ace.renderer.textToScreenCoordinates(pos.sl, pos.sc);
                 
-                windowHtml.style.width  = 
-                windowHtml.style.height = "auto";
-                windowHtml.style.left   = coords.pageX + "px";
-                windowHtml.style.top    = (coords.pageY + ace.renderer.lineHeight) + "px";
+                windowHtml.style.maxWidth  = Math.min(800, window.innerWidth 
+                    - coords.pageX - 30) + "px"
+                windowHtml.style.maxHeight = Math.min(250, window.innerHeight 
+                    - coords.pageY - ace.renderer.lineHeight - 10) + "px"
+                windowHtml.style.left      = coords.pageX + "px";
+                windowHtml.style.top       = (coords.pageY + ace.renderer.lineHeight) + "px";
     
                 // show window
                 container.show();
