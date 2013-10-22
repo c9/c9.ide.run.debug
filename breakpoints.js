@@ -197,7 +197,10 @@ define(function(require, exports, module) {
                         
                         // Wait until break
                         function done(){
+                            // Remove breakpoint
                             updateBreakpointAtDebugger(breakpoint, "remove");
+                            
+                            // Re-activate all breakpoints
                             activateAll(true);
                             
                             debug.off("break", done);
@@ -207,8 +210,10 @@ define(function(require, exports, module) {
                         debug.on("break", done);
                         debug.on("detach", done);
                         
-                        // Continue
+                        // Deactivate all breakpoints
                         deactivateAll(true);
+                        
+                        // Continue
                         debug.resume();
                     }
                 }, plugin));
