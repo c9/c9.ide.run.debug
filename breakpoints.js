@@ -186,13 +186,26 @@ define(function(require, exports, module) {
                     },
                     onclick     : function(){
                         // Add hidden breakpoint
-                        
-                        // Continue
+                        var breakpoint = new Breakpoint({
+                           path    : meta.ace.session.c9doc.tab.path,
+                           line    : meta.line,
+                           column  : 0,
+                           hidden  : true,
+                           enabled : true
+                        });
+                        updateBreakpointAtDebugger(breakpoint, "add");
                         
                         // Wait until break
+                        debug.on("break", function(e){
+                            // When we've hit the breakpoint
+                            if (breakpoint.equals(e.frame)) {
+                                // Remove breakpoint
+                                updateBreakpointAtDebugger(breakpoint, "remove");
+                            }
+                        });
                         
-                        // Remove breakpoint
-                        
+                        // Continue
+                        debug.resume();
                     }
                 }, plugin));
                 
@@ -705,6 +718,9 @@ define(function(require, exports, module) {
                     return;
                 }
             }
+            
+            if (breakpoint.hidden)
+                return;
                 
             // Make sure we have a breakpoint object
             if (!(breakpoint instanceof Breakpoint))
