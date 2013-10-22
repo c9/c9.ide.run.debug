@@ -79,7 +79,7 @@ define(function(require, exports, module) {
                 
                 // Deactivate breakpoints if user wants to
                 if (!enableBreakpoints)
-                    deactivateAll();
+                    deactivateAll(true);
             });
             debug.on("detach", function(e){
                 dbg = null;
@@ -89,7 +89,7 @@ define(function(require, exports, module) {
             });
             
             debug.on("getBreakpoints", function(){ 
-                return breakpoints; 
+                return breakpoints;
             });
             
             debug.on("breakpointUpdate", function(e){
@@ -101,7 +101,7 @@ define(function(require, exports, module) {
                     if (tab) {
                         var session = tab.document.getSession();
                         if (bp.actual.line >= session.session.getLength()) {
-                            breakpoints.clearBreakpoint(bp);
+                            clearBreakpoint(bp);
                             return;
                         }
                     }
@@ -138,10 +138,10 @@ define(function(require, exports, module) {
                     ["active", "true"]
                 ]);
                 
-                var list = settings.getJson("user/breakpoints");
+                var bps = settings.getJson("user/breakpoints");
                 
                 // bind it to the Breakpoint model
-                breakpoints = (list || []).map(function(bp){
+                breakpoints = (bps || []).map(function(bp){
                     return new Breakpoint(bp);
                 });
                 model.load("<breakpoints>" 
@@ -155,7 +155,7 @@ define(function(require, exports, module) {
                 enableBreakpoints = settings.getBool("user/breakpoints/@active");
                 toggleBreakpoints(enableBreakpoints);
                 
-                if (!enableBreakpoints)
+                if (!enableBreakpoints && drawn)
                     list.setAttribute("class", "listBPDisabled");
             });
             
@@ -196,15 +196,19 @@ define(function(require, exports, module) {
                         updateBreakpointAtDebugger(breakpoint, "add");
                         
                         // Wait until break
-                        debug.on("break", function(e){
-                            // When we've hit the breakpoint
-                            if (breakpoint.equals(e.frame)) {
-                                // Remove breakpoint
-                                updateBreakpointAtDebugger(breakpoint, "remove");
-                            }
-                        });
+                        function done(){
+                            updateBreakpointAtDebugger(breakpoint, "remove");
+                            activateAll(true);
+                            
+                            debug.off("break", done);
+                            debug.off("detach", done);
+                        }
+                        
+                        debug.on("break", done);
+                        debug.on("detach", done);
                         
                         // Continue
+                        deactivateAll(true);
                         debug.resume();
                     }
                 }, plugin));
@@ -288,6 +292,9 @@ define(function(require, exports, module) {
             menu = plugin.getElement("menu");
         
             list.setAttribute("contextmenu", menu);
+            
+            if (!enableBreakpoints)
+                list.setAttribute("class", "listBPDisabled");
             
             menu.on("prop.visible", function(){
                 var length = list.length;
@@ -656,7 +663,7 @@ define(function(require, exports, module) {
             session.session._emit("changeBreakpoint", {});
         }
 
-        function updateBreakpoint(breakpoint, action){
+        function updateBreakpoint(breakpoint, action, force){
             //This can be optimized, currently rereading everything
             var tab = tabs.findTab(breakpoint.path);
             if (tab) {
@@ -666,7 +673,7 @@ define(function(require, exports, module) {
             
             // Don't call update to enable/disable breakpoints when they are
             // all deactivated
-            if (enableBreakpoints || (action != "enable" && action != "disable"))
+            if (force || enableBreakpoints || (action != "enable" && action != "disable"))
                 updateBreakpointAtDebugger(breakpoint, action);
             
             changed = true;
@@ -813,15 +820,15 @@ define(function(require, exports, module) {
             });
         }
         
-        function activateAll(){
-            if (enableBreakpoints) return;
+        function activateAll(force){
+            if (enableBreakpoints && !force) return;
             
             enableBreakpoints = true;
             settings.set("user/breakpoints/@active", true);
             
             breakpoints.forEach(function(bp){
                 if (bp.enabled)
-                    updateBreakpoint({id: bp.id, enabled: true}, "enable");
+                    updateBreakpoint({id: bp.id, enabled: true}, "enable", force);
             });
             
             list.setAttribute("class", "");
@@ -829,18 +836,18 @@ define(function(require, exports, module) {
             toggleBreakpoints(true);
         }
         
-        function deactivateAll(){
-            if (!enableBreakpoints) return;
+        function deactivateAll(force){
+            if (!enableBreakpoints && !force) return;
             
-            enableBreakpoints = false;
             settings.set("user/breakpoints/@active", false);
             
             breakpoints.forEach(function(bp){
-                updateBreakpoint({id: bp.id, enabled: false}, "disable");
+                updateBreakpoint({id: bp.id, enabled: false}, "disable", force);
             });
             
             list.setAttribute("class", "listBPDisabled");
             
+            enableBreakpoints = false;
             toggleBreakpoints(false);
         }
         
