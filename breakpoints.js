@@ -181,7 +181,8 @@ define(function(require, exports, module) {
                     caption     : "Continue to Here",
                     position    : 100,
                     isAvailable : function(){ 
-                        return dbg && dbg.state == "stopped"; 
+                        return dbg && dbg.state == "stopped" 
+                          && meta.className.indexOf("breakpoint") === -1; 
                     },
                     onclick     : function(){
                         // Add hidden breakpoint
@@ -465,7 +466,7 @@ define(function(require, exports, module) {
                 // Toggle disabled/enabled
                 else if (e.getShiftKey()) {
                     action = className && className.indexOf("disabled") > -1
-                        ? "disable" : "enable";
+                        ? "enable" : "disable";
                 } 
                 // Toggle add/remove
                 else {

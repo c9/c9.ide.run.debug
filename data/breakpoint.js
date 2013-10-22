@@ -54,7 +54,7 @@ define(function(require, exports, module) {
     
     Breakpoint.prototype = new Data([
         "id", "path", "text", "line", "column", "serverOnly", "actual",
-        "content", "enabled", "sourcemap", "condition"
+        "content", "enabled", "sourcemap", "condition", "hidden"
     ]);
         
     Breakpoint.prototype.equals = function(breakpoint){
