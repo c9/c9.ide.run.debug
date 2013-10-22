@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Panel", "settings", "ui", "layout", "immediate", "run", "panels", 
-        "tabManager", "commands", "ace" //, "quickwatch"
+        "tabManager", "commands"//, "quickwatch"
     ];
     main.provides = ["debugger"];
     return main;
@@ -10,7 +10,6 @@ define(function(require, exports, module) {
         var Panel     = imports.Panel;
         var settings  = imports.settings;
         var ui        = imports.ui;
-        var ace       = imports.ace;
         var tabs      = imports.tabManager;
         var panels    = imports.panels;
         var commands  = imports.commands;
@@ -110,16 +109,6 @@ define(function(require, exports, module) {
                     dbg && dbg.stepOut();
                 }
             }, plugin);
-            
-            // right click context item in ace gutter
-            ace.getElement("menuGutter", function(menu) {
-                ui.insertByIndex(menu, new ui.item({
-                    caption : "Continue to Here",
-                    onclick : function(){
-                        
-                    }
-                }), 100, plugin);
-            });
             
             // Load CSS
             ui.insertCss(css, plugin);

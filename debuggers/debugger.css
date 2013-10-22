@@ -93,7 +93,7 @@
     padding : 5px;
     font-family : Arial;
     font-size : 12px;
-    width : 450px;
+    width : 230px;
     
     position: absolute;
     display : none;
@@ -108,18 +108,17 @@
 }
 
 .condition_dialog .ace_content div{
-    color : #E6E6E6;
+    color : #2C2C2C;
 }
 
 .condition_dialog>.input{
     border: 0;
-    width: 441px;
     padding: 4px 3px 2px 7px;
     outline: none;
-    box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.4) inset;
+    box-shadow: inset 1px 2px 3px 0 rgba(0,0,0,.3);
     color: #FFF;
     border-radius: 3px;
-    background: rgb(51, 51, 51);
+    background: white;
     -webkit-font-smoothing: auto;
     font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
     height : 18px;
