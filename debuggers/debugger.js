@@ -269,7 +269,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("sources", function(e){
-                sources = sources.concat(e.sources);
+                sources = e.sources.slice()
                 emit("sources", e);
             }, plugin);
             
