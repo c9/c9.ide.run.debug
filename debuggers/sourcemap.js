@@ -174,9 +174,11 @@ define(function(require, exports, module) {
                 
                 // Fetch the map, based on the generated file
                 getSourcemapFromGenerated(e.state.path, function(err, map, source){
+                    var jump = e.state.document.ace.jump;
+                    
                     if (map) {
-                        var jump = e.state.document.ace.jump 
-                            || {row: 0, column: 0};
+                        if (!jump)
+                            jump = {row: 0, column: 0};
                         
                         var mapping = map.originalPositionFor({
                             line   : jump.row + 1,
@@ -201,8 +203,21 @@ define(function(require, exports, module) {
                     }
                     
                     tabs.open(e.state, function(err, tab, done){
-                        if (err) return e.callback(err); //@todo util.alert??
-                        e.callback(null, tab);
+                        if (err || !done) 
+                            return e.callback(err, tab);
+                        
+                        fetchSource(e.state.path, function(err, value){
+                            if (err) return;
+                            
+                            tab.document.value = value;
+                            
+                            if (tab.isActive())
+                                tab.document.editor
+                                    .scrollTo(jump.row, jump.column, jump.select);
+                            
+                            done();
+                            e.callback(null, tab);
+                        })
                     });
                 });
                 

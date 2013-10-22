@@ -198,19 +198,8 @@ define(function(require, exports, module) {
     
             if (mouseMoveAllowed) return;
     
-            // not in the editor?
-            if (container.visible) {
-                // if we are visible, then give the user 400 ms to get back into the window
-                // otherwise hide it
-                if (activeTimeout)
-                    clearTimeout(activeTimeout);
-                activeTimeout = setTimeout(hide, 400);
-            }
-            else {
-                // if not visible? then just clear the timeout
-                clearTimeout(activeTimeout);
-                activeTimeout = null;
-            }
+            clearTimeout(activeTimeout);
+            activeTimeout = container.visible ? setTimeout(hide, 400) : null;
         };
     
         /**

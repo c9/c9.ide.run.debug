@@ -438,35 +438,24 @@ define(function(require, exports, module) {
                 return;
 
             tabs.open(state, function(err, tab, done){
-                // If we need to load the contens ourselves, lets.
-                if (done) {
-                    dbg.getSource(source, function(err, value){
-                        if (err) return;
-                        
-                        function debugDone(value){
-                            tab.document.value = value;
-                            // tab.document.getSession().jumpTo({
-                            //     row    : row,
-                            //     column : column
-                            // });
-                            done();
-                            callback && callback(null, tab);
-                        }
-                        
-                        if (emit("open", {
-                            path      : source.path,
-                            source    : source,
-                            value     : value,
-                            tab       : tab,
-                            line      : row,
-                            column    : column,
-                            generated : options.generated,
-                            done      : debugDone
-                        }) !== false)
-                            debugDone(value);
-                    });
-                    tab.document.getSession().readOnly = true;
-                }
+                if (!done)
+                    return;
+                    
+                // If we need to load the contents ourselves, lets.
+                dbg.getSource(source, function(err, value){
+                    if (err) return;
+                    
+                    tab.document.value = value;
+                    
+                    if (tab.isActive())
+                        tab.document.editor
+                            .scrollTo(jump.row, jump.column, jump.select);
+                                    
+                    done();
+                    callback && callback(null, tab);
+                });
+                
+                tab.document.getSession().readOnly = true;
             });
         }
         

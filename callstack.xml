@@ -5,6 +5,7 @@
       border     = "0"
       options    = "size|move"
       caching    = "false"
+      reselectable = "true"
       class      = "noscrollbar"
       empty-message = "No callstack to display">
         <a:actions />
