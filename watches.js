@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "util", "debugger", "ace", "commands",
-        "menus"
+        "menus", "Menu", "MenuItem", "Divider"
     ];
     main.provides = ["watches"];
     return main;
@@ -15,6 +15,9 @@ define(function(require, exports, module) {
         var menus      = imports.menus;
         var commands   = imports.commands;
         var ace        = imports.ace;
+        var Menu       = imports.Menu;
+        var MenuItem   = imports.MenuItem;
+        var Divider    = imports.Divider;
         
         var keys     = require("ace/lib/keys");
         var markup   = require("text!./watches.xml");
@@ -122,6 +125,33 @@ define(function(require, exports, module) {
         
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", model);
+            
+            var contextMenu = new Menu({
+                items : [
+                    new MenuItem({ value: "edit1", caption: "Edit Watch Expression" }),
+                    new MenuItem({ value: "edit2", caption: "Edit Watch Value" }),
+                    new Divider(),
+                    new MenuItem({ value: "remove", caption: "Remove Watch Expression" }),
+                ]
+            }, plugin);
+            contextMenu.on("itemclick", function(e){
+                if (e.value == "edit1")
+                    datagrid.$dblclick(datagrid.$selected.childNodes[0]);
+                else if (e.value == "edit2")
+                    datagrid.$dblclick(datagrid.$selected.childNodes[1]);
+                else if (e.value == "remove")
+                    datagrid.remove();
+            });
+            contextMenu.on("show", function(e) {
+                var selected = datagrid.selected;
+                var isNew    = selected && selected.getAttribute("new");
+                var isProp   = selected.parentNode.localName != "watches";
+                contextMenu.items[0].disabled = !selected || isProp;
+                contextMenu.items[1].disabled = !selected || !!isNew;
+                contextMenu.items[3].disabled = !selected || !!isNew || isProp;
+            });
+            
+            datagrid.setAttribute("contextmenu", contextMenu.aml);
             
             datagrid.on("beforeinsert", function(e){
                 var node = e.xmlNode;

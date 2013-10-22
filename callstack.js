@@ -164,6 +164,10 @@ define(function(require, exports, module) {
                 setActiveFrame(e.selected && findFrame(e.selected), true);
             });
             
+            datagrid.on("contextmenu", function(){
+                return false;
+            });
+            
             var hbox = debug.getElement("hbox");
             menu = hbox.ownerDocument.documentElement.appendChild(new ui.menu({
                 style : "top: 56px;"

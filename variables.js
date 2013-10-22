@@ -98,6 +98,10 @@ define(function(require, exports, module) {
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", model);
             
+            datagrid.on("contextmenu", function(){
+                return false;
+            });
+            
             datagrid.on("beforeinsert", function(e){
                 var node = e.xmlNode;
 

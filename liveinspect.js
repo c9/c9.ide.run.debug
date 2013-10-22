@@ -32,6 +32,7 @@ define(function(require, exports, module) {
         var currentTab        = null;
         var marker            = null;
         
+        var isContextMenuVisible = false;
         var dbg, container, worker;
         
         var loaded = false;
@@ -94,11 +95,10 @@ define(function(require, exports, module) {
             // get respective HTML elements
             windowHtml = container.$ext;
             
-            container.on("prop.visible", function(e) {
-                // don't track when hiding the window
-                if (!e.value)
-                    return;
-                    
+            ace.getElement("menu", function(menu) {
+                menu.on("prop.visible", function(e){
+                    isContextMenuVisible = e.value;
+                });
             });
             
             // when hovering over the inspector window we should ignore all further listeners
@@ -144,7 +144,7 @@ define(function(require, exports, module) {
                 activeTimeout = null;
             }
     
-            if (!dbg || dbg.state != 'stopped')
+            if (!dbg || dbg.state != 'stopped' || isContextMenuVisible)
                 return;
                 
             activeTimeout = setTimeout(function () {
@@ -171,7 +171,7 @@ define(function(require, exports, module) {
          * onDocumentMove handler to clear the timeout
          */
         function onDocumentMouseMove (ev) {
-            if (!activeTimeout)
+            if (!activeTimeout || !currentTab)
                 return;
     
             // see whether we hover over the editor or the quickwatch window
