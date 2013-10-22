@@ -214,9 +214,12 @@ define(function(require, exports, module) {
                 var itemCondition = menu.append(new MenuItem({
                     position : 300,
                     isAvailable : function(){
-                        itemCondition.caption = meta.className.indexOf("condition") > -1
+                        var name = meta.className;
+                        itemCondition.caption = name.indexOf("condition") > -1
                             ? "Edit Condition"
-                            : "Add Conditional Breakpoint";
+                            : (name.indexOf("breakpoint") > -1
+                                ? "Set Condition"
+                                : "Add Conditional Breakpoint");
                         return true;
                     },
                     onclick : function(){
