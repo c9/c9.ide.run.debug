@@ -807,7 +807,7 @@ define(function(require, exports, module) {
                 // Wait until source is parsed
                 plugin.on("sourcesCompile", function wait(e){
                     if (e.source.path.indexOf(path) > -1) {
-                        plugin.off("sources.compile", wait);
+                        plugin.off("sourcesCompile", wait);
                         setBreakpoint(null, bp, callback);
                     }
                 });
