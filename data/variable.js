@@ -48,12 +48,13 @@ define(function(require, exports, module) {
     
     function Variable(options){
         this.data    = options || {};
-        this.tagName = "variable";
+        this.tagName = options.tagName || "variable";
     }
     
     Variable.prototype = new Data(
         ["name", "value", "type", "ref", "scope", "children", "error"],
-        ["properties"]
+        ["properties"],
+        ["prototype", "proto", "constructorFunction"]
     );
     
     Variable.prototype.findVariable = function(ref, name, parents){

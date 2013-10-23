@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "settings", "ui", "util", "debugger"
+        "DebugPanel", "settings", "ui", "util", "debugger", "ace", "commands",
+        "menus", "Menu", "MenuItem", "Divider"
     ];
     main.provides = ["watches"];
     return main;
@@ -11,6 +12,12 @@ define(function(require, exports, module) {
         var ui         = imports.ui;
         var debug      = imports.debugger;
         var util       = imports.util;
+        var menus      = imports.menus;
+        var commands   = imports.commands;
+        var ace        = imports.ace;
+        var Menu       = imports.Menu;
+        var MenuItem   = imports.MenuItem;
+        var Divider    = imports.Divider;
         
         var keys     = require("ace/lib/keys");
         var markup   = require("text!./watches.xml");
@@ -58,6 +65,29 @@ define(function(require, exports, module) {
                 updateAll();
             });
             
+            // Add Watch hook into ace
+            commands.addCommand({
+                name        : "addwatchfromselection",
+                bindKey     : { mac: "Command-Shift-C", win: "Ctrl-Shift-C" },
+                hint        : "Add the selection as a watch expression",
+                isAvailable : function(editor){ 
+                    var ace = dbg && editor && editor.ace;
+                    return ace && !ace.selection.isEmpty();
+                },
+                exec        : function(editor){ 
+                    if (!editor.ace.selection.isEmpty())
+                        addWatch(editor.ace.getCopyText());
+                }
+            }, plugin);
+    
+            // right click context item in ace
+            ace.getElement("menu", function(menu) {
+                menus.addItemToMenu(menu, new ui.item({
+                    caption : "Add As Watch Expression",
+                    command : "addwatchfromselection"
+                }), 50, plugin);
+            });
+            
             // restore the variables from the IDE settings
             settings.on("read", function (e){
                 (settings.getJson("state/watches") || []).forEach(function(name){
@@ -96,6 +126,33 @@ define(function(require, exports, module) {
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", model);
             
+            var contextMenu = new Menu({
+                items : [
+                    new MenuItem({ value: "edit1", caption: "Edit Watch Expression" }),
+                    new MenuItem({ value: "edit2", caption: "Edit Watch Value" }),
+                    new Divider(),
+                    new MenuItem({ value: "remove", caption: "Remove Watch Expression" }),
+                ]
+            }, plugin);
+            contextMenu.on("itemclick", function(e){
+                if (e.value == "edit1")
+                    datagrid.$dblclick(datagrid.$selected.childNodes[0]);
+                else if (e.value == "edit2")
+                    datagrid.$dblclick(datagrid.$selected.childNodes[1]);
+                else if (e.value == "remove")
+                    datagrid.remove();
+            });
+            contextMenu.on("show", function(e) {
+                var selected = datagrid.selected;
+                var isNew    = selected && selected.getAttribute("new");
+                var isProp   = selected.parentNode.localName != "watches";
+                contextMenu.items[0].disabled = !selected || isProp;
+                contextMenu.items[1].disabled = !selected || !!isNew;
+                contextMenu.items[3].disabled = !selected || !!isNew || isProp;
+            });
+            
+            datagrid.setAttribute("contextmenu", contextMenu.aml);
+            
             datagrid.on("beforeinsert", function(e){
                 var node = e.xmlNode;
 
@@ -111,6 +168,14 @@ define(function(require, exports, module) {
 
                 emit("expand", event);
                 return false;
+            });
+            
+            datagrid.on("afterremove", function(e){
+                var idx = watches.indexOf(findVariable(e.args[0].args[0]));
+                watches.splice(idx, 1);
+                
+                dirty = true;
+                settings.save();
             });
             
             var justEdited = false;
@@ -212,6 +277,23 @@ define(function(require, exports, module) {
         
         /***** Methods *****/
         
+        function addWatch(expression){
+            var variable = new Variable({
+                name  : expression,
+                value : "",
+                ref   : ""
+            });
+            watches.push(variable);
+            
+            var newNode = ui.xmldb.appendChild(model.data, apf.getXml(variable.xml), model.data.firstChild);
+            // model.appendXml(newNode); //apf hack
+            
+            dirty = true;
+            settings.save();
+            
+            setWatch(variable, null, true, null, newNode, []);
+        }
+        
         function setWatch(variable, value, isNew, oldValue, node, parents){
             if (!dbg)
                 return; // We've apparently already disconnected.
@@ -267,21 +349,6 @@ define(function(require, exports, module) {
                 if (!node) return;
                 
                 setWatch(variable, undefined, true, null, node, []);
-                
-                // emit("setWatch", {
-                //     name     : variable.name,
-                //     node     : node,
-                //     isNew    : true,
-                //     variable : variable,
-                //     parents  : [],
-                //     error    : function(message){
-                //         variable.value      = message;
-                //         variable.properties = null;
-                        
-                //         updateVariable(variable, [], node, true);
-                //     },
-                //     undo     : function(){}
-                // });
             });
         }
         

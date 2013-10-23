@@ -83,50 +83,62 @@
 }
 
 .condition_dialog{
-    border-radius: 5px;
+    border-radius: 3px;
     
-    background: -moz-linear-gradient(top,  #3993d3 0%, #1f73ac 100%); /* FF3.6+ */
-    background: -webkit-linear-gradient(top,  #3993d3 0%,#1f73ac 100%); /* Chrome10+,Safari5.1+ */
-    background: -ms-linear-gradient(top,  #3993d3 0%,#1f73ac 100%); /* IE10+ */
-    background: linear-gradient(to bottom,  #3993d3 0%,#1f73ac 100%); /* W3C */
+    background: -moz-linear-gradient(top,  rgba(103, 126, 10, 1) 0%, rgba(71, 87, 9, 1) 100%); /* FF3.6+ */
+    background: -webkit-linear-gradient(top,  rgba(103, 126, 10, 1) 0%, rgba(71, 87, 9, 1) 100%); /* Chrome10+,Safari5.1+ */
+    background: -ms-linear-gradient(top,  rgba(103, 126, 10, 1) 0%, rgba(71, 87, 9, 1) 100%); /* IE10+ */
+    background: linear-gradient(to bottom, rgba(103, 126, 10, 1) 0%, rgba(71, 87, 9, 1) 100%); /* W3C */
     
-    padding : 5px 5px 3px 5px;
+    padding : 5px;
     font-family : Arial;
     font-size : 12px;
-    width : 450px;
+    width : 230px;
     
     position: absolute;
     display : none;
     z-index : 1000000;
-    box-shadow : 2px 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 2px 2px 13px rgba(0,0,0,0.8), inset -1px -1px rgba(255,255,255,0.1), inset 1px 1px rgba(255,255,255,0.2);
+    -webkit-font-smoothing: antialiased;
 }
 
-.condition_dialog div{
-    color : #f1f1f1;
-    margin : 0 0 3px 0;
+.condition_dialog>.message{
+    color : #E6E6E6;
+    margin : 0 0 5px 1px;
 }
 
-.condition_dialog input{
+.condition_dialog .ace_content div{
+    color : #2C2C2C;
+}
+
+.condition_dialog>.input{
     border: 0;
-    width: 441px;
-    padding: 4px 3px 4px 6px;
+    padding: 4px 3px 2px 7px;
     outline: none;
-    box-shadow: 2px 2px 6px 0px rgba(0,0,0,0.3) inset;
-    color: #333;
+    box-shadow: inset 1px 2px 3px 0 rgba(0,0,0,.3);
+    color: #FFF;
     border-radius: 3px;
+    background: white;
+    -webkit-font-smoothing: auto;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
+    height : 18px;
 }
 
-.condition_dialog .arrow{
+.condition_dialog>.input .simplebox{
+    height : 20px !important;
+}
+
+.condition_dialog>.arrow{
     border: 7px inset blue;
     display: block;
-    border-color: transparent transparent #3993d3 transparent;
+    border-color: transparent transparent rgba(103, 126, 10, 1) transparent;
     position: absolute;
     left: 3px;
-    top: -14px;
+    top: -13px;
 }
 
 .liveinspect {
-    box-shadow: 0 0 13px 0px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 5px 13px 0px rgba(0, 0, 0, 0.7);
     z-index : 100000;
     background-color: rgb(42, 43, 35);
     position: absolute;
@@ -134,8 +146,8 @@
     padding: 1px 6px 1px 1px;
     font-size: 11px;
     font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin : 1px 0 0 -1px;
+    border: 1px solid rgba(235, 255, 0, 0.1);
+    margin : 0 0 0 -1px;
     max-height : 150px;
     overflow : auto;
     max-width : 800px;
@@ -145,6 +157,6 @@
 .liveinspect .return{
     border-bottom : 0;
 }
-.liveinspect .immediate .null{
+.liveinspect.immediate .null{
     color : rgb(200,200,200);
 }

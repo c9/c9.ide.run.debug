@@ -48,9 +48,11 @@ define(function(require, exports, module) {
                 dbg = null;
             });
             debug.on("stateChange", function(e){
-                plugin[e.action]();
-                if (e.action == "enable" && activeFrame)
+                if (!plugin.enabled && e.action == "enable" && activeFrame)
                     debug.activeFrame = activeFrame;
+                    
+                plugin[e.action]();
+                
                 if (e.action == "disable" && e.state != "away")
                     clearFrames();
             });
@@ -59,8 +61,9 @@ define(function(require, exports, module) {
                 function setFrames(frames, frame, force) {
                     // Load frames into the callstack and if the frames 
                     // are completely reloaded, set active frame
-                    if (loadFrames(frames) && (force || !activeFrame ||
-                      activeFrame == frame || activeFrame == frames[0])) {
+                    if (loadFrames(frames, false, force) && (force 
+                      || !activeFrame || activeFrame == frame 
+                      || activeFrame == frames[0])) {
                           
                         // Set the active frame
                         activeFrame = frames[0];
@@ -74,12 +77,12 @@ define(function(require, exports, module) {
                 
                 // Load frames
                 if (e.frames) 
-                    setFrames(e.frames, e.frame);
-                else { 
-                    dbg.getFrames(function(err, frames){
-                        setFrames(frames, e.frame);
-                    });
-                }
+                    return setFrames(e.frames, e.frame, true);
+                
+                // If we don't have the frames yet, lets fetch them
+                dbg.getFrames(function(err, frames){
+                    setFrames(frames, e.frame);
+                });
                 
                 // If we're most likely in the current frame, lets update
                 // The callstack and show it in the editor
@@ -159,6 +162,10 @@ define(function(require, exports, module) {
                     return;
                 
                 setActiveFrame(e.selected && findFrame(e.selected), true);
+            });
+            
+            datagrid.on("contextmenu", function(){
+                return false;
             });
             
             var hbox = debug.getElement("hbox");
@@ -292,8 +299,14 @@ define(function(require, exports, module) {
                 if (path == framePath) {
                     addMarker(session, "step", row);
                     
-                    if (scrollToLine)
-                        tab.editor.ace.scrollToLine(row, true, true);
+                    if (scrollToLine) {
+                        var ace = tab.editor.ace;
+                        var renderer = ace.renderer;
+                        if (row < renderer.getFirstFullyVisibleRow() 
+                          || row > renderer.getLastFullyVisibleRow()) {
+                            ace.scrollToLine(row, true, true);
+                        }
+                    }
                 }
             }
             else {
@@ -391,9 +404,9 @@ define(function(require, exports, module) {
             });
         };
         
-        function loadFrames(input, noRecur){
+        function loadFrames(input, noRecur, force){
             // If we're in the same frameset, lets just update the frames
-            if (input.length && input.length == frames.length 
+            if (!force && input.length && input.length == frames.length 
               && frames[0].equals(input[0])) {
                 for (var i = 0, l = input.length; i < l; i++)                                                                        
                     updateFrameXml(input[i], noRecur);

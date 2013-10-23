@@ -6,8 +6,6 @@ define(function(require, exports, module) {
     main.provides = ["liveinspect"];
     return main;
 
-    // @todo on scroll hide container
-
     function main(options, imports, register) {
         var Plugin     = imports.Plugin;
         var ui         = imports.ui;
@@ -32,6 +30,7 @@ define(function(require, exports, module) {
         var currentTab        = null;
         var marker            = null;
         
+        var isContextMenuVisible = false;
         var dbg, container, worker;
         
         var loaded = false;
@@ -77,6 +76,7 @@ define(function(require, exports, module) {
                 });
                 ace.on("mousedown", onEditorClick);
                 ace.on("changeSelection", onEditorClick);
+                ace.on("mousewheel", onEditorClick);
             }, plugin);
         }
         
@@ -94,11 +94,10 @@ define(function(require, exports, module) {
             // get respective HTML elements
             windowHtml = container.$ext;
             
-            container.on("prop.visible", function(e) {
-                // don't track when hiding the window
-                if (!e.value)
-                    return;
-                    
+            ace.getElement("menu", function(menu) {
+                menu.on("prop.visible", function(e){
+                    isContextMenuVisible = e.value;
+                });
             });
             
             // when hovering over the inspector window we should ignore all further listeners
@@ -144,7 +143,7 @@ define(function(require, exports, module) {
                 activeTimeout = null;
             }
     
-            if (!dbg || dbg.state != 'stopped')
+            if (!dbg || dbg.state != 'stopped' || isContextMenuVisible)
                 return;
                 
             activeTimeout = setTimeout(function () {
@@ -171,7 +170,7 @@ define(function(require, exports, module) {
          * onDocumentMove handler to clear the timeout
          */
         function onDocumentMouseMove (ev) {
-            if (!container.visible)
+            if (!activeTimeout || !currentTab)
                 return;
     
             // see whether we hover over the editor or the quickwatch window
@@ -198,26 +197,15 @@ define(function(require, exports, module) {
     
             if (mouseMoveAllowed) return;
     
-            // not in the editor?
-            if (container.visible) {
-                // if we are visible, then give the user 400 ms to get back into the window
-                // otherwise hide it
-                if (activeTimeout)
-                    clearTimeout(activeTimeout);
-                activeTimeout = setTimeout(hide, 400);
-            }
-            else {
-                // if not visible? then just clear the timeout
-                clearTimeout(activeTimeout);
-                activeTimeout = null;
-            }
+            clearTimeout(activeTimeout);
+            activeTimeout = container.visible ? setTimeout(hide, 400) : null;
         };
     
         /**
          * When clicking in the editor window, hide live inspect
          */
-        function onEditorClick (ev) {
-            hide(ev.editor);
+        function onEditorClick() {
+            hide();
         };
     
         /**
@@ -254,6 +242,9 @@ define(function(require, exports, module) {
                 session : { repl: { onWidgetChanged : function(){
                     
                 }}},
+                setError : function(){
+                    hide();
+                },
                 setWaiting : function(show){
                     if (!show)
                         done();
@@ -278,10 +269,12 @@ define(function(require, exports, module) {
                 var ace    = tab.document.editor.ace;
                 var coords = ace.renderer.textToScreenCoordinates(pos.sl, pos.sc);
                 
-                windowHtml.style.width  = 
-                windowHtml.style.height = "auto";
-                windowHtml.style.left   = coords.pageX + "px";
-                windowHtml.style.top    = (coords.pageY + ace.renderer.lineHeight) + "px";
+                windowHtml.style.maxWidth  = Math.min(800, window.innerWidth 
+                    - coords.pageX - 30) + "px"
+                windowHtml.style.maxHeight = Math.min(250, window.innerHeight 
+                    - coords.pageY - ace.renderer.lineHeight - 10) + "px"
+                windowHtml.style.left      = coords.pageX + "px";
+                windowHtml.style.top       = (coords.pageY + ace.renderer.lineHeight) + "px";
     
                 // show window
                 container.show();

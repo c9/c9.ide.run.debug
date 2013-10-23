@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Panel", "settings", "ui", "layout", "immediate", "run", "panels", 
-        "tabManager", "commands", "c9" //, "quickwatch"
+        "tabManager", "commands"//, "quickwatch"
     ];
     main.provides = ["debugger"];
     return main;
@@ -10,11 +10,9 @@ define(function(require, exports, module) {
         var Panel     = imports.Panel;
         var settings  = imports.settings;
         var ui        = imports.ui;
-        var c9        = imports.c9;
         var tabs      = imports.tabManager;
         var panels    = imports.panels;
         var commands  = imports.commands;
-        var immediate = imports.immediate;
         var run       = imports.run;
         
         var markup = require("text!./debugger.xml");
@@ -111,6 +109,9 @@ define(function(require, exports, module) {
                     dbg && dbg.stepOut();
                 }
             }, plugin);
+            
+            // Load CSS
+            ui.insertCss(css, plugin);
         }
         
         var drawn;
@@ -136,9 +137,6 @@ define(function(require, exports, module) {
             
             var scroller = bar.$ext.appendChild(document.createElement("div"));
             scroller.className = "scroller";
-            
-            // Load CSS
-            ui.insertCss(css, plugin);
             
             // Create UI elements
             var parent = bar;
@@ -283,37 +281,6 @@ define(function(require, exports, module) {
                     breakpoint : e.breakpoint
                 });
             }, plugin);
-
-            // Immediate 
-            // immediate.addType("Debugger (current frame)", "debug-frame", plugin);
-            // immediate.addType("Debugger (global)", "debug-global", plugin);
-
-            // immediate.on("evaluate", function(e){
-            //     if (e.type.substr(0, 5) == "debug") {
-            //         var global = e.type.indexOf("global") > -1;
-                    
-            //         dbg.evaluate(e.expression, null, global, false, 
-            //             function(err, value, body, refs){
-            //                 if (err) 
-            //                     e.output.error(err.message, err.stack);
-            //                 else {
-            //                     // @todo expand this do display types, etc.
-            //                     //       probably best to move that into immediate
-            //                     e.output.log(value.value);
-            //                 }
-                            
-            //                 watches.updateAll();
-            //                 if (!global)
-            //                     callstack.updateAll();
-                            
-            //                 e.done();
-            //             }
-            //         )
-            //     }
-            // }, plugin);
-            
-            // Quickwatch
-            //@todo
         }
         
         function updatePanels(action, runstate){
@@ -438,35 +405,26 @@ define(function(require, exports, module) {
                 return;
 
             tabs.open(state, function(err, tab, done){
-                // If we need to load the contens ourselves, lets.
-                if (done) {
-                    dbg.getSource(source, function(err, value){
-                        if (err) return;
-                        
-                        function debugDone(value){
-                            tab.document.value = value;
-                            // tab.document.getSession().jumpTo({
-                            //     row    : row,
-                            //     column : column
-                            // });
-                            done();
-                            callback && callback(null, tab);
-                        }
-                        
-                        if (emit("open", {
-                            path      : source.path,
-                            source    : source,
-                            value     : value,
-                            tab       : tab,
-                            line      : row,
-                            column    : column,
-                            generated : options.generated,
-                            done      : debugDone
-                        }) !== false)
-                            debugDone(value);
-                    });
-                    tab.document.getSession().readOnly = true;
-                }
+                if (!done)
+                    return;
+                    
+                // If we need to load the contents ourselves, lets.
+                dbg.getSource(source, function(err, value){
+                    if (err) return;
+                    
+                    tab.document.value = value;
+                    
+                    var jump = state.document.ace.jump;
+                    if (tab.isActive() && jump) {
+                        tab.document.editor
+                          .scrollTo(jump.row, jump.column, jump.select);
+                    }
+                                    
+                    done();
+                    callback && callback(null, tab);
+                });
+                
+                tab.document.getSession().readOnly = true;
             });
         }
         
@@ -522,7 +480,7 @@ define(function(require, exports, module) {
                 });
                 
                 process.on("back", function(){
-                    updatePanels("enable", running);
+                    updatePanels("enable", dbg.state);
                     debug(process, true, function(){});
                 });
                 

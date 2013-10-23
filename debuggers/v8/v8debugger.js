@@ -71,6 +71,9 @@ define(function(require, exports, module) {
                             emit("attach", { breakpoints: breakpoints });
                         }, 
                         function() {
+                            if (reconnect && frames && frames.length)
+                                activeFrame = frames[0];
+                            
                             // This check is for when the process is not 
                             // started with debug-brk
                             if (activeFrame) {
@@ -253,7 +256,11 @@ define(function(require, exports, module) {
                     return JSON.stringify(value.value);
     
                 case "object":
-                    return "[" + (value.className || "Object") + "]";
+                    // text: "#<Student>"
+                    var name = value.className || (value.text 
+                        ? value.text.replace(/#<(.*)>/, "$1") 
+                        : "Object");
+                    return "[" + name + "]";
     
                 case "function":
                     return "function " + value.inferredName + "()";
@@ -366,16 +373,41 @@ define(function(require, exports, module) {
         }
         
         function createVariable(options, name, scope){
-            return new Variable({
-                name     : name || options.name,
-                scope    : scope,
-                value    : formatType(options.value),
-                type     : options.value.type,
-                ref      : typeof options.value.ref == "number" 
-                    ? options.value.ref 
-                    : options.value.handle,
-                children : hasChildren[options.value.type] ? true : false
+            var value = options.value;
+            
+            var variable = new Variable({
+                name      : name || options.name,
+                scope     : scope,
+                value     : formatType(value),
+                type      : value.type,
+                ref       : typeof value.ref == "number" 
+                    ? value.ref 
+                    : value.handle,
+                children  : hasChildren[value.type] ? true : false
             });
+            
+            if (value.prototypeObject)
+                variable.prototype = new Variable({
+                    tagName : "prototype",
+                    name    : "prototype", 
+                    type    : "object",
+                    ref     : value.prototypeObject.ref
+                });
+            if (value.protoObject)
+                variable.proto = new Variable({ 
+                    tagName : "proto",
+                    name    : "proto", 
+                    type    : "object",
+                    ref     : value.protoObject.ref
+                });
+            if (value.constructorFunction)
+                variable.constructorFunction = new Variable({ 
+                    tagName : "constructor", 
+                    name    : "constructor", 
+                    type    : "function",
+                    ref     : value.constructorFunction.ref
+                });
+            return variable;
         }
         
         function createSource(options) {
@@ -461,7 +493,7 @@ define(function(require, exports, module) {
         function onChangeFrame(frame, silent) {
             activeFrame = frame;
             if (!silent)
-                emit("frameActivate", {frame: frame});
+                emit("frameActivate", { frame: frame });
         }
     
         /***** Socket *****/
@@ -654,14 +686,12 @@ define(function(require, exports, module) {
                     var topFrame = frames[0];
                     if (topFrame)
                         topFrame.istop = true;
-                    onChangeFrame(topFrame, silent);
                 }
                 else {
                     frames = [];
-                    onChangeFrame(null, silent);
                 }
                 
-                emit("getFrames", {frames: frames});
+                emit("getFrames", { frames: frames });
                 callback(null, frames);
             });
         }
@@ -749,21 +779,10 @@ define(function(require, exports, module) {
                     return callback(err);
                 }
                 
-                var variable = new Variable({
-                    name     : name,
-                    value    : formatType(body),
-                    type     : body.type,
-                    ref      : typeof body.ref == "number" 
-                        ? body.ref 
-                        : body.handle,
-                    children : body.properties && body.properties.length ? true : false
+                var variable = createVariable({
+                    name  : name,
+                    value : body
                 });
-                
-//              @todo - and make this consistent with getProperties
-//                if (body.constructorFunction)
-//                    value.contructor = body.constructorFunction.ref;
-//                if (body.prototypeObject)
-//                    value.prototype = body.prototypeObject.ref;
                 
                 if (variable.children) {
                     lookup(body.properties, false, function(err, properties){

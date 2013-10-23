@@ -1,21 +1,22 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "c9", "util", "settings", "ui", "tabManager", "debugger"
+        "DebugPanel", "util", "settings", "ui", "tabManager", "debugger", "ace",
+        "MenuItem", "Divider"
     ];
     main.provides = ["breakpoints"];
     return main;
 
     function main(options, imports, register) {
-        var c9         = imports.c9;
         var util       = imports.util;
         var DebugPanel = imports.DebugPanel;
         var settings   = imports.settings;
         var ui         = imports.ui;
+        var ace        = imports.ace;
         var tabs       = imports.tabManager;
         var debug      = imports.debugger;
+        var MenuItem   = imports.MenuItem;
+        var Divider    = imports.Divider;
         
-        var markup     = require("text!./breakpoints.xml");
-        var html       = require("text!./breakpoints.html");
         var Breakpoint = require("./data/breakpoint");
         
         var basename   = require("path").basename;
@@ -35,7 +36,8 @@ define(function(require, exports, module) {
         
         var dbg;
         var list, menu, model, hCondition, hInput; // UI Elements
-        var btnBreakpoints, btnBpRemove;
+        var btnBreakpoints, btnBpRemove, codebox;
+        var conditionBreakpoint;
         
         var loaded = false;
         function load(){
@@ -77,7 +79,7 @@ define(function(require, exports, module) {
                 
                 // Deactivate breakpoints if user wants to
                 if (!enableBreakpoints)
-                    deactivateAll();
+                    deactivateAll(true);
             });
             debug.on("detach", function(e){
                 dbg = null;
@@ -87,7 +89,7 @@ define(function(require, exports, module) {
             });
             
             debug.on("getBreakpoints", function(){ 
-                return breakpoints; 
+                return breakpoints;
             });
             
             debug.on("breakpointUpdate", function(e){
@@ -99,7 +101,7 @@ define(function(require, exports, module) {
                     if (tab) {
                         var session = tab.document.getSession();
                         if (bp.actual.line >= session.session.getLength()) {
-                            breakpoints.clearBreakpoint(bp);
+                            clearBreakpoint(bp);
                             return;
                         }
                     }
@@ -136,10 +138,10 @@ define(function(require, exports, module) {
                     ["active", "true"]
                 ]);
                 
-                var list = settings.getJson("user/breakpoints");
+                var bps = settings.getJson("user/breakpoints");
                 
                 // bind it to the Breakpoint model
-                breakpoints = (list || []).map(function(bp){
+                breakpoints = (bps || []).map(function(bp){
                     return new Breakpoint(bp);
                 });
                 model.load("<breakpoints>" 
@@ -153,7 +155,7 @@ define(function(require, exports, module) {
                 enableBreakpoints = settings.getBool("user/breakpoints/@active");
                 toggleBreakpoints(enableBreakpoints);
                 
-                if (!enableBreakpoints)
+                if (!enableBreakpoints && drawn)
                     list.setAttribute("class", "listBPDisabled");
             });
             
@@ -167,6 +169,87 @@ define(function(require, exports, module) {
                 
                 changed = false;
             });
+            
+            // Wait for the gutter menu
+            ace.on("draw", function() {
+                
+                // We need the gutter context menu
+                var menu = ace.gutterContextMenu;
+                var meta = menu.meta;
+                
+                menu.append(new MenuItem({
+                    caption     : "Continue to Here",
+                    position    : 100,
+                    isAvailable : function(){ 
+                        return dbg && dbg.state == "stopped" 
+                          && meta.className.indexOf("breakpoint") === -1; 
+                    },
+                    onclick     : function(){
+                        // Add hidden breakpoint
+                        var breakpoint = new Breakpoint({
+                           path    : meta.ace.session.c9doc.tab.path,
+                           line    : meta.line,
+                           column  : 0,
+                           hidden  : true,
+                           enabled : true
+                        });
+                        updateBreakpointAtDebugger(breakpoint, "add");
+                        
+                        // Wait until break
+                        function done(){
+                            // Remove breakpoint
+                            updateBreakpointAtDebugger(breakpoint, "remove");
+                            
+                            // Re-activate all breakpoints
+                            activateAll(true);
+                            
+                            debug.off("break", done);
+                            debug.off("detach", done);
+                        }
+                        
+                        debug.on("break", done);
+                        debug.on("detach", done);
+                        
+                        // Deactivate all breakpoints
+                        deactivateAll(true);
+                        
+                        // Continue
+                        debug.resume();
+                    }
+                }, plugin));
+                
+                menu.append(new Divider({ position: 150 }, plugin));
+                
+                var itemAdd = menu.append(new MenuItem({
+                    position : 200,
+                    isAvailable : function(){
+                        itemAdd.caption = meta.className.indexOf("breakpoint") > -1
+                            ? "Remove Breakpoint"
+                            : "Add Breakpoint";
+                        return true; 
+                    },
+                    onclick  : function(){
+                        editBreakpoint(meta.className.indexOf("breakpoint") > -1
+                            ? "remove" : "add", meta.ace, meta.line);
+                    }
+                }, plugin));
+                
+                var itemCondition = menu.append(new MenuItem({
+                    position : 300,
+                    isAvailable : function(){
+                        var name = meta.className;
+                        itemCondition.caption = name.indexOf("condition") > -1
+                            ? "Edit Condition"
+                            : (name.indexOf("breakpoint") > -1
+                                ? "Set Condition"
+                                : "Add Conditional Breakpoint");
+                        return true;
+                    },
+                    onclick : function(){
+                        editBreakpoint("edit", meta.ace, meta.line);
+                    }
+                }, plugin));
+            });
         }
 
         var drawn;
@@ -175,18 +258,8 @@ define(function(require, exports, module) {
             drawn = true;
             
             // Create UI elements
+            var markup = require("text!./breakpoints.xml");
             ui.insertMarkup(options.aml, markup, plugin);
-            
-            // Create HTML elements
-            var nodes = ui.insertHtml(null, html, plugin);
-            hCondition = nodes[0];
-            hInput     = hCondition.getElementsByTagName("input")[0];
-            hInput.onblur = function(){
-                hCondition.style.display = "none";
-            }
-            hInput.onmousedown = function(e){
-                apf.stopEvent(e);
-            }
             
             list = plugin.getElement("list");
             list.setAttribute("model", model);
@@ -224,6 +297,9 @@ define(function(require, exports, module) {
             menu = plugin.getElement("menu");
         
             list.setAttribute("contextmenu", menu);
+            
+            if (!enableBreakpoints)
+                list.setAttribute("class", "listBPDisabled");
             
             menu.on("prop.visible", function(){
                 var length = list.length;
@@ -299,6 +375,43 @@ define(function(require, exports, module) {
             });
         }
         
+        var drawnCondition;
+        function drawCondition(){
+            if (drawnCondition) return;
+            drawnCondition = true;
+            
+            // Create HTML elements
+            var html   = require("text!./breakpoints.html");
+            hCondition = ui.insertHtml(null, html, plugin)[0];
+            
+            hInput = hCondition.querySelector(".input");
+            codebox = new apf.codebox({
+                skin        : "simplebox",
+                "class"     : "dark",
+                focusselect : "true",
+                htmlNode    : hInput,
+                "initial-message": "Your Expression"
+            })
+            
+            codebox.ace.commands.addCommands([
+                {
+                    bindKey : "ESC",
+                    exec    : function(){ hCondition.style.display = "none"; }
+                }, {
+                    bindKey : "Enter",
+                    exec    : function(){ 
+                        setCondition(conditionBreakpoint, codebox.getValue());
+                        hCondition.style.display = "none";
+                    }
+                },
+            ]);
+            
+            apf.addEventListener("movefocus", function(e){
+                if (e.toElement != codebox)
+                    hCondition.style.display = "none";
+            });
+        }
+        
         /***** Helper Functions *****/
         
         function toggleBreakpoints(force){
@@ -367,63 +480,86 @@ define(function(require, exports, module) {
                     
                 e.stop();
                 
-                var session   = editor.session;
                 var line      = e.getDocumentPosition().row;
-                var path      = session.c9doc.tab.path;
-                var className = session.getBreakpoints()[line];
-                var obp       = findBreakpoint(path, line);
-                var removed   = false;
-                var enabled   = true;
-                
-                function createBreakpoint(condition){
-                    var caption = basename(path);
-                    var lineContents = session.getLine(line);
-                    
-                    return setBreakpoint({
-                        path       : path,
-                        line       : line,
-                        column     : (lineContents.match(/^(\s+)/) ||[0,""])[1].length,
-                        text       : caption,
-                        content    : lineContents,
-                        enabled    : enabled,
-                        condition  : condition
-                    });
-                }
+                var className = editor.session.getBreakpoints()[line];
+                var action;
                 
                 // Show condition dialog
                 if (e.getAccelKey()) {
-                    showConditionDialog(editor, createBreakpoint, path, line, obp);
-                    return;
+                    action = "edit";
                 }
                 // Toggle disabled/enabled
                 else if (e.getShiftKey()) {
-                    enabled = className && className.indexOf("disabled") == -1;
-                    removed = false;
+                    action = className && className.indexOf("disabled") > -1
+                        ? "enable" : "disable";
                 } 
                 // Toggle add/remove
                 else {
-                    removed = className ? true : false;
-                    enabled = true;
-                }
-    
-                // Remove old breakpoint
-                if (obp) {
-                    if (removed)
-                        clearBreakpoint(obp);
-                    else if (enabled)
-                        enableBreakpoint(obp);
-                    else
-                        disableBreakpoint(obp);
-                    return;
+                    action = !className ? "create" : 
+                        (className.indexOf("disabled") > -1 ? "enable" : "remove");
                 }
                 
-                createBreakpoint();
+                editBreakpoint(action, editor, line);
             });
         }
         
+        function editBreakpoint(action, editor, line){
+            var session   = editor.session;
+            var path      = session.c9doc.tab.path;
+            var obp       = findBreakpoint(path, line);
+            var removed   = false;
+            var enabled   = true;
+            
+            function createBreakpoint(condition){
+                var caption = basename(path);
+                var lineContents = session.getLine(line);
+                
+                return setBreakpoint({
+                    path       : path,
+                    line       : line,
+                    column     : (lineContents.match(/^(\s+)/) ||[0,""])[1].length,
+                    text       : caption,
+                    content    : lineContents,
+                    enabled    : enabled,
+                    condition  : condition
+                });
+            }
+            
+            // Show condition dialog
+            if (action == "edit") {
+                showConditionDialog(editor, createBreakpoint, path, line, obp);
+                return;
+            }
+            // Toggle disabled/enabled
+            else if (action == "enable" || action == "disable") {
+                enabled = action == "enable";
+                removed = false;
+            } 
+            // Toggle add/remove
+            else {
+                removed = action == "remove";
+                enabled = true;
+            }
+
+            // Remove old breakpoint
+            if (obp) {
+                if (removed)
+                    clearBreakpoint(obp);
+                else if (enabled)
+                    enableBreakpoint(obp);
+                else
+                    disableBreakpoint(obp);
+                return;
+            }
+            
+            createBreakpoint();
+        }
+        
         function showConditionDialog(ace, createBreakpoint, path, line, breakpoint){
+            drawCondition();
+            
             // Attach dialog to ace
-            ace.container.appendChild(hCondition);
+            ace.container.parentNode.appendChild(hCondition);
             hCondition.style.display = "block";
             
             // Set left
@@ -435,10 +571,10 @@ define(function(require, exports, module) {
                 row    : line+1,
                 column : 0
             }, true);
-            hCondition.style.top = (pos.top + 2) + "px"; // line position
+            hCondition.style.top = (pos.top + 3) + "px"; // line position
             
             // Set current value
-            hInput.value = breakpoint.condition ||  "";
+            codebox.setValue(breakpoint.condition ||  "")
             
             var node = hCondition.getElementsByTagName("div")[0].firstChild;
             node.nodeValue = node.nodeValue.replace(/\d+/, line + 1);
@@ -446,21 +582,9 @@ define(function(require, exports, module) {
             if (!breakpoint)
                 breakpoint = createBreakpoint();
             
-            hInput.onkeydown = function(e){
-                if (e.keyCode == 27) {
-                    hCondition.style.display = "none";
-                    apf.stopEvent(e);
-                }
-                else if (e.keyCode == 13) {
-                    setCondition(breakpoint, hInput.value);
-                    hCondition.style.display = "none";
-                    
-                    apf.stopEvent(e);
-                }
-                
-            };
+            conditionBreakpoint = breakpoint;
             
-            hInput.focus();
+            setTimeout(function(){ codebox.focus(); });
         }
         
         /**
@@ -535,16 +659,16 @@ define(function(require, exports, module) {
                     return;
 
                 rows[((bp.actual || bp).line)] 
-                    = " ace_breakpoint "
-                        + (bp.condition ? "condition" : "")
-                        + (bp.enabled ? "" : "disabled ");
+                    = " ace_breakpoint"
+                        + (bp.condition ? " condition" : "")
+                        + (bp.enabled ? "" : " disabled ");
             });
 
             session.session.$breakpoints = rows;
             session.session._emit("changeBreakpoint", {});
         }
 
-        function updateBreakpoint(breakpoint, action){
+        function updateBreakpoint(breakpoint, action, force){
             //This can be optimized, currently rereading everything
             var tab = tabs.findTab(breakpoint.path);
             if (tab) {
@@ -554,7 +678,7 @@ define(function(require, exports, module) {
             
             // Don't call update to enable/disable breakpoints when they are
             // all deactivated
-            if (enableBreakpoints || (action != "enable" && action != "disable"))
+            if (force || enableBreakpoints || (action != "enable" && action != "disable"))
                 updateBreakpointAtDebugger(breakpoint, action);
             
             changed = true;
@@ -606,6 +730,9 @@ define(function(require, exports, module) {
                     return;
                 }
             }
+            
+            if (breakpoint.hidden)
+                return;
                 
             // Make sure we have a breakpoint object
             if (!(breakpoint instanceof Breakpoint))
@@ -698,15 +825,15 @@ define(function(require, exports, module) {
             });
         }
         
-        function activateAll(){
-            if (enableBreakpoints) return;
+        function activateAll(force){
+            if (enableBreakpoints && !force) return;
             
             enableBreakpoints = true;
             settings.set("user/breakpoints/@active", true);
             
             breakpoints.forEach(function(bp){
                 if (bp.enabled)
-                    updateBreakpoint({id: bp.id, enabled: true}, "enable");
+                    updateBreakpoint({id: bp.id, enabled: true}, "enable", force);
             });
             
             list.setAttribute("class", "");
@@ -714,18 +841,18 @@ define(function(require, exports, module) {
             toggleBreakpoints(true);
         }
         
-        function deactivateAll(){
-            if (!enableBreakpoints) return;
+        function deactivateAll(force){
+            if (!enableBreakpoints && !force) return;
             
-            enableBreakpoints = false;
             settings.set("user/breakpoints/@active", false);
             
             breakpoints.forEach(function(bp){
-                updateBreakpoint({id: bp.id, enabled: false}, "disable");
+                updateBreakpoint({id: bp.id, enabled: false}, "disable", force);
             });
             
             list.setAttribute("class", "listBPDisabled");
             
+            enableBreakpoints = false;
             toggleBreakpoints(false);
         }
         
@@ -745,6 +872,7 @@ define(function(require, exports, module) {
         plugin.on("unload", function(){
             loaded = false;
             drawn  = false;
+            drawnCondition = false;
         });
         
         /***** Register and define API *****/

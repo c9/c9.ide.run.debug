@@ -54,7 +54,7 @@ define(function(require, exports, module) {
             
             // When clicking on a frame in the call stack show it 
             // in the variables datagrid
-            debug.on("frameActivate", function(e){
+            callstack.on("frameActivate", function(e){
                 // @todo reload the clicked frame recursively + keep state
                 loadFrame(e.frame);
             }, plugin);
@@ -97,6 +97,10 @@ define(function(require, exports, module) {
         
             datagrid = plugin.getElement("datagrid");
             datagrid.setAttribute("model", model);
+            
+            datagrid.on("contextmenu", function(){
+                return false;
+            });
             
             datagrid.on("beforeinsert", function(e){
                 var node = e.xmlNode;
