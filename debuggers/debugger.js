@@ -23,13 +23,13 @@ define(function(require, exports, module) {
         /***** Initialization *****/
         
         var plugin = new Panel("Ajax.org", main.consumes, {
-            index        : 100,
+            index        : options.index || 100,
             caption      : "Debugger",
             className    : "debugger",
             elementName  : "winDebugger",
             minWidth     : 165,
             width        : 300,
-            where        : "right"
+            where        : options.where || "right"
         });
         var emit   = plugin.getEmitter();
         
