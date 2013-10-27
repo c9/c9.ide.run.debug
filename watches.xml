@@ -1,19 +1,6 @@
 <a:application xmlns:a="http://ajax.org/2005/aml">
-    <a:datagrid id="datagrid"
+    <a:bar id="datagrid"
       border     = "0"
-      skinset    = "debugger"
-      options    = "size|move"
-      prerender  = "false"
-      caching    = "false">
-        <a:remove match="[node()[../../watches and not(@new='new')]]" />
-        <a:each match="[variable]">
-            <a:insert match="[node()[@children='true']]" />
-            <a:css match="[node()[@new='new']]" value="newwatch" />
-            <a:css match="[node()[@error='1']]" value="watcherror" />
-            <a:column caption="Expression" match="[@name]" value="{[@name]||'Type your expression here...'}" width="60%" 
-                icon="debugger/genericvariable_obj.gif" tree="true" editor="textbox" />
-            <a:column caption="Value" value="[@value]" width="40%" editor="textbox" />
-            <a:column caption="Type" value="[@type]" width="50"/>
-        </a:each>
-    </a:datagrid>
+      skinset    = "debugger">
+    </a:bar>
 </a:application>

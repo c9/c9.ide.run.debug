@@ -13,6 +13,8 @@ define(function(require, exports, module) {
         var util       = imports.util;
         
         var markup   = require("text!./variables.xml");
+        var Tree     = require("ace_tree/tree");
+        var TreeData = require("ace_tree/data_provider");
         
         /***** Initialization *****/
         
@@ -30,9 +32,9 @@ define(function(require, exports, module) {
             if (loaded) return false;
             loaded = true;
             
-            model = new ui.model();
-            plugin.addElement(model);
-            
+            model = new TreeData();
+            model.emptyMessage = "No variables to display";
+
             // Set and clear the dbg variable
             debug.on("attach", function(e){
                 dbg = e.implementation;
@@ -46,11 +48,11 @@ define(function(require, exports, module) {
             
             callstack.on("scopeUpdate", function(e){
                 updateScope(e.scope, e.variables);
-            })
+            });
             callstack.on("framesLoad", function(e){
                 // Clear the cached states of the variable datagrid
                 clearCache();
-            })
+            });
             
             // When clicking on a frame in the call stack show it 
             // in the variables datagrid
@@ -96,12 +98,16 @@ define(function(require, exports, module) {
             ui.insertMarkup(options.aml, markup, plugin);
         
             datagrid = plugin.getElement("datagrid");
-            datagrid.setAttribute("model", model);
+            
+            var datagridEl = plugin.getElement("datagrid");
+            datagrid = new Tree(datagridEl.$ext);
+            datagrid.setOption("maxLines", 200);
+            datagrid.setDataProvider(model);
             
             datagrid.on("contextmenu", function(){
                 return false;
             });
-            
+            /*
             datagrid.on("beforeinsert", function(e){
                 var node = e.xmlNode;
 
@@ -185,6 +191,7 @@ define(function(require, exports, module) {
             datagrid.on("editor.create", function(e){
                 var tb = e.editor;
             });
+            */
         }
         
         /***** Methods *****/
@@ -194,17 +201,17 @@ define(function(require, exports, module) {
                 return;
 
             if (!frame) {
-                model.clear();
+                model.setRoot({});
             }
             else {
                 if (cached[frame.id])
-                    model.load(cached[frame.id]);
+                    model.setRoot(cached[frame.id]);
                 else {
-                    model.load(frame.xml);
-                    cached[frame.id] = model.data;
+                    model.setRoot(frame.scopes);
+                    cached[frame.id] = model.root;
                 }
             }
-                
+            
             activeFrame = frame;
         }
         
@@ -302,7 +309,6 @@ define(function(require, exports, module) {
         
         function clearCache(){
             cached = {};
-            datagrid && datagrid.clearAllCache();
         }
         
         /***** Lifecycle *****/

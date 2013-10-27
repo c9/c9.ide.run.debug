@@ -22,6 +22,8 @@ define(function(require, exports, module) {
         var keys     = require("ace/lib/keys");
         var markup   = require("text!./watches.xml");
         var Variable = require("./data/variable");
+        var Tree     = require("ace_tree/tree");
+        var TreeData = require("ace_tree/data_provider");
         
         /***** Initialization *****/
         
@@ -42,9 +44,8 @@ define(function(require, exports, module) {
             if (loaded) return false;
             loaded = true;
             
-            model = new ui.model();
-            
-            plugin.addElement(model);
+            model = new TreeData();
+            model.emptyMessage = "Type your expression here...";
             
             // Set and clear the dbg variable
             debug.on("attach", function(e){
@@ -94,12 +95,10 @@ define(function(require, exports, module) {
                     watches.push(new Variable({ 
                         name : name, 
                         ref  : "fromsettings" + count++ 
-                    }))
+                    }));
                 });
                 
-                model.load("<watches>" + watches.join("") 
-                    + "<variable new='new' name='' value='' ref='new" 
-                    + (count++) + "'/></watches>");
+                model.setRoot(watches.join(""));
                 
                 if (dbg)
                     updateAll();
@@ -123,8 +122,10 @@ define(function(require, exports, module) {
             // Create UI elements
             ui.insertMarkup(options.aml, markup, plugin);
         
-            datagrid = plugin.getElement("datagrid");
-            datagrid.setAttribute("model", model);
+            var datagridEl = plugin.getElement("datagrid");
+            datagrid = new Tree(datagridEl.$ext);
+            datagrid.setOption("maxLines", 200);
+            datagrid.setDataProvider(model);
             
             var contextMenu = new Menu({
                 items : [
@@ -151,7 +152,7 @@ define(function(require, exports, module) {
                 contextMenu.items[3].disabled = !selected || !!isNew || isProp;
             });
             
-            datagrid.setAttribute("contextmenu", contextMenu.aml);
+            datagridEl.setAttribute("contextmenu", contextMenu.aml);
             
             datagrid.on("beforeinsert", function(e){
                 var node = e.xmlNode;
@@ -285,8 +286,7 @@ define(function(require, exports, module) {
             });
             watches.push(variable);
             
-            var newNode = ui.xmldb.appendChild(model.data, apf.getXml(variable.xml), model.data.firstChild);
-            // model.appendXml(newNode); //apf hack
+            var newNode;
             
             dirty = true;
             settings.save();
@@ -305,7 +305,7 @@ define(function(require, exports, module) {
                   !debug.activeFrame, true, function(err, serverVariable){
                     if (err) {
                         variable.value      = err.message;
-                        variable.properties = null
+                        variable.properties = null;
                         updateVariable(variable, [], node, true);
                         return;
                     }
@@ -314,7 +314,7 @@ define(function(require, exports, module) {
 
                     updateVariable(variable, 
                         variable.properties || [], node);
-                })
+                });
             }
             // Set new value of a property
             else {
@@ -345,7 +345,7 @@ define(function(require, exports, module) {
         
         function updateAll(){
             watches.forEach(function(variable){
-                var node = findVariableXml(variable);
+                var node = findVariableNode(variable);
                 if (!node) return;
                 
                 setWatch(variable, undefined, true, null, node, []);
@@ -366,34 +366,23 @@ define(function(require, exports, module) {
             }
         }
         
-        function findVariableXml(variable){
-            return model.queryNode("//variable[@ref=" 
-                + util.escapeXpathString(String(variable.ref)) + "]");
+        function findVariableNode(variable){
+            return variable;
         }
         
-        function updateVariableXml(node, variable, oldVar){
-            node.setAttribute("value", oldVar.value = variable.value);
-            node.setAttribute("type",  oldVar.type  = variable.type);
-            node.setAttribute("ref",   oldVar.ref   = variable.ref);
-            apf.xmldb.setAttribute(node, "children", oldVar.children = variable.children);
+        function updateVariableNode(node, variable, oldVar){
+            model._signal("change", node);
         }
         
         function updateVariable(variable, properties, node, error){
             // Pass node for recursive trees
             if (!node)
-                node = findVariableXml(variable);
+                node = findVariableNode(variable);
             if (!node || !node.parentNode)
                 return;
             
-            // Update xml node
-            node.setAttribute("ref", variable.ref);
-            node.setAttribute("value", variable.value);
-            node.setAttribute("error", error ? "1" : "0");
-            variable.error = error;
-            apf.xmldb.setAttribute(node, "type", variable.type);
-            
-            var htmlNode = apf.xmldb.findHtmlNode(node, datagrid);
-            htmlNode.childNodes[1].setAttribute("title", variable.value);
+            // Update ace_tree node
+            model._signal("change", variable);
             
             if (node.childNodes.length && variable.properties
               && node.childNodes.length == variable.properties.length) {
@@ -401,7 +390,7 @@ define(function(require, exports, module) {
                 
                 variable.properties.forEach(function(prop, i){
                     var oldVar = variable.findVariable(null, prop.name);
-                    updateVariableXml(vars[i], prop, oldVar);
+                    updateVariableNode(vars[i], prop, oldVar);
                     
                     if (oldVar.properties) {
                         emit("expand", {
@@ -410,13 +399,7 @@ define(function(require, exports, module) {
                             expand   : function(){}
                         });
                     }
-                })
-            }
-            else {
-                apf.mergeXml(apf.getXml("<p>" + properties.join("") + "</p>"), 
-                    node, {clearContents : true});
-                apf.xmldb.applyChanges("insert", node);
-                //model.appendXml(properties.join(""), node);
+                });
             }
         }
         

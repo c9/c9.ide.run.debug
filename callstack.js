@@ -16,6 +16,10 @@ define(function(require, exports, module) {
         var Range    = require("ace/range").Range;
         var markup   = require("text!./callstack.xml");
         
+        
+        var Tree     = require("ace_tree/tree");
+        var TreeData = require("ace_tree/data_provider");
+        
         /***** Initialization *****/
         
         var deps   = main.consumes.splice(0, main.consumes.length - 1);
@@ -37,8 +41,10 @@ define(function(require, exports, module) {
             loaded = true;
             
             modelSources = new ui.model();
-            modelFrames  = new ui.model();
-            plugin.addElement(modelSources, modelFrames);
+            plugin.addElement(modelSources);
+            
+            modelFrames  = new TreeData();
+            modelFrames.emptyMessage = "No callstack to display";
             
             // Set and clear the dbg variable
             debug.on("attach", function(e){
@@ -147,8 +153,10 @@ define(function(require, exports, module) {
             // Create UI elements
             ui.insertMarkup(options.aml, markup, plugin);
             
-            datagrid = plugin.getElement("datagrid");
-            datagrid.setAttribute("model", modelFrames);
+            var datagridEl = plugin.getElement("datagrid");
+            datagrid = new Tree(datagridEl.$ext);
+            datagrid.setOption("maxLines", 200);
+            datagrid.setDataProvider(modelFrames);
             
             // Update markers when a document becomes available
             tabs.on("tabAfterActivateSync", function(e) {
@@ -156,12 +164,13 @@ define(function(require, exports, module) {
             });
             
             // stack view
-            datagrid.on("afterselect", function(e) {
+            datagrid.on("changeSelection", function(e) {
                 // afterselect can be called after setting value, without user interaction
-                if (!datagrid.hasFocus())
+                // TODO add userSelect event to aceTree ?
+                if (!datagrid.isFocused())
                     return;
-                
-                setActiveFrame(e.selected && findFrame(e.selected), true);
+                var frame = datagrid.selection.getCursor();
+                setActiveFrame(frame, true);
             });
             
             datagrid.on("contextmenu", function(){
@@ -206,7 +215,7 @@ define(function(require, exports, module) {
             plugin.addElement(menu, button);
             
             // Load the scripts in the sources dropdown
-            var list = menu.firstChild
+            var list = menu.firstChild;
             list.setModel(modelSources);
             list.on("afterselect", function(e){
                 debug.openFile({
@@ -227,11 +236,11 @@ define(function(require, exports, module) {
             if (!fromDG && datagrid) {
                 // Select the frame in the UI
                 if (!frame) {
-                    modelFrames.clear();
+                    modelFrames.setRoot({});
                     frames = [];
                 }
                 else {
-                    datagrid.select(findFrameXml(frame));
+                    datagrid.select(frame);
                 }
             }
             
@@ -355,72 +364,16 @@ define(function(require, exports, module) {
             }
         }
         
-        function findFrameXml(frame){
-            return modelFrames.queryNode("//frame[@index=" 
-                + util.escapeXpathString(String(frame.index)) + "]")
-        }
-        
-        /**
-         * Assumptions:
-         *  - .index stays the same
-         *  - sequence in the array stays the same
-         *  - ref stays the same when stepping in the same context
-         */
-        function updateFrameXml(frame, noRecur){
-            var node = findFrameXml(frame);
-            if (!node)
-                return;
-            
-            //With code insertion, line/column might change??
-            node.setAttribute("line", frame.line);
-            node.setAttribute("path", frame.path);
-            apf.xmldb.setAttribute(node, "column", frame.column);
-        
-            if (noRecur)
-                return;
-        
-            // Updating the scopes of a frame
-            if (frame.variables) {
-                emit("scopeUpdate", {
-                    scope     : frame,
-                    variables : frame.variables
-                });
-            }
-            else {
-                dbg.getScope(activeFrame, frame, function(err, vars){
-                    if (err) return console.error(err);
-                    
-                    emit("scopeUpdate", {
-                        scope     : frame,
-                        variables : vars
-                    });
-                });
-            }
-        
-            // Update scopes if already loaded
-            frame.scopes && frame.scopes.forEach(function(scope){
-                if (scope.variables)
-                    emit("scopeUpdate", { scope: scope });
-            });
-        };
-        
         function loadFrames(input, noRecur, force){
-            // If we're in the same frameset, lets just update the frames
-            if (!force && input.length && input.length == frames.length 
-              && frames[0].equals(input[0])) {
-                for (var i = 0, l = input.length; i < l; i++)                                                                        
-                    updateFrameXml(input[i], noRecur);
-                return false;
-            }
-            else {
-                frames = input;
-                modelFrames.load("<frames>" + frames.join("") + "</frames>");
-                
-                if (activeFrame && frames.indexOf(activeFrame) > -1)
-                    setActiveFrame(activeFrame);
-                
-                return true;
-            }
+            frames = input;
+            modelFrames.setRoot(frames);
+            
+            if (activeFrame && frames.indexOf(activeFrame) > -1)
+                setActiveFrame(activeFrame);
+            else
+                setActiveFrame(frames[0]);
+            
+            return true;
         }
         
         function loadSources(input){
@@ -442,11 +395,12 @@ define(function(require, exports, module) {
         }
         
         function updateAll(){
-            frames.forEach(function(frame){
-                updateFrameXml(frame);
-            });
+            modelFrames.setRoot(frames);
         }
         
+        function updateFrame(frame){
+            modelFrames._signal("change", frame);
+        }
         /***** Lifecycle *****/
         
         plugin.on("load", function(){
@@ -518,7 +472,7 @@ define(function(require, exports, module) {
              * Updates a specific frame in the call stack UI
              * @param {debugger.Frame} frame  The frame to update.
              */
-            updateFrame : updateFrameXml
+            updateFrame : updateFrame
         });
         
         register(null, {
