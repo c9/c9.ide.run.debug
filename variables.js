@@ -34,6 +34,27 @@ define(function(require, exports, module) {
             
             model = new TreeData();
             model.emptyMessage = "No variables to display";
+            
+            // <a:each match="[scope|variable]" sort="[@name]" sort-method="scopesort">
+            // <a:insert match="[scope]" />
+            // <a:insert match="[node()[@children='true']]" />
+            model.columns = [{
+                caption : "Property",
+                value   : "name",
+                defaultValue : "Scope",
+                width   : "40%",
+                icon    : "debugger/genericvariable_obj.gif",
+                tree    : "true"
+            }, {
+                caption : "Value",
+                value   : "value",
+                width   : "60%",
+                editor  : "textbox" 
+            }, {
+                caption : "Type",
+                value   : "[@type]",
+                width   : "50"
+            }];
 
             // Set and clear the dbg variable
             debug.on("attach", function(e){
@@ -237,6 +258,9 @@ define(function(require, exports, module) {
         }
         
         function updateScope(scope, variables){
+            model.setRoot(variables.concat([scope]))
+            return 
+            // 
             var update = scope.equals(activeFrame);
             var node   = update ? model.data : findScopeXml(scope);
             if (!node) return;

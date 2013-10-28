@@ -46,6 +46,26 @@ define(function(require, exports, module) {
             modelFrames  = new TreeData();
             modelFrames.emptyMessage = "No callstack to display";
             
+            modelFrames.columns = [{
+                caption : "Function",
+                value   : "name",
+                width   : "60%",
+                icon    : "debugger/stckframe_obj.gif"
+            }, {
+                caption : "Script",
+                value   : "path",
+                width   : "40%"
+            }, {
+                caption : "Ln",
+                getText : function(node) { return node.line + 1; },
+                width   : "30",
+            }, {
+                caption : "Col",
+                getText : function(node) { return node.column + 1; },
+                width   : "30"
+            }];
+            
+            
             // Set and clear the dbg variable
             debug.on("attach", function(e){
                 dbg = e.implementation;
