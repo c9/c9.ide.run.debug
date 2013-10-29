@@ -46,6 +46,7 @@ define(function(require, exports, module) {
             modelFrames  = new TreeData();
             modelFrames.emptyMessage = "No callstack to display";
             
+            modelFrames.$sorted = false;
             modelFrames.columns = [{
                 caption : "Function",
                 value   : "name",
@@ -175,7 +176,9 @@ define(function(require, exports, module) {
             
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
+            datagrid.renderer.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
+            modelFrames.rowHeight = 18;
             datagrid.setDataProvider(modelFrames);
             
             // Update markers when a document becomes available
@@ -384,6 +387,43 @@ define(function(require, exports, module) {
             }
         }
         
+                /**
+         * Assumptions:
+         *  - .index stays the same
+         *  - sequence in the array stays the same
+         *  - ref stays the same when stepping in the same context
+         */
+        
+        function updateFrame(frame, noRecur){
+            modelFrames._signal("change", frame);
+            if (noRecur)
+                return;
+        
+            // Updating the scopes of a frame
+            if (frame.variables) {
+                emit("scopeUpdate", {
+                    scope     : frame,
+                    variables : frame.variables
+                });
+            }
+            else {
+                dbg.getScope(activeFrame, frame, function(err, vars){
+                    if (err) return console.error(err);
+                    
+                    emit("scopeUpdate", {
+                        scope     : frame,
+                        variables : vars
+                    });
+                });
+            }
+        
+            // Update scopes if already loaded
+            frame.scopes && frame.scopes.forEach(function(scope){
+                if (scope.variables)
+                    emit("scopeUpdate", { scope: scope });
+            });
+        };
+        
         function loadFrames(input, noRecur, force){
             frames = input;
             modelFrames.setRoot(frames);
@@ -392,7 +432,10 @@ define(function(require, exports, module) {
                 setActiveFrame(activeFrame);
             else
                 setActiveFrame(frames[0]);
-            
+
+            for (var i = 0, l = input.length; i < l; i++)
+                updateFrame(input[i], noRecur);
+
             return true;
         }
         
@@ -418,9 +461,6 @@ define(function(require, exports, module) {
             modelFrames.setRoot(frames);
         }
         
-        function updateFrame(frame){
-            modelFrames._signal("change", frame);
-        }
         /***** Lifecycle *****/
         
         plugin.on("load", function(){

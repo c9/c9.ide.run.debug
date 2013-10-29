@@ -48,23 +48,23 @@ define(function(require, exports, module) {
             model.emptyMessage = "Type your expression here...";
             
             model.columns = [{
-                caption:"Expression",
-                match:"[@name]",
-                value:"{[@name]||'Type your expression here...'}",
-                width:"60%",
-                icon:"debugger/genericvariable_obj.gif",
-                tree:"true",
-                editor:"textbox"
+                caption : "Expression",
+                match   : "name",
+                value   : "name",
+                width   : "60%",
+                icon    : "debugger/genericvariable_obj.gif",
+                tree    : "true",
+                editor  : "textbox"
             }, { 
-                caption:"Value",
-                value:"[@value]",
-                width:"40%",
-                editor:"textbox"
+                caption : "Value",
+                value   : "value",
+                width   : "40%",
+                editor  : "textbox"
             }, { 
-                caption:"Type",
-                value:"[@type]",
-                width:"50"
-            }]
+                caption : "Type",
+                value   : "type",
+                width   : "50"
+            }];
             
             // Set and clear the dbg variable
             debug.on("attach", function(e){
@@ -143,7 +143,9 @@ define(function(require, exports, module) {
         
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
+            datagrid.renderer.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
+            model.rowHeight = 18;
             datagrid.setDataProvider(model);
             
             var contextMenu = new Menu({

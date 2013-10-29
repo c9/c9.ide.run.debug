@@ -17,7 +17,7 @@
                 /*border-bottom: 10px solid rgb(255, 0, 0);*/
             }
     
-            .blackdg .headings{
+            .blackdg .tree-headings{
                 height: 18px;
                 z-index : 10;
                 white-space : nowrap;
@@ -31,7 +31,7 @@
                 border-bottom: 1px solid rgb(41, 41, 41);
             }
     
-            .blackdg .headings div{
+            .blackdg .tree-headings .tree-column{
                 overflow : hidden;
                 text-overflow : ellipsis;
                 color: rgb(150, 150, 150);
@@ -39,39 +39,48 @@
                 /*border: 1px solid rgb(82, 82, 82);*/
                 /*border-width: 0px 1px 0 0;*/
             }
+            
+            .tree-headings>.tree-column {
+                background: rgba(0, 0, 0, 0);
+                display: inline-block;
+                padding: 2px 4px 1px 3px;
+                -moz-box-sizing: border-box;
+                box-sizing: border-box;
+            }
     
-            .blackdg .headings div u{
+            .blackdg .tree-headings .tree-column u{
                 padding : 2px 4px 1px 3px;
                 display : block;
                 height : 15px;
                 text-decoration : none;
             }
     
-            .docktab .blackdg .headings div u{
+            .docktab .blackdg .tree-headings .tree-column u{
             }
     
-            .blackdg .headings div.hover,
-            .blackdg .headings div.down,
-            .blackdg .headings div.drag{
+            .blackdg .tree-headings .tree-column:hover,
+            .blackdg .tree-headings .tree-column.hover,
+            .blackdg .tree-headings .tree-column.down,
+            .blackdg .tree-headings .tree-column.drag{
                 color : rgb(199, 198, 198);
                 background: rgb(51, 51, 51);
             }
     
-            .blackdg .headings div.drag{
+            .blackdg .tree-headings .tree-column.drag{
             }
     
-            .blackdg .headings div.down u,
-            .blackdg .headings div.hover u {
+            .blackdg .tree-headings .tree-column.down u,
+            .blackdg .tree-headings .tree-column.hover u {
             }
     
-            .blackdg .headings div.ascending u{
+            .blackdg .tree-headings .tree-column.ascending u{
                 background-image : url(images/sort_asc.gif);
                 background-repeat : no-repeat;
                 background-position : right 7px;
             }
     
     
-            .blackdg .headings div.descending u {
+            .blackdg .tree-headings .tree-column.descending u {
                 background-image : url(images/sort_desc.gif);
                 background-repeat : no-repeat;
                 background-position : right 6px;
@@ -83,12 +92,16 @@
             .blackdg .records blockquote{
                 margin : 0;
             }
+            
+            .blackdg .tree-headings>.tree-column-resizer {
+                display: none;
+            }
     
-            .blackdg .records .row span{
+            .blackdg .row span{
                 height : 18px;
             }
     
-            .blackdg .records .row span u{
+            .blackdg .row span u{
                 padding : 1px 3px 3px 4px;
                 height : 15px;
                 display : block;
@@ -99,28 +112,32 @@
                 cursor: default;
             }
     
-            .blackdg .records .row{
+            .blackdg .row{
                 height : 18px;
                 padding-left : 0;
             }
     
-            .blackdgFocus .records .indicate span{
+            .ace_tree_focus .indicate span{
                 padding : 0;
                 color : #333;
             }
     
-            .blackdgFocus .records .indicate span u{
+            .ace_tree_focus .indicate span u{
             }
     
-            .blackdgFocus .records .row span{
+            .ace_tree_focus .row span{
             }
     
-            .blackdg .records .selected, .blackdg .records .selected span{
+            .blackdg .selected{
             }
-            .blackdgFocus .records .selected, .blackdgFocus .records .selected span,
-            .blackdgFocus .records .dragAppend, .blackdgFocus .records .dragAppend span{
+            .ace_tree_focus .selected, .ace_tree_focus .selected span,
+            .ace_tree_focus .dragAppend, .ace_tree_focus .dragAppend span{
             }
-            .blackdgFocus .records .selected span u {
+            .ace_tree_focus .selected span u {
+            }
+            
+            .ace_tree .tree-row>.tree-column {
+                padding: 2px 0px;
             }
     
             .blackdg .move_pointer{
@@ -181,7 +198,7 @@
                 display : none;
             }
     
-            .blackdg .records span.treecell u{
+            .blackdg span.treecell u{
                 text-decoration : none;
                 display : inline-block;
                 width : 100%;
@@ -189,46 +206,39 @@
                 border : 0;
             }
     
-            .blackdg .records span.treecell u {
+            .blackdg span.treecell u {
                 background-repeat: no-repeat;
                 padding-left:20px;
             }
     
-            .blackdg.noicon .records span.treecell u {
+            .blackdg.noicon span.treecell u {
                 padding-left: 0;
             }
     
-            .blackdg .records .row .treecell .iconCell, .blackdg .records .row .iconCell  {
+            .blackdg .row .treecell .iconCell, .blackdg .row .iconCell  {
                 background-position : 1px 1px;
                 background-repeat   : no-repeat;
                 padding             : 1px 0 3px 22px;
             }
     
-            .blackdg .treecell strong{
-                width : 9px;
-                height : 9px;
-                margin : 4px 4px 0 4px;
-                position : relative;
-                top : -1px;
+            .blackdg .toggler{
                 display : inline-block;
-                
                 width : 15px;
                 height : 15px;
-                margin : 2px 0 0 4px;
-                vertical-align : top;
+                margin : -1px 2px -3px 5px;
             }
     
-            .blackdg .plus>.treecell strong,
-            .blackdg .pluslast>.treecell strong{
+            .blackdg .toggler.closed{
                 background-image : url(images/plus_dark.png);
+                background-position: 50%;
             }
     
-            .blackdg .min>.treecell strong,
-            .blackdg .minlast>.treecell strong{
+            .blackdg .toggler.open{
                 background-image : url(images/min_dark.png);
+                background-position: 50%;
             }
     
-            .blackdg .loading>.treecell strong{
+            .blackdg .loading .toggler{
                 background : url(images/file-tree-load-spinner-dark.gif) no-repeat 0 0;
                 width : 16px;
                 height : 16px;
@@ -237,10 +247,10 @@
                 vertical-align : top;
                 margin-right : -1px !important;
             }
-            .blackdg .loading.selected>.treecell strong{
+            .blackdg .loading.selected .toggler{
                 background : url(images/file-tree-load-spinner-dark-unfocus.gif) no-repeat 0 0;
             }
-            .blackdgFocus .loading.selected>.treecell strong{
+            .ace_tree_focus .loading.selected .toggler{
                 background : url(images/file-tree-load-spinner-dark-selected.gif) no-repeat 0 0;
             }
             
@@ -248,14 +258,18 @@
                 vertical-align : top;
             }
             
+            .blackdg .tree-column{
+                text-overflow: ellipsis;
+            }
+                
             .blackdg{
                 color : #ccc;
             }
-            .blackdgFocus{
+            .ace_tree_focus{
             }
             
-            /*.blackdg .headings div u,*/
-            /*.blackdg .headings div,*/
+            /*.blackdg .tree-headings div u,*/
+            /*.blackdg .tree-headings div,*/
             /*.blackdg .records,*/
             /*.blackdg .records .row span u,*/
             /*.blackdg .records .selected, */
@@ -282,12 +296,12 @@
             .blackdg .row span.colsel{
                 background : rgba(0,0,0,0.15);
             }
-            .blackdg .records .selected span,
-            .blackdgDisabled .records .selected span{
+            .blackdg .selected,
+            .blackdgDisabled .selected{
                 background-color : rgb(61, 61, 61);
                 vertical-align : top;
             }
-            .blackdgFocus .records .selected span{
+            .ace_tree_focus .selected{
                 background-color : #748512;
                 color : #f1f1f1;
             }
@@ -297,11 +311,6 @@
                 overflow : hidden;
             }
             
-            .blackdg .empty{
-                padding: 5px 5px 8px 5px;
-                cursor : default;
-            }
-    
             /*.blackdg {*/
             /*    overflow : hidden;*/
             /*    font-family: Tahoma, Arial;*/
@@ -310,7 +319,7 @@
             /*    color : #333;*/
             /*}*/
     
-            /*.blackdg .headings {*/
+            /*.blackdg .tree-headings {*/
             /*    height : 20px;*/
             /*    z-index : 10;*/
             /*    white-space : nowrap;*/
