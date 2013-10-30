@@ -14,7 +14,7 @@ define(function(require, exports, module) {
         
         var markup   = require("text!./variables.xml");
         var Tree     = require("ace_tree/tree");
-        var TreeData = require("ace_tree/data_provider");
+        var TreeData = require("./variablesdp");
         
         /***** Initialization *****/
         
@@ -35,9 +35,6 @@ define(function(require, exports, module) {
             model = new TreeData();
             model.emptyMessage = "No variables to display";
             
-            // <a:each match="[scope|variable]" sort="[@name]" sort-method="scopesort">
-            // <a:insert match="[scope]" />
-            // <a:insert match="[node()[@children='true']]" />
             model.columns = [{
                 caption : "Property",
                 value   : "name",
@@ -55,52 +52,6 @@ define(function(require, exports, module) {
                 value   : "type",
                 width   : "50"
             }];
-            
-            
-            model.getChildren = function(node) {
-                if (node.status === "pending" || node.status === "loading")
-                    return null;
-                
-                var children = node.variables || node.properties || node.items;
-                if (!children)
-                    node.status = "pending";
-                var ch = children && children[0] && children[0];
-                if (ch) {
-                    var d = (node.$depth + 1) || 0;
-                    children.forEach(function(n) {
-                        n.$depth = d;
-                        n.parent = node;
-                    });
-                }
-        
-                if (this.$sortNodes && !node.$sorted) {
-                    children && this.sort(children);
-                }
-                return children;
-            };
-            
-            model.hasChildren = function(node) {
-                return node.children || node.tagName == "scope";
-            };
-            
-            model.getCaptionHTML = function(node) {
-                if (node.tagName == "scope")
-                    return node.name || "Scope";
-                return node.name || ""
-            }
-            
-            model.sort = function(children) {
-                var compare = TreeData.alphanumCompare;
-                return children.sort(function(a, b) {
-                    var aIsSpecial = a.tagName == "scope";
-                    var bIsSpecial = b.tagName == "scope";
-                    if (aIsSpecial && !bIsSpecial) return 1;
-                    if (!aIsSpecial && bIsSpecial) return -1;
-                    if (aIsSpecial && bIsSpecial) return a.index - b.index;
-                    
-                    return compare(a.name || "", b.name || "");
-                });
-            };
             
             model.getChildrenAsync = function(node, callback) {
                 emit("expand", {
@@ -137,7 +88,7 @@ define(function(require, exports, module) {
             
             // Variables
             plugin.on("expand", function(e){
-                if (e.node.tagName != "scope") {
+                if (e.node.tagName == "variable") {
                     //<a:insert match="[item[@children='true']]" get="{adbg.loadObject(dbg, %[.])}" />
                     dbg.getProperties(e.node, function(err, properties){
                         if (err) return console.error(err);
@@ -152,7 +103,7 @@ define(function(require, exports, module) {
                 //     e.expand();
                 // }
                 // Other scopes
-                else {
+                else if (e.node.tagName == "scope") {
                     dbg.getScope(model.frame/*debug.activeFrame*/, e.node, function(err, vars){
                         if (err) return console.error(err);
                         
@@ -234,10 +185,6 @@ define(function(require, exports, module) {
                 if (datagrid.selected.getAttribute("name") == "this")
                     return false;
             });
-            
-            datagrid.on("editor.create", function(e){
-                var tb = e.editor;
-            });
             */
         }
         
@@ -256,7 +203,7 @@ define(function(require, exports, module) {
                 if (cached[frame.id])
                     model.setRoot(cached[frame.id]);
                 else {
-                    model.setRoot([].concat(frame.variables, frame.scopes));
+                    model.setRoot([].concat(frame.variables, frame.scopes).filter(Boolean));
                     cached[frame.id] = model.root;
                 }
             }
