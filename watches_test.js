@@ -1,8 +1,10 @@
 /*global describe it before */
 
-require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"], 
-  function (architect, chai, baseProc) {
+require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
+  function (architect, chai, baseProc, events) {
     var expect = chai.expect;
+
+    var EventEmitter = events.EventEmitter;
     
     architect.resolveConfig([
         {
@@ -22,24 +24,49 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             packagePath : "plugins/c9.ide.ui/ui",
             staticPrefix : "plugins/c9.ide.ui"
         },
+        "plugins/c9.ide.editors/document",
+        "plugins/c9.ide.editors/undomanager",
         "plugins/c9.ide.ui/lib_apf",
+        {
+            packagePath: "plugins/c9.ide.editors/editors",
+            defaultEditor: "ace"
+        },
+        "plugins/c9.ide.editors/editor",
+        {
+            packagePath : "plugins/c9.ide.ace/ace",
+            staticPrefix : "plugins/c9.ide.layout.classic"
+        },
         {
             packagePath: "plugins/c9.fs/fs",
             baseProc: baseProc
         },
+        "plugins/c9.ide.editors/tabmanager",
+        "plugins/c9.ide.editors/pane",
+        "plugins/c9.ide.editors/tab",
         "plugins/c9.vfs.client/vfs_client",
         "plugins/c9.vfs.client/endpoint",
         "plugins/c9.ide.auth/auth",
+        "plugins/c9.ide.browsersupport/browsersupport",
+        "plugins/c9.ide.ui/menus",
+        "plugins/c9.ide.panels/panels",
+        "plugins/c9.ide.panels/panel",
+        "plugins/c9.ide.panels/area",
+        "plugins/c9.ide.run.debug/debugpanel",
+        {
+            packagePath: "plugins/c9.ide.run.debug/debuggers/debugger",
+            staticPrefix : "plugins/c9.ide.layout.classic"
+        },
+        "plugins/c9.ide.run.debug/breakpoints",
         "plugins/c9.ide.run.debug/watches",
-        
         //Mock Plugins
         {
             consumes : ["apf", "ui", "Plugin"],
-            provides : ["commands", "panels", "tabManager", "layout", "watcher"],
+            provides : ["commands", "layout", "watcher", "auth.bootstrap",
+                "preferences", "anims", "clipboard", "immediate", "run", "dialog.alert"],
             setup    : expect.html.mocked
         },
         {
-            consumes : ["watches"],
+            consumes : ["panels", "debugger", "watches", "breakpoints"],
             provides : [],
             setup    : main
         }
@@ -50,8 +77,13 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
     });
     
     function main(options, imports, register) {
-        var watches = imports.watches;
-        watches.show();
+        var watches     = imports.watches;
+        var panels      = imports.panels;
+        var breakpoints = imports.breakpoints;
+        var debug       = imports.debugger;
+
+        panels.activate("debugger");
+        // watches.show();
         var datagrid = watches.getElement("datagrid");
         
         function countEvents(count, expected, done){
@@ -66,7 +98,12 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             if (node.$ext) return node.$ext;
 
             return apf.xmldb.getHtmlNode(node, datagrid);
-        })
+        });
+
+        var testDebugger = new EventEmitter();
+        testDebugger.attach = function () {
+            testDebugger.emit("attached", { breakpoints: breakpoints });
+        };
         
         describe('breakpoints', function() {
             before(function(done){
@@ -81,32 +118,35 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
                 bar.$ext.style.bottom = "20px";
                 bar.$ext.style.width = "300px";
                 bar.$ext.style.height = "";
-                
+
+                debug.registerDebugger("test", testDebugger);
                 done();
             });
 
             it('should add a frame', function(done) {
-                breakpoints.addFrame({
-                    
-                });
+                debug.debug({running: true, STARTED: true, meta: {$debugger: true}, runner: {"debugger": "test"}}, function () {});
+                testDebugger.emit("break", { frame: {} });
                 
-                expect.html(datagrid, "Missing caption").text("/file.txt");
-                expect.html(datagrid, "Missing content").text("This is the content");
-                expect.html(datagrid.getFirstTraverseNode(), "Checked").className("checked");
+                // TODO actual watches
+                // expect.html(datagrid, "Missing caption").text("/file.txt");
+                // expect.html(datagrid, "Missing content").text("This is the content");
+                // expect.html(datagrid.getFirstTraverseNode(), "Checked").className("checked");
                 
                 done();
             });
             
-//            describe("unload()", function(){
-//                it('should destroy all ui elements when it is unloaded', function(done) {
-//                    breakpoints.unload();
-//                    expect(datagrid.$amlDestroyed).to.equal(true);
-//                    bar.destroy(true, true);
-//                    bar = null;
-//                    done();
-//                });
-//            });
         });
+
+       // describe("unload()", function(){
+       //     it('should destroy all ui elements when it is unloaded', function(done) {
+       //         breakpoints.unload();
+       //         expect(datagrid.$amlDestroyed).to.equal(true);
+       //         bar.destroy(true, true);
+       //         bar = null;
+       //         done();
+       //     });
+       // });
+
         
         onload && onload();
     }

@@ -19,23 +19,51 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         "plugins/c9.core/util",
         "plugins/c9.core/settings",
         {
-            packagePath : "plugins/c9.ide.ui/ui",
+            packagePath  : "plugins/c9.ide.ui/ui",
             staticPrefix : "plugins/c9.ide.ui"
         },
+        "plugins/c9.ide.editors/document",
+        "plugins/c9.ide.editors/undomanager",
+        {
+            packagePath: "plugins/c9.ide.editors/editors",
+            defaultEditor: "ace"
+        },
+        "plugins/c9.ide.editors/editor",
         "plugins/c9.ide.ui/lib_apf",
         {
             packagePath: "plugins/c9.fs/fs",
             baseProc: baseProc
         },
+        {
+            packagePath : "plugins/c9.ide.ace/ace",
+            staticPrefix : "plugins/c9.ide.layout.classic"
+        },
         "plugins/c9.vfs.client/vfs_client",
         "plugins/c9.vfs.client/endpoint",
         "plugins/c9.ide.auth/auth",
         "plugins/c9.ide.run.debug/breakpoints",
-        
+        {
+            packagePath : "plugins/c9.ide.panels/panels",
+            staticPrefix : "plugins/c9.ide.layout.classic",
+            defaultActiveLeft : "tree"
+        },
+        "plugins/c9.ide.panels/panel",
+        "plugins/c9.ide.panels/area",
+        "plugins/c9.ide.run.debug/debugpanel",
+        "plugins/c9.ide.browsersupport/browsersupport",
+        "plugins/c9.ide.ui/menus",
+        {
+            packagePath : "plugins/c9.ide.run.debug/debuggers/debugger",
+            staticPrefix : "plugins/c9.ide.layout.classic"
+        },
+        "plugins/c9.ide.editors/tabmanager",
+        "plugins/c9.ide.editors/pane",
+        "plugins/c9.ide.editors/tab",
         //Mock Plugins
         {
             consumes : ["apf", "ui", "Plugin"],
-            provides : ["commands", "panels", "tabManager", "layout", "watcher"],
+            provides : ["commands", "layout", "watcher", "auth.bootstrap",
+                "preferences", "anims", "menus", "clipboard", "immediate", "run", "dialog.alert"],
             setup    : expect.html.mocked
         },
         {
@@ -56,7 +84,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         var list;
         
         function countEvents(count, expected, done){
-            if (count == expected) 
+            if (count == expected)
                 done();
             else
                 throw new Error("Wrong Event Count: "
@@ -67,7 +95,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             if (node.$ext) return node.$ext;
 
             return apf.xmldb.getHtmlNode(node, list);
-        })
+        });
         
         describe('breakpoints', function() {
             before(function(done){
