@@ -399,6 +399,7 @@ define(function(require, exports, module) {
         
         function updateVariable(variable, properties, node, error){
             // Pass node for recursive trees
+            variable.error = error;
             if (!variable.parent || variable.parent == model.root)
                 reloadModel();
             else
@@ -408,7 +409,7 @@ define(function(require, exports, module) {
         function reloadModel() {
             model.setRoot([].concat(watches, [{
                 name: model.emptyMessage,
-                className: "empty"
+                className: "newwatch"
             }]));
         }
         

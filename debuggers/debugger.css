@@ -69,19 +69,21 @@
 .blackdg .newwatch strong{
     display : none;
 }
-.has_apf .blackdg .records .newwatch .treecell u{
+.blackdg .newwatch{
     padding : 1px 0 3px 0 !important;
     background-position : -200px !important;
     text-indent : 4px;
     color : #999;
 }
-.blackdgFocus .newwatch.selected .treecell u{
+.blackdgFocus .newwatch.selected{
     color : #b7c594 !important;
 }
-.has_apf .blackdg .records .watcherror u{
+.blackdg .watcherror{
     color : yellow;
 }
 
+
+/** condition_dialog **/
 .condition_dialog{
     border-radius: 3px;
     
@@ -137,6 +139,7 @@
     top: -13px;
 }
 
+/** liveinspect **/
 .liveinspect {
     box-shadow: 0 5px 13px 0px rgba(0, 0, 0, 0.7);
     z-index : 100000;

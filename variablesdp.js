@@ -67,6 +67,13 @@ define(function(require, exports, module) {
         this.getIconHTML = function(node) {
             return node.className == "empty" ? "" : "<span class='dbgVarIcon'></span>";
         };
+        
+        
+        this.getClassName = function(node) {
+            return (node.className || "")
+                + (node.status == "loading" ? " loading" : "")
+                + (node.error ? " watcherror" : "");
+        };
 
     }).call(DataProvider.prototype);
  
