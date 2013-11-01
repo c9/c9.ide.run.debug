@@ -49,7 +49,7 @@ define(function(require, exports, module) {
             
             model.getChildrenAsync = function(node, callback) {
                 emit("expand", {
-                    node: node,
+                    variable: node,
                     expand: callback
                 });
             };
@@ -90,6 +90,13 @@ define(function(require, exports, module) {
             debug.on("framesLoad", function(e){
                 // Update Watchers
                 updateAll();
+            });
+            
+            plugin.on("expand", function(e) {
+                dbg.getProperties(e.variable, function(err, properties){
+                    updateVariable(e.variable, properties);
+                    e.expand && e.expand();
+                });
             });
             
             // Add Watch hook into ace
@@ -174,8 +181,8 @@ define(function(require, exports, module) {
             });
             contextMenu.on("show", function(e) {
                 var selected = datagrid.selection.getCursor();
-                var isNew    = selected && selected.pending;
-                var isProp   = selected.parentNode.localName != "watches";
+                var isNew    = selected && selected.status  == "pending";
+                var isProp   = selected.parent != model.root;
                 contextMenu.items[0].disabled = !selected || isProp;
                 contextMenu.items[1].disabled = !selected || !!isNew;
                 contextMenu.items[3].disabled = !selected || !!isNew || isProp;
@@ -324,6 +331,7 @@ define(function(require, exports, module) {
             if (!dbg)
                 return; // We've apparently already disconnected.
             
+            variable.status = "pending";
             // Editing watches in the current or global frame
             // Execute expression
             if (isNew) {
@@ -348,7 +356,7 @@ define(function(require, exports, module) {
                   value, debug.activeFrame, function(err){
                     if (err) {
                         variable.value = oldValue;
-                        apf.xmldb.setAttribute(node, "value", oldValue);
+                        updateVariable(variable, [], node, true);
                         return;
                     }
                         
@@ -391,7 +399,7 @@ define(function(require, exports, module) {
         
         function updateVariable(variable, properties, node, error){
             // Pass node for recursive trees
-            if (!variable.parent)
+            if (!variable.parent || variable.parent == model.root)
                 reloadModel();
             else
                 model.updateNode(variable);
