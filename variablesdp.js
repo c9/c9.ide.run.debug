@@ -65,7 +65,7 @@ define(function(require, exports, module) {
         };
         
         this.getIconHTML = function(node) {
-            return node.className == "empty" ? "" : "<span class='dbgVarIcon'></span>";
+            return node.className == "newwatch" ? "" : "<span class='dbgVarIcon'></span>";
         };
         
         
