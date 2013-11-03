@@ -245,7 +245,7 @@
                 top : -1px !important;
                 left : -2px;
                 vertical-align : top;
-                margin-right : -1px !important;
+                margin-right : 1px !important;
             }
             .blackdg .loading.selected .toggler{
                 background : url(images/file-tree-load-spinner-dark-unfocus.gif) no-repeat 0 0;
