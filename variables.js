@@ -12,9 +12,10 @@ define(function(require, exports, module) {
         var debug      = imports.debugger;
         var util       = imports.util;
         
-        var markup   = require("text!./variables.xml");
-        var Tree     = require("ace_tree/tree");
-        var TreeData = require("./variablesdp");
+        var markup     = require("text!./variables.xml");
+        var Tree       = require("ace_tree/tree");
+        var TreeData   = require("./variablesdp");
+        var TreeEditor = require("ace_tree/edit");
         
         /***** Initialization *****/
         
@@ -126,36 +127,35 @@ define(function(require, exports, module) {
             
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
-            datagrid.renderer.setTheme({cssClass: "blackdg"});
+            datagrid.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
-            model.rowHeight = 18;
             datagrid.setDataProvider(model);
+            datagrid.edit = new TreeEditor(datagrid);
             
-            datagrid.on("contextmenu", function(){
+            datagridEl.on("contextmenu", function(){
                 return false;
             });
-            /*
             
-            datagrid.on("afterchange", function(e){
-                var node  = e.xmlNode;
-                var value = node.getAttribute("value");
+            
+            datagrid.on("rename", function(e){
+                var node  = e.node;
+                var value = e.value;
                 
-                var parents    = [];
-                var variable   = activeFrame.findVariable(node, null, parents);
-                var oldValue   = variable.value;
+                var parents  = [];
+                var variable = activeFrame.findVariable(node, null, parents);
+                var oldValue = variable.value;
                 
-                variable.value = value;
+                model.setAttribute(variable, "value", value);
                 
                 function undo(){
-                    variable.value = oldValue;
-                    apf.xmldb.setAttribute(node, "value", oldValue);
+                    model.setAttribute(variable, "value", oldValue);
                 }
                 
                 // Set new value
                 dbg.setVariable(variable, parents, 
                   value, debug.activeFrame, function(err){
                     if (err) 
-                        return e.undo();
+                        return undo();
                         
                     // Reload properties of the variable
                     // dbg.getProperties(variable, function(err, properties){
@@ -173,19 +173,18 @@ define(function(require, exports, module) {
                 });
             });
             
-            datagrid.on("before.edit", function(e){
+            datagrid.on("beforeRename", function(e){
                 if (!plugin.enabled)
-                    return false;
+                    return e.allowRename = false;
                 
                 // Don't allow setting the value of scopes
-                if (datagrid.selected.localName == "scope")
-                    return false;
+                if (e.node.tagName == "scope")
+                    return e.allowRename = false;
                 
                 // Don't allow setting "this"
-                if (datagrid.selected.getAttribute("name") == "this")
-                    return false;
+                if (e.node.name == "this")
+                    return e.allowRename = false;
             });
-            */
         }
         
         /***** Methods *****/
@@ -216,6 +215,8 @@ define(function(require, exports, module) {
             model.close(node, null, false);
             if (isOpen)
                 model.open(node, null, false);
+            else
+                model._signal("change", node);
         }
         
         function updateScope(scope, variables){

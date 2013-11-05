@@ -19,11 +19,12 @@ define(function(require, exports, module) {
         var MenuItem   = imports.MenuItem;
         var Divider    = imports.Divider;
         
-        var keys     = require("ace/lib/keys");
-        var markup   = require("text!./watches.xml");
-        var Variable = require("./data/variable");
-        var Tree     = require("ace_tree/tree");
-        var TreeData = require("./variablesdp");
+        var keys       = require("ace/lib/keys");
+        var markup     = require("text!./watches.xml");
+        var Variable   = require("./data/variable");
+        var Tree       = require("ace_tree/tree");
+        var TreeData   = require("./variablesdp");
+        var TreeEditor = require("ace_tree/edit");
         
         /***** Initialization *****/
         
@@ -48,6 +49,8 @@ define(function(require, exports, module) {
             model.emptyMessage = "Type your expression here...";
             
             model.getChildrenAsync = function(node, callback) {
+                if (node.className == "newwatch")
+                    return callback(true);
                 emit("expand", {
                     variable: node,
                     expand: callback
@@ -157,9 +160,10 @@ define(function(require, exports, module) {
         
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
-            datagrid.renderer.setTheme({cssClass: "blackdg"});
+            datagrid.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
             datagrid.setDataProvider(model);
+            datagrid.edit = new TreeEditor(datagrid);
             
             reloadModel();
 
@@ -173,11 +177,11 @@ define(function(require, exports, module) {
             }, plugin);
             contextMenu.on("itemclick", function(e){
                 if (e.value == "edit1")
-                    datagrid.$dblclick(datagrid.$selected.childNodes[0]);
+                    datagrid.edit.startRename(0);
                 else if (e.value == "edit2")
-                    datagrid.$dblclick(datagrid.$selected.childNodes[1]);
+                    datagrid.edit.startRename(1);
                 else if (e.value == "remove")
-                    datagrid.remove();
+                    datagrid.execCommand("delete");
             });
             contextMenu.on("show", function(e) {
                 var selected = datagrid.selection.getCursor();
@@ -190,123 +194,107 @@ define(function(require, exports, module) {
             
             datagridEl.setAttribute("contextmenu", contextMenu.aml);
             
-            datagrid.on("beforeinsert", function(e){
-                var node = e.xmlNode;
-
-                var event = {
-                    node   : node,
-                    expand : function(){
-                        var htmlNode = apf.xmldb.getHtmlNode(node, datagrid);
-                        if (htmlNode)
-                            datagrid.slideOpen(null, node, true);
+            datagrid.on("delete", function(e){
+                var nodes = datagrid.selection.getSelectedNodes();
+                nodes.forEach(function (node) {
+                    var idx = watches.indexOf(node);
+                    if (idx != -1) {
+                        model._signal("remove", node);
+                        watches.splice(idx, 1);
                     }
-                };
-                event.variable = findVariable(node);
-
-                emit("expand", event);
-                return false;
-            });
-            
-            datagrid.on("afterremove", function(e){
-                var idx = watches.indexOf(findVariable(e.args[0].args[0]));
-                watches.splice(idx, 1);
-                reloadModel()
+                });
+                reloadModel();
                 dirty = true;
                 settings.save();
             });
             
             var justEdited = false;
             
-            datagrid.on("afterchange", function(e){
-                var node    = e.xmlNode;
-                var name    = node.getAttribute("name");
-                var value   = node.getAttribute("value");
-                var isNew   = node.getAttribute("new");
-                var changed = e.args[1];
+            datagrid.on("rename", function(e){
+                var node    = e.node;
+                var name    = e.value;
+                var value   = node.value;
+                var isNew   = node.isNew;
+                var column  = e.column;
                 var parents = [];
                 var variable, oldValue;
                 
                 // Delete a watch by removing the expression
                 if (!name) {
-                    apf.xmldb.removeNode(node);
+                    datagrid.execCommand("delete");
                     return;
                 }
                 
                 // If we've filled a new watch remove the new attribute
                 if (isNew) {
-                    apf.xmldb.removeAttribute(node, "new");
-                    
-                    
-                    
                     variable = new Variable({
                         name  : name,
                         value : value,
-                        ref   : node.getAttribute("ref")
+                        ref   : node.ref
                     });
                     watches.push(variable);
-                    
-                    dirty = true;
-                    settings.save();
                 }
                 else {
-                    variable = findVariable(node, parents);
+                    variable = node;
                     
-                    if (changed == "value") {
-                        oldValue = variable.value
+                    if (column.value == "value") {
+                        oldValue = variable.value;
                         variable.value = value;
-                        
-                        dirty = true;
-                        settings.save();
                     }
                     else {
                         variable.name = name;
                         isNew = true;
                     }
+                    
+                    if (variable.error) {
+                        isNew = true;
+                        variable.ref = null;
+                    }
                 }
+                
+                dirty = true;
+                settings.save();
+                reloadModel();
                 
                 setWatch(variable, value, isNew, oldValue, node, parents);
             });
             
-            datagrid.on("before.edit", function(e){
+            datagrid.on("beforeRename", function(e){
                 if (!plugin.enabled)
-                    return false;
+                    return e.allowRename = false;
                 
                 // Don't allow setting the value of new variables
-                if (e.heading.caption == "Value" 
-                  && datagrid.selected.getAttribute("ref").substr(0,3) == "new") {
-                    datagrid.$dblclick(datagrid.$selected.firstChild)
-                    return false;
+                if (e.column.caption == "Value" 
+                  && (e.node.ref + "").substr(0,3) == "new") {
+                    datagrid.edit.startRename(0);
+                    return e.allowRename = false;
                 }
                 
                 // When editing a property name, always force editing the value
-                if (e.heading.caption == "Expression"
-                  && datagrid.selected.parentNode.localName != "watches") {
-                    datagrid.$dblclick(datagrid.$selected.childNodes[1])
-                    return false;
+                if (e.column.caption == "Expression"
+                  && e.node.parent != model.root) {
+                    datagrid.edit.startRename(1);
+                    return e.allowRename = false;
                 }
             });
             
-            datagrid.on("editor.create", function(e){
-                var tb = e.editor;
-                
-                tb.on("keydown", function(e){
-                    if (e.keyCode == 13) {
-                        justEdited = true;
-                        setTimeout(function(){ justEdited = false }, 500);
-                    }
-                });
+            datagrid.on("rename", function(e){
+                justEdited = true;
+                setTimeout(function(){ justEdited = false }, 500);
             });
             
-            datagrid.on("keydown", function(e){
-                if (keys[e.keyCode] && keys[e.keyCode].length == 1
-                  && datagrid.$selected && !justEdited)
-                    datagrid.$dblclick(datagrid.$selected.firstChild)
-            });
+            datagrid.container.addEventListener("keydown", function(e){
+                var cursor = datagrid.selection.getCursor();
+                var key = keys[e.keyCode] || "";
+                if (key.length == 1 || key.substr(0, 3) == "num" && cursor && !justEdited)
+                    datagrid.edit.startRename(cursor, 0);
+            }, true);
             
-            datagrid.on("keyup", function(e){
-                if (e.keyCode == 13 && datagrid.$selected && !justEdited)
-                    datagrid.$dblclick(datagrid.$selected.firstChild)
-            });
+            datagrid.container.addEventListener("keyup", function(e){
+                var cursor = datagrid.selection.getCursor();
+                if (e.keyCode == 13 && cursor && !justEdited)
+                    datagrid.edit.startRename(cursor, 0);
+            }, true);
         }
         
         /***** Methods *****/
@@ -407,10 +395,15 @@ define(function(require, exports, module) {
         }
 
         function reloadModel() {
-            model.setRoot([].concat(watches, [{
+            model.newWatchNode = model.newWatchNode || {
                 name: model.emptyMessage,
-                className: "newwatch"
-            }]));
+                className: "newwatch",
+                isNew: true
+            };
+            model.setRoot({
+                items: [].concat(watches, model.newWatchNode),
+                $sorted: true
+            });
         }
         
         /***** Lifecycle *****/
