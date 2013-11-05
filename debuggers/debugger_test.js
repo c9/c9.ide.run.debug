@@ -1,6 +1,8 @@
 /*global describe it before after  =*/
 
 require([
+"use client";
+
     "lib/architect/architect", 
     "lib/chai/chai", 
     "text!plugins/c9.ide.layout.classic/skins.xml",
