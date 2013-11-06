@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "util", "ui", "tabManager", "debugger", "save"
+        "DebugPanel", "util", "ui", "tabManager", "debugger", "save", "Menu",
+        "MenuItem"
     ];
     main.provides = ["callstack"];
     return main;
@@ -12,10 +13,11 @@ define(function(require, exports, module) {
         var save       = imports.save;
         var debug      = imports.debugger;
         var tabs       = imports.tabManager;
+        var Menu       = imports.Menu;
+        var MenuItem   = imports.MenuItem;
         
         var Range    = require("ace/range").Range;
         var markup   = require("text!./callstack.xml");
-        
         
         var Tree     = require("ace_tree/tree");
         var TreeData = require("ace_tree/data_provider");
@@ -196,9 +198,26 @@ define(function(require, exports, module) {
                 setActiveFrame(frame, true);
             });
             
-            datagrid.on("contextmenu", function(){
-                return false;
+            // datagrid.on("contextmenu", function(){
+            //     return false;
+            // });
+            
+            var contextMenu = new Menu({
+                items : [
+                    new MenuItem({ value: "restart", caption: "Restart Frame" }),
+                    // new MenuItem({ value: "edit2", caption: "Edit Watch Value" })
+                ]
+            }, plugin);
+            contextMenu.on("itemclick", function(e){
+                if (e.value == "restart")
+                    dbg.restartFrame(activeFrame, function(){});
             });
+            contextMenu.on("show", function(e) {
+                var selected = datagrid.selection.getCursor();
+                contextMenu.items[0].disabled = selected && dbg ? false : true;
+            });
+            
+            datagridEl.setAttribute("contextmenu", contextMenu.aml);
             
             var hbox = debug.getElement("hbox");
             menu = hbox.ownerDocument.documentElement.appendChild(new ui.menu({

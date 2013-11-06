@@ -766,6 +766,18 @@ define(function(require, exports, module) {
             });
         };
         
+        function restartFrame(frame, callback){
+            var frameIndex = frame && typeof frame == "object" ? frame.index : frame;
+            v8dbg.restartframe(frameIndex, function(body){
+                if (body.result && body.result.stack_update_needs_step_in) {
+                    stepInto();
+                }
+                else {
+                    callback.apply(this, arguments);
+                }
+            });
+        }
+        
         function evaluate(expression, frame, global, disableBreak, callback) {
             var frameIndex = frame && typeof frame == "object" ? frame.index : frame;
             
@@ -1235,6 +1247,11 @@ define(function(require, exports, module) {
              * @param {Object}              callback.data  Additional debugger specific information.
              */
             setVariable : setVariable,
+            
+            /**
+             * 
+             */
+            restartFrame : restartFrame,
             
             /**
              * 

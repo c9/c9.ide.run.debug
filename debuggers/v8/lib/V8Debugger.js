@@ -327,6 +327,16 @@ var V8Debugger = module.exports = function(tabId, v8service) {
 
         this.$send(msg, callback);
     };
+    
+    this.restartframe = function(frameId, callback) {
+        var msg = new V8Message("request");
+        msg.command = "restartframe";
+        msg.arguments = {
+            frame: frameId
+        };
+
+        this.$send(msg, callback);
+    };
 
     this.$send = function(msg, callback) {
         if (callback)
