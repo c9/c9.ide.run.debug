@@ -1,5 +1,8 @@
 /*global describe it before */
 
+"use server";
+"use mocha";
+
 require([
     "plugins/c9.ide.run.debug/debuggers/chrome/lib/chrome", 
     "lib/chai/chai"

@@ -1,5 +1,7 @@
 /*global describe it before */
 
+"use client";
+
 require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
   function (architect, chai, baseProc, events) {
     var expect = chai.expect;
