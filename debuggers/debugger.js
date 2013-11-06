@@ -168,6 +168,7 @@ define(function(require, exports, module) {
             
             btnImmediate.on("click", function(){
                 commands.exec("showimmediate");
+                tabs.focussedTab.editor.setActiveEvaluator("debugger");
             });
             
             // Update button state
