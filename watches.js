@@ -63,7 +63,7 @@ define(function(require, exports, module) {
                 value   : "name",
                 width   : "60%",
                 icon    : "debugger/genericvariable_obj.gif",
-                tree    : "true",
+                type    : "tree",
                 editor  : "textbox"
             }, { 
                 caption : "Value",

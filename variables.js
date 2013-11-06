@@ -42,7 +42,7 @@ define(function(require, exports, module) {
                 defaultValue : "Scope",
                 width   : "40%",
                 icon    : "debugger/genericvariable_obj.gif",
-                tree    : "true"
+                type    : "tree"
             }, {
                 caption : "Value",
                 value   : "value",
