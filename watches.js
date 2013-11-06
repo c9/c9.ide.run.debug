@@ -96,6 +96,8 @@ define(function(require, exports, module) {
             });
             
             plugin.on("expand", function(e) {
+                if (e.variable.parent == model.root)
+                    return e.expand && e.expand(e.variable.error);
                 dbg.getProperties(e.variable, function(err, properties){
                     updateVariable(e.variable, properties);
                     e.expand && e.expand();
@@ -326,8 +328,11 @@ define(function(require, exports, module) {
                 dbg.evaluate(variable.name, debug.activeFrame, 
                   !debug.activeFrame, true, function(err, serverVariable){
                     if (err) {
-                        variable.value      = err.message;
-                        variable.properties = null;
+                        variable.json = {
+                            name  : variable.name,
+                            value : err.message,
+                            error : true
+                        };
                         updateVariable(variable, [], node, true);
                         return;
                     }
