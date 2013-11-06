@@ -165,33 +165,8 @@
             }
     
             .blackdg .message{
-                font-weight : normal;
-                color : #333;
-                padding : 0 0 10px 50px;
-                font-size : 11px;
-                margin-top : 10px;
-                border-bottom : 1px solid #eee;
-            }
-    
-            .blackdg .message label{
-                padding : 2px 0 0 4px;
-                height : 14px;
                 display : inline-block;
-                position : relative;
-                top : -3px;
-            }
-    
-            .blackdg .root .message{
-                padding : 0;
-                margin : 0;
-                border-bottom : 0;
-                height : 0;
-            }
-            .blackdg .root .message label{
-                top : 0;
-                padding : 0;
-                height : 0;
-                overflow : hidden;
+                padding : 2px 5px 8px 5px; /*5px 5px 8px 5px*/
             }
     
             .pointer{

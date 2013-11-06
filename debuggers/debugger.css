@@ -48,12 +48,9 @@
     display : none;
 }
 .blackdg .newwatch{
-    padding : 1px 0 3px 0 !important;
-    background-position : -200px !important;
-    text-indent : 4px;
     color : #999;
 }
-.blackdgFocus .newwatch.selected{
+.blackdg.ace_tree_focus .newwatch.selected{
     color : #b7c594 !important;
 }
 .blackdg .watcherror{
