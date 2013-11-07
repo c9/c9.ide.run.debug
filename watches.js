@@ -187,7 +187,7 @@ define(function(require, exports, module) {
             });
             contextMenu.on("show", function(e) {
                 var selected = datagrid.selection.getCursor();
-                var isNew    = selected && selected.status  == "pending";
+                var isNew    = selected && selected.isNew;
                 var isProp   = selected.parent != model.root;
                 contextMenu.items[0].disabled = !selected || isProp;
                 contextMenu.items[1].disabled = !selected || !!isNew;

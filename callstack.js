@@ -196,7 +196,7 @@ define(function(require, exports, module) {
                 setActiveFrame(frame, true);
             });
             
-            datagrid.on("contextmenu", function(){
+            datagridEl.on("contextmenu", function(){
                 return false;
             });
             
