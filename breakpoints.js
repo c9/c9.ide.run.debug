@@ -28,7 +28,7 @@ define(function(require, exports, module) {
             caption : "Breakpoints",
             index   : 400
         });
-        var emit   = plugin.getEmitter();
+        // var emit   = plugin.getEmitter();
         
         var changed           = false;
         var breakpoints       = [];
@@ -100,7 +100,12 @@ define(function(require, exports, module) {
                     var tab = tabs.findTab(bp.path);
                     if (tab) {
                         var session = tab.document.getSession();
-                        if (bp.actual.line >= session.session.getLength()) {
+                        var len     = session.session.getLength();
+                        
+                        if (bp.actual.line == len) {
+                            bp.actual.line = len - 1;
+                        }
+                        else if (bp.actual.line > len) {
                             clearBreakpoint(bp);
                             return;
                         }
@@ -785,12 +790,15 @@ define(function(require, exports, module) {
                 path = path.getAttribute("path");
             }
             
-            var loc, bp, list = [];
+            var match = { line: line, path: path};
+            
+            var bp, list = [];
             for (var i = 0, l = breakpoints.length; i < l; i++) {
                 bp  = breakpoints[i];
-                loc = bp.actual || bp;
+                // loc = bp.actual || bp;
                 
-                if (bp.path == path && (!line || loc.line == line)) {
+                // if (bp.path == path && (!line || loc.line == line)) {
+                if (bp.equals(match)) {
                     if (!multi) return bp;
                     else list.push(bp);
                 }

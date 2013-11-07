@@ -854,7 +854,7 @@ define(function(require, exports, module) {
                         setBreakpoint(null, bp, callback);
                     }
                 });
-                callback(new Error("Source not available yet. Queuing request."));
+                callback && callback(new Error("Source not available yet. Queuing request."));
                 return false;
             }
 

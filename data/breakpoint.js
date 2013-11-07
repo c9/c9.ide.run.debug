@@ -63,18 +63,24 @@ define(function(require, exports, module) {
         if (this.data.id && this.data.id === breakpoint.id) 
             return true;
         
-        if (this.data.line === breakpoint.line && this.data.path === breakpoint.path)
-            return true;
+        var left = {};
+        left[this.data.path + ":" + this.data.line] = true;
         
-        var sm = this.data.sourcemap;
-        if (sm && sm.line === breakpoint.line && sm.source === breakpoint.path)
+        if (this.data.sourcemap)
+            left[this.data.sourcemap.source + ":" + this.data.sourcemap.line] = true;
+            
+        if (this.data.actual)
+            left[this.data.path + ":" + this.data.actual.line] = true;
+        
+        if (left[breakpoint.path + ":" + breakpoint.line])
             return true;
             
-        var smo = breakpoint.sourcemap;
-        if (smo && this.data.line === smo.line && this.data.path === smo.source)
+        var sm = breakpoint.sourcemap;
+        if (sm && left[sm.source + ":" + sm.line])
             return true;
             
-        if (sm && smo && sm.line === smo.line && sm.source === smo.source)
+        var actual = breakpoint.actual;
+        if (actual && left[actual.path + ":" + actual.line])
             return true;
         
         return false;

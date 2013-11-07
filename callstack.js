@@ -348,6 +348,9 @@ define(function(require, exports, module) {
             
             if (frame.istop) {
                 if (path == framePath) {
+                    if (row >= session.getLength())
+                        row = session.getLength() - 1;
+                        
                     addMarker(session, "step", row);
                     
                     if (scrollToLine) {
