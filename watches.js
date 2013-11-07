@@ -403,7 +403,8 @@ define(function(require, exports, module) {
             model.newWatchNode = model.newWatchNode || {
                 name: model.emptyMessage,
                 className: "newwatch",
-                isNew: true
+                fullWidth: true,
+                isNew: true,
             };
             model.setRoot({
                 items: [].concat(watches, model.newWatchNode),
