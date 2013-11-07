@@ -95,6 +95,9 @@ define(function(require, exports, module) {
             debug.on("breakpointUpdate", function(e){
                 var bp = e.breakpoint;
                 
+                if (bp.hidden)
+                    return;
+                
                 if (bp.actual) {
                     // Delete breakpoints that are outside of the doc length
                     var tab = tabs.findTab(bp.path);
@@ -198,7 +201,23 @@ define(function(require, exports, module) {
                            hidden  : true,
                            enabled : true
                         });
-                        updateBreakpointAtDebugger(breakpoint, "add");
+                        
+                        // Set breakpoint
+                        dbg.setBreakpoint(breakpoint, function(err, bp){
+                            if (err || bp.actual && bp.actual.line != bp.line) {
+                                updateBreakpointAtDebugger(breakpoint, "remove");
+                                return; // Won't do this if bp can't be set
+                            }
+                            
+                            debug.on("break", done);
+                            debug.on("detach", done);
+                            
+                            // Deactivate all breakpoints
+                            deactivateAll(true);
+                            
+                            // Continue
+                            debug.resume();
+                        });
                         
                         // Wait until break
                         function done(){
@@ -211,15 +230,6 @@ define(function(require, exports, module) {
                             debug.off("break", done);
                             debug.off("detach", done);
                         }
-                        
-                        debug.on("break", done);
-                        debug.on("detach", done);
-                        
-                        // Deactivate all breakpoints
-                        deactivateAll(true);
-                        
-                        // Continue
-                        debug.resume();
                     }
                 }, plugin));
                 
