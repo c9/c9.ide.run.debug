@@ -281,7 +281,7 @@ define(function(require, exports, module) {
         /***** Helper Functions *****/
         
         function addMarker(session, type, row) {
-            var marker = session.addMarker(new Range(row, 0, row + 1, 0), "ace_" + type, "line");
+            var marker = session.addMarker(new Range(row, 0, row, 1), "ace_" + type, "fullLine");
             session.addGutterDecoration(row, type);
             session["$" + type + "Marker"] = {lineMarker: marker, row: row};
         }
