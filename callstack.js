@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "util", "ui", "tabManager", "debugger", "save"
+        "DebugPanel", "util", "ui", "tabManager", "debugger", "save", "panels"
     ];
     main.provides = ["callstack"];
     return main;
@@ -12,6 +12,7 @@ define(function(require, exports, module) {
         var save       = imports.save;
         var debug      = imports.debugger;
         var tabs       = imports.tabManager;
+        var panels     = imports.panels;
         
         var Range    = require("ace/range").Range;
         var markup   = require("text!./callstack.xml");
@@ -180,6 +181,10 @@ define(function(require, exports, module) {
             datagrid.setOption("maxLines", 200);
             modelFrames.rowHeight = 18;
             datagrid.setDataProvider(modelFrames);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
             
             // Update markers when a document becomes available
             tabs.on("tabAfterActivateSync", function(e) {

@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "util", "debugger", "ace", "commands",
-        "menus", "Menu", "MenuItem", "Divider"
+        "menus", "Menu", "MenuItem", "Divider", "panels"
     ];
     main.provides = ["watches"];
     return main;
@@ -18,6 +18,7 @@ define(function(require, exports, module) {
         var Menu       = imports.Menu;
         var MenuItem   = imports.MenuItem;
         var Divider    = imports.Divider;
+        var panels     = imports.panels;
         
         var keys       = require("ace/lib/keys");
         var markup     = require("text!./watches.xml");
@@ -166,6 +167,10 @@ define(function(require, exports, module) {
             datagrid.setOption("maxLines", 200);
             datagrid.setDataProvider(model);
             datagrid.edit = new TreeEditor(datagrid);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
             
             reloadModel();
 

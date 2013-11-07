@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "ui", "util", "debugger", "callstack"
+        "DebugPanel", "ui", "util", "debugger", "callstack", "panels"
     ];
     main.provides = ["variables"];
     return main;
@@ -11,6 +11,7 @@ define(function(require, exports, module) {
         var callstack  = imports.callstack;
         var debug      = imports.debugger;
         var util       = imports.util;
+        var panels     = imports.panels;
         
         var markup     = require("text!./variables.xml");
         var Tree       = require("ace_tree/tree");
@@ -131,11 +132,14 @@ define(function(require, exports, module) {
             datagrid.setOption("maxLines", 200);
             datagrid.setDataProvider(model);
             datagrid.edit = new TreeEditor(datagrid);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
             
             datagridEl.on("contextmenu", function(){
                 return false;
             });
-            
             
             datagrid.on("rename", function(e){
                 var node  = e.node;
