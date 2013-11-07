@@ -446,6 +446,10 @@ define(function(require, exports, module) {
                 return;
             
             // There used to be a timeout here.
+            if (!dbg)
+                return setTimeout(function(){
+                    updateBreakpointAtDebugger(bp, action);
+                }, 500);
             
             if (action == "enable" || action == "disable" 
               || action == "condition" || action == "ignoreCount") {

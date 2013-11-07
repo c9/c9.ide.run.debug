@@ -39,6 +39,7 @@ define(function(require, exports, module) {
         var dirty   = false;
         var dbg;
         var model, datagrid; // UI Elements
+        var errorWatch;
         
         var loaded = false;
         function load(){
@@ -51,9 +52,10 @@ define(function(require, exports, module) {
             model.getChildrenAsync = function(node, callback) {
                 if (node.className == "newwatch")
                     return callback(true);
+                    
                 emit("expand", {
-                    variable: node,
-                    expand: callback
+                    variable : node,
+                    expand   : callback
                 });
             };
             
@@ -85,14 +87,21 @@ define(function(require, exports, module) {
                 dbg = null;
             });
             debug.on("stateChange", function(e){
+                if (errorWatch)
+                    removeWatch(errorWatch);
+                
                 plugin[e.action]();
                 if (e.action == "enable")
                     updateAll();
             });
-            
             debug.on("framesLoad", function(e){
                 // Update Watchers
                 updateAll();
+            });
+            debug.on("exception", function(e){
+                errorWatch = e.exception;
+                addWatch(errorWatch);
+                model.expand(errorWatch);
             });
             
             plugin.on("expand", function(e) {
@@ -142,7 +151,9 @@ define(function(require, exports, module) {
             
             settings.on("write", function (e){
                 if (dirty) {
-                    settings.setJson("state/watches", watches.map(function(w){ 
+                    settings.setJson("state/watches", watches.filter(function(w){
+                        return w !== errorWatch;
+                    }).map(function(w){ 
                         return w.name;
                     }));
                     dirty = false;
@@ -300,19 +311,33 @@ define(function(require, exports, module) {
         /***** Methods *****/
         
         function addWatch(expression){
-            var variable = new Variable({
-                name  : expression,
-                value : "",
-                ref   : ""
-            });
+            var variable;
+            
+            if (expression instanceof Variable) {
+                variable = expression;
+            }
+            else {
+                variable = new Variable({
+                    name  : expression,
+                    value : "",
+                    ref   : ""
+                });
+                setWatch(variable, null, true, null, {}, []);
+            }
             watches.push(variable);
             
             reloadModel();
             
             dirty = true;
             settings.save();
+        }
+        
+        function removeWatch(variable){
+            watches.splice(watches.indexOf(variable), 1);
+            reloadModel();
             
-            setWatch(variable, null, true, null, {}, []);
+            dirty = true;
+            settings.save();
         }
         
         function setWatch(variable, value, isNew, oldValue, node, parents){

@@ -243,6 +243,7 @@ define(function(require, exports, module) {
                 
                 // Process Exception
                 if (e.exception) {
+                    emit("exception", e);
                     // @todo add this into the ace view?
                 }
                 
@@ -290,9 +291,6 @@ define(function(require, exports, module) {
         }
         
         function togglePause(force){
-            if (state == "disconnected")
-                return;
-            
             pauseOnBreaks = force !== undefined
                 ? force
                 : (pauseOnBreaks > 1 ? 0 : pauseOnBreaks + 1);
@@ -308,10 +306,12 @@ define(function(require, exports, module) {
                 );
             }
             
-            dbg.setBreakBehavior(
-                pauseOnBreaks === 1 ? "uncaught" : "all",
-                pauseOnBreaks === 0 ? false : true
-            );
+            if (state !== "disconnected") {
+                dbg.setBreakBehavior(
+                    pauseOnBreaks === 1 ? "all" : "uncaught",
+                    pauseOnBreaks === 0 ? false : true
+                );
+            }
             
             pauseOnBreaks = pauseOnBreaks;
             settings.set("user/debug/@pause", pauseOnBreaks);

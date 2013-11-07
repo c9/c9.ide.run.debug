@@ -40,6 +40,7 @@ define(function(require, exports, module) {
         }
         
         var hasChildren = {
+            "error"    : 16,
             "object"   : 8,
             "function" : 4
         }
@@ -163,7 +164,14 @@ define(function(require, exports, module) {
             // If there's no breakpoint set
             if (!bp) {
                 attach();
-                return resume(callback);
+                
+                // If we reconnect to a break then don't resume.
+                if (reconnect)
+                    callback();
+                else
+                    resume(callback);
+                    
+                return;
             }
             
             // Check for a serverOnly breakpoint on line 0
@@ -247,6 +255,9 @@ define(function(require, exports, module) {
                 case "undefined":
                 case "null":
                     return value.type;
+                
+                case "error":
+                    return value.value || "[Error]";
     
                 case "boolean":
                 case "number":
@@ -480,9 +491,29 @@ define(function(require, exports, module) {
         function onException(e) {
             var frame = createFrameFromBreak(e.data);
             
-            emit("exception", {
-                frame     : frame, 
-                exception : e.exception
+            var options = e.data.exception;
+            options.text.match(/^(\w+):(.*)$/);
+            var name  = RegExp.$1 || options.className;
+            var value = RegExp.$2 || options.text;
+            
+            options.name     = name;
+            options.value    = { 
+                value  : value, 
+                type   : "error", 
+                handle : options.handle
+            };
+            options.children = true;
+            
+            var variable = createVariable(options);
+            variable.error = true;
+            
+            lookup(options.properties, false, function(err, properties){
+                variable.properties = properties;
+                
+                emit("exception", {
+                    frame     : frame, 
+                    exception : variable
+                });
             });
         }
     
