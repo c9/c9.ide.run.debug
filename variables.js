@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "ui", "util", "debugger", "callstack"
+        "DebugPanel", "ui", "util", "debugger", "callstack", "panels"
     ];
     main.provides = ["variables"];
     return main;
@@ -11,8 +11,12 @@ define(function(require, exports, module) {
         var callstack  = imports.callstack;
         var debug      = imports.debugger;
         var util       = imports.util;
+        var panels     = imports.panels;
         
-        var markup   = require("text!./variables.xml");
+        var markup     = require("text!./variables.xml");
+        var Tree       = require("ace_tree/tree");
+        var TreeData   = require("./variablesdp");
+        var TreeEditor = require("ace_tree/edit");
         
         /***** Initialization *****/
         
@@ -30,9 +34,34 @@ define(function(require, exports, module) {
             if (loaded) return false;
             loaded = true;
             
-            model = new ui.model();
-            plugin.addElement(model);
+            model = new TreeData();
+            model.emptyMessage = "No variables to display";
             
+            model.columns = [{
+                caption : "Property",
+                value   : "name",
+                defaultValue : "Scope",
+                width   : "40%",
+                icon    : "debugger/genericvariable_obj.gif",
+                type    : "tree"
+            }, {
+                caption : "Value",
+                value   : "value",
+                width   : "60%",
+                editor  : "textbox" 
+            }, {
+                caption : "Type",
+                value   : "type",
+                width   : "50"
+            }];
+            
+            model.getChildrenAsync = function(node, callback) {
+                emit("expand", {
+                    node: node,
+                    expand: callback
+                });
+            };
+
             // Set and clear the dbg variable
             debug.on("attach", function(e){
                 dbg = e.implementation;
@@ -46,11 +75,11 @@ define(function(require, exports, module) {
             
             callstack.on("scopeUpdate", function(e){
                 updateScope(e.scope, e.variables);
-            })
+            });
             callstack.on("framesLoad", function(e){
                 // Clear the cached states of the variable datagrid
                 clearCache();
-            })
+            });
             
             // When clicking on a frame in the call stack show it 
             // in the variables datagrid
@@ -61,26 +90,26 @@ define(function(require, exports, module) {
             
             // Variables
             plugin.on("expand", function(e){
-                if (e.variable) {
+                if (e.node.tagName == "variable") {
                     //<a:insert match="[item[@children='true']]" get="{adbg.loadObject(dbg, %[.])}" />
-                    dbg.getProperties(e.variable, function(err, properties){
+                    dbg.getProperties(e.node, function(err, properties){
                         if (err) return console.error(err);
                         
-                        updateVariable(e.variable, properties, e.node);
+                        //updateVariable(e.node, properties);
                         e.expand();
                     });
                 }
                 // Local scope
-                else if (e.scope.type == 1) {
-                    //updateScope(e.scope);
-                    e.expand();
-                }
+                // else if (e.scope.type == 1) {
+                //     //updateScope(e.scope);
+                //     e.expand();
+                // }
                 // Other scopes
-                else {
-                    dbg.getScope(debug.activeFrame, e.scope, function(err, vars){
+                else if (e.node.tagName == "scope") {
+                    dbg.getScope(model.frame/*debug.activeFrame*/, e.node, function(err, vars){
                         if (err) return console.error(err);
                         
-                        updateScope(e.scope, vars);
+                        //updateScope(e.node, vars);
                         e.expand();
                     });
                 }
@@ -96,62 +125,41 @@ define(function(require, exports, module) {
             ui.insertMarkup(options.aml, markup, plugin);
         
             datagrid = plugin.getElement("datagrid");
-            datagrid.setAttribute("model", model);
             
-            datagrid.on("contextmenu", function(){
+            var datagridEl = plugin.getElement("datagrid");
+            datagrid = new Tree(datagridEl.$ext);
+            datagrid.setTheme({cssClass: "blackdg"});
+            datagrid.setOption("maxLines", 200);
+            datagrid.setDataProvider(model);
+            datagrid.edit = new TreeEditor(datagrid);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
+            
+            datagridEl.on("contextmenu", function(){
                 return false;
             });
             
-            datagrid.on("beforeinsert", function(e){
-                var node = e.xmlNode;
-
-                var event = {
-                    node   : node,
-                    expand : function(){
-                        var htmlNode = apf.xmldb.getHtmlNode(node, datagrid);
-                        if (htmlNode)
-                            datagrid.slideOpen(null, node, true);
-                    }
-                };
-                if (node.localName == "scope") {
-                    event.scope = activeFrame.findScope(node);
-                }
-                else if (node.localName == "variable") {
-                    var parent = node.parentNode;
-                    while (parent && parent.localName != "scope") {
-                        parent = parent.parentNode;
-                    }
-                    
-                    var scope = parent 
-                        ? activeFrame.findScope(parent) 
-                        : activeFrame;
-                    event.variable = scope.findVariable(node);
-                }
-
-                emit("expand", event);
-                return false;
-            });
-            
-            datagrid.on("afterchange", function(e){
-                var node  = e.xmlNode;
-                var value = node.getAttribute("value");
+            datagrid.on("rename", function(e){
+                var node  = e.node;
+                var value = e.value;
                 
-                var parents    = [];
-                var variable   = activeFrame.findVariable(node, null, parents);
-                var oldValue   = variable.value;
+                var parents  = [];
+                var variable = activeFrame.findVariable(node, null, parents);
+                var oldValue = variable.value;
                 
-                variable.value = value;
+                model.setAttribute(variable, "value", value);
                 
                 function undo(){
-                    variable.value = oldValue;
-                    apf.xmldb.setAttribute(node, "value", oldValue);
+                    model.setAttribute(variable, "value", oldValue);
                 }
                 
                 // Set new value
                 dbg.setVariable(variable, parents, 
                   value, debug.activeFrame, function(err){
                     if (err) 
-                        return e.undo();
+                        return undo();
                         
                     // Reload properties of the variable
                     // dbg.getProperties(variable, function(err, properties){
@@ -169,21 +177,17 @@ define(function(require, exports, module) {
                 });
             });
             
-            datagrid.on("before.edit", function(e){
+            datagrid.on("beforeRename", function(e){
                 if (!plugin.enabled)
-                    return false;
+                    return e.allowRename = false;
                 
                 // Don't allow setting the value of scopes
-                if (datagrid.selected.localName == "scope")
-                    return false;
+                if (e.node.tagName == "scope")
+                    return e.allowRename = false;
                 
                 // Don't allow setting "this"
-                if (datagrid.selected.getAttribute("name") == "this")
-                    return false;
-            });
-            
-            datagrid.on("editor.create", function(e){
-                var tb = e.editor;
+                if (e.node.name == "this")
+                    return e.allowRename = false;
             });
         }
         
@@ -192,117 +196,43 @@ define(function(require, exports, module) {
         function loadFrame(frame){
             if (frame == activeFrame)
                 return;
+            
+            model.frame = frame;
 
             if (!frame) {
-                model.clear();
+                model.setRoot({});
             }
             else {
                 if (cached[frame.id])
-                    model.load(cached[frame.id]);
+                    model.setRoot(cached[frame.id]);
                 else {
-                    model.load(frame.xml);
-                    cached[frame.id] = model.data;
+                    model.setRoot([].concat(frame.variables, frame.scopes).filter(Boolean));
+                    cached[frame.id] = model.root;
                 }
             }
-                
+            
             activeFrame = frame;
         }
         
-        function findVariableXml(variable){
-            return model.queryNode("//variable[@ref=" 
-                + util.escapeXpathString(String(variable.ref)) + "]");
-        }
-        
-        function findScopeXml(scope){
-            return model.queryNode("//scope[@index=" 
-                + util.escapeXpathString(String(scope.index)) + "]");
-        }
-        
-        function updateVariableXml(node, variable, oldVar){
-            node.setAttribute("value", oldVar.value = variable.value);
-            node.setAttribute("type",  oldVar.type  = variable.type);
-            node.setAttribute("ref",   oldVar.ref   = variable.ref);
-            if (variable.children && !oldVar.children) {
-                datagrid.$setLoadStatus(node, "potential");
-                datagrid.$fixItem(node, ui.xmldb.findHtmlNode(node, datagrid));
-            }
-            apf.xmldb.setAttribute(node, "children", oldVar.children = variable.children);
+        function updateNode(node, variable, oldVar){
+            var isOpen = node.isOpen;
+            model.close(node, null, false);
+            if (isOpen)
+                model.open(node, null, false);
+            else
+                model._signal("change", node);
         }
         
         function updateScope(scope, variables){
-            var update = scope.equals(activeFrame);
-            var node   = update ? model.data : findScopeXml(scope);
-            if (!node) return;
-            
-            if (update || node.childNodes.length
-              && node.childNodes.length == scope.variables.length) {
-                var vars = node.selectNodes("variable");
-                
-                variables.forEach(function(variable, i){
-                    var oldVar = (update ? activeFrame : scope).findVariable(null, variable.name);
-                    if (vars[i])
-                        updateVariableXml(vars[i], variable, oldVar);
-                    else
-                        debugger; //This shouldn't happen, but it does
-                    
-                    if (oldVar.properties) {
-                        emit("expand", {
-                            node     : vars[i],
-                            variable : oldVar,
-                            expand   : function(){}
-                        });
-                    }
-                });
-            }
-            else {
-                apf.mergeXml(apf.getXml("<p>" + variables.join("") + "</p>"), 
-                    node, {clearContents : true});
-                apf.xmldb.applyChanges("insert", node);
-                //model.appendXml(variables.join(""), node);
-            }
+            updateNode(scope);
         }
         
         function updateVariable(variable, properties, node){
-            // Pass node for recursive trees
-            if (!node)
-                node = findVariableXml(variable);
-            if (!node || !node.parentNode)
-                return;
-            
-            // Update xml node
-            node.setAttribute("ref", variable.ref);
-            node.setAttribute("value", variable.value);
-            node.setAttribute("children", variable.children ? "true" : "false");
-            apf.xmldb.setAttribute(node, "type", variable.type);
-            
-            if (node.childNodes.length 
-              && node.childNodes.length == variable.properties.length) {
-                var vars = node.selectNodes("variable");
-                
-                properties.forEach(function(prop, i){
-                    var oldVar = variable.findVariable(null, prop.name);
-                    updateVariableXml(vars[i], prop, oldVar);
-                    
-                    if (oldVar.properties) {
-                        emit("expand", {
-                            node     : vars[i],
-                            variable : oldVar,
-                            expand   : function(){}
-                        });
-                    }
-                })
-            }
-            else {
-                apf.mergeXml(apf.getXml("<p>" + properties.join("") + "</p>"), 
-                    node, {clearContents : true});
-                apf.xmldb.applyChanges("insert", node);
-                //model.appendXml(properties.join(""), node);
-            }
+            updateNode(variable);
         }
         
         function clearCache(){
             cached = {};
-            datagrid && datagrid.clearAllCache();
         }
         
         /***** Lifecycle *****/

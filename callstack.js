@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "util", "ui", "tabManager", "debugger", "save"
+        "DebugPanel", "util", "ui", "tabManager", "debugger", "save", "panels"
     ];
     main.provides = ["callstack"];
     return main;
@@ -12,9 +12,14 @@ define(function(require, exports, module) {
         var save       = imports.save;
         var debug      = imports.debugger;
         var tabs       = imports.tabManager;
+        var panels     = imports.panels;
         
         var Range    = require("ace/range").Range;
         var markup   = require("text!./callstack.xml");
+        
+        
+        var Tree     = require("ace_tree/tree");
+        var TreeData = require("ace_tree/data_provider");
         
         /***** Initialization *****/
         
@@ -37,8 +42,31 @@ define(function(require, exports, module) {
             loaded = true;
             
             modelSources = new ui.model();
-            modelFrames  = new ui.model();
-            plugin.addElement(modelSources, modelFrames);
+            plugin.addElement(modelSources);
+            
+            modelFrames  = new TreeData();
+            modelFrames.emptyMessage = "No callstack to display";
+            
+            modelFrames.$sorted = false;
+            modelFrames.columns = [{
+                caption : "Function",
+                value   : "name",
+                width   : "60%",
+                icon    : "debugger/stckframe_obj.gif"
+            }, {
+                caption : "Script",
+                value   : "path",
+                width   : "40%"
+            }, {
+                caption : "Ln",
+                getText : function(node) { return node.line + 1; },
+                width   : "30",
+            }, {
+                caption : "Col",
+                getText : function(node) { return node.column + 1; },
+                width   : "30"
+            }];
+            
             
             // Set and clear the dbg variable
             debug.on("attach", function(e){
@@ -147,8 +175,16 @@ define(function(require, exports, module) {
             // Create UI elements
             ui.insertMarkup(options.aml, markup, plugin);
             
-            datagrid = plugin.getElement("datagrid");
-            datagrid.setAttribute("model", modelFrames);
+            var datagridEl = plugin.getElement("datagrid");
+            datagrid = new Tree(datagridEl.$ext);
+            datagrid.renderer.setTheme({cssClass: "blackdg"});
+            datagrid.setOption("maxLines", 200);
+            modelFrames.rowHeight = 18;
+            datagrid.setDataProvider(modelFrames);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
             
             // Update markers when a document becomes available
             tabs.on("tabAfterActivateSync", function(e) {
@@ -156,15 +192,16 @@ define(function(require, exports, module) {
             });
             
             // stack view
-            datagrid.on("afterselect", function(e) {
+            datagrid.on("changeSelection", function(e) {
                 // afterselect can be called after setting value, without user interaction
-                if (!datagrid.hasFocus())
+                // TODO add userSelect event to aceTree ?
+                if (!datagrid.isFocused())
                     return;
-                
-                setActiveFrame(e.selected && findFrame(e.selected), true);
+                var frame = datagrid.selection.getCursor();
+                setActiveFrame(frame, true);
             });
             
-            datagrid.on("contextmenu", function(){
+            datagridEl.on("contextmenu", function(){
                 return false;
             });
             
@@ -206,7 +243,7 @@ define(function(require, exports, module) {
             plugin.addElement(menu, button);
             
             // Load the scripts in the sources dropdown
-            var list = menu.firstChild
+            var list = menu.firstChild;
             list.setModel(modelSources);
             list.on("afterselect", function(e){
                 debug.openFile({
@@ -227,11 +264,11 @@ define(function(require, exports, module) {
             if (!fromDG && datagrid) {
                 // Select the frame in the UI
                 if (!frame) {
-                    modelFrames.clear();
+                    modelFrames.setRoot({});
                     frames = [];
                 }
                 else {
-                    datagrid.select(findFrameXml(frame));
+                    datagrid.select(frame);
                 }
             }
             
@@ -249,7 +286,7 @@ define(function(require, exports, module) {
         /***** Helper Functions *****/
         
         function addMarker(session, type, row) {
-            var marker = session.addMarker(new Range(row, 0, row + 1, 0), "ace_" + type, "line");
+            var marker = session.addMarker(new Range(row, 0, row, 1), "ace_" + type, "fullLine");
             session.addGutterDecoration(row, type);
             session["$" + type + "Marker"] = {lineMarker: marker, row: row};
         }
@@ -355,27 +392,15 @@ define(function(require, exports, module) {
             }
         }
         
-        function findFrameXml(frame){
-            return modelFrames.queryNode("//frame[@index=" 
-                + util.escapeXpathString(String(frame.index)) + "]")
-        }
-        
-        /**
+                /**
          * Assumptions:
          *  - .index stays the same
          *  - sequence in the array stays the same
          *  - ref stays the same when stepping in the same context
          */
-        function updateFrameXml(frame, noRecur){
-            var node = findFrameXml(frame);
-            if (!node)
-                return;
-            
-            //With code insertion, line/column might change??
-            node.setAttribute("line", frame.line);
-            node.setAttribute("path", frame.path);
-            apf.xmldb.setAttribute(node, "column", frame.column);
         
+        function updateFrame(frame, noRecur){
+            modelFrames._signal("change", frame);
             if (noRecur)
                 return;
         
@@ -405,22 +430,18 @@ define(function(require, exports, module) {
         };
         
         function loadFrames(input, noRecur, force){
-            // If we're in the same frameset, lets just update the frames
-            if (!force && input.length && input.length == frames.length 
-              && frames[0].equals(input[0])) {
-                for (var i = 0, l = input.length; i < l; i++)                                                                        
-                    updateFrameXml(input[i], noRecur);
-                return false;
-            }
-            else {
-                frames = input;
-                modelFrames.load("<frames>" + frames.join("") + "</frames>");
-                
-                if (activeFrame && frames.indexOf(activeFrame) > -1)
-                    setActiveFrame(activeFrame);
-                
-                return true;
-            }
+            frames = input;
+            modelFrames.setRoot(frames);
+            
+            if (activeFrame && frames.indexOf(activeFrame) > -1)
+                setActiveFrame(activeFrame);
+            else
+                setActiveFrame(frames[0]);
+
+            for (var i = 0, l = input.length; i < l; i++)
+                updateFrame(input[i], noRecur);
+
+            return true;
         }
         
         function loadSources(input){
@@ -442,9 +463,7 @@ define(function(require, exports, module) {
         }
         
         function updateAll(){
-            frames.forEach(function(frame){
-                updateFrameXml(frame);
-            });
+            modelFrames.setRoot(frames);
         }
         
         /***** Lifecycle *****/
@@ -518,7 +537,7 @@ define(function(require, exports, module) {
              * Updates a specific frame in the call stack UI
              * @param {debugger.Frame} frame  The frame to update.
              */
-            updateFrame : updateFrameXml
+            updateFrame : updateFrame
         });
         
         register(null, {

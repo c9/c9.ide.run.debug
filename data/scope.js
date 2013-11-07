@@ -45,7 +45,7 @@ define(function(require, exports, module) {
     
     Scope.prototype.findVariable = function(ref, name, parents){
         if (ref && typeof ref == "object")
-            ref = ref.getAttribute("ref");
+            ref = ref.ref;
         
         var vars = this.data.variables || [];
         for (var i = 0, l = vars.length; i < l; i++) {

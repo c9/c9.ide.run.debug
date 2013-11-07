@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "util", "debugger", "ace", "commands",
-        "menus", "Menu", "MenuItem", "Divider"
+        "menus", "Menu", "MenuItem", "Divider", "panels"
     ];
     main.provides = ["watches"];
     return main;
@@ -18,10 +18,14 @@ define(function(require, exports, module) {
         var Menu       = imports.Menu;
         var MenuItem   = imports.MenuItem;
         var Divider    = imports.Divider;
+        var panels     = imports.panels;
         
-        var keys     = require("ace/lib/keys");
-        var markup   = require("text!./watches.xml");
-        var Variable = require("./data/variable");
+        var keys       = require("ace/lib/keys");
+        var markup     = require("text!./watches.xml");
+        var Variable   = require("./data/variable");
+        var Tree       = require("ace_tree/tree");
+        var TreeData   = require("./variablesdp");
+        var TreeEditor = require("ace_tree/edit");
         
         /***** Initialization *****/
         
@@ -42,9 +46,36 @@ define(function(require, exports, module) {
             if (loaded) return false;
             loaded = true;
             
-            model = new ui.model();
+            model = new TreeData();
+            model.emptyMessage = "Type your expression here...";
             
-            plugin.addElement(model);
+            model.getChildrenAsync = function(node, callback) {
+                if (node.className == "newwatch")
+                    return callback(true);
+                emit("expand", {
+                    variable: node,
+                    expand: callback
+                });
+            };
+            
+            model.columns = [{
+                caption : "Expression",
+                match   : "name",
+                value   : "name",
+                width   : "60%",
+                icon    : "debugger/genericvariable_obj.gif",
+                type    : "tree",
+                editor  : "textbox"
+            }, { 
+                caption : "Value",
+                value   : "value",
+                width   : "40%",
+                editor  : "textbox"
+            }, { 
+                caption : "Type",
+                value   : "type",
+                width   : "50"
+            }];
             
             // Set and clear the dbg variable
             debug.on("attach", function(e){
@@ -63,6 +94,15 @@ define(function(require, exports, module) {
             debug.on("framesLoad", function(e){
                 // Update Watchers
                 updateAll();
+            });
+            
+            plugin.on("expand", function(e) {
+                if (e.variable.parent == model.root)
+                    return e.expand && e.expand(e.variable.error);
+                dbg.getProperties(e.variable, function(err, properties){
+                    updateVariable(e.variable, properties);
+                    e.expand && e.expand();
+                });
             });
             
             // Add Watch hook into ace
@@ -94,12 +134,10 @@ define(function(require, exports, module) {
                     watches.push(new Variable({ 
                         name : name, 
                         ref  : "fromsettings" + count++ 
-                    }))
+                    }));
                 });
                 
-                model.load("<watches>" + watches.join("") 
-                    + "<variable new='new' name='' value='' ref='new" 
-                    + (count++) + "'/></watches>");
+                reloadModel();
                 
                 if (dbg)
                     updateAll();
@@ -123,9 +161,19 @@ define(function(require, exports, module) {
             // Create UI elements
             ui.insertMarkup(options.aml, markup, plugin);
         
-            datagrid = plugin.getElement("datagrid");
-            datagrid.setAttribute("model", model);
+            var datagridEl = plugin.getElement("datagrid");
+            datagrid = new Tree(datagridEl.$ext);
+            datagrid.setTheme({cssClass: "blackdg"});
+            datagrid.setOption("maxLines", 200);
+            datagrid.setDataProvider(model);
+            datagrid.edit = new TreeEditor(datagrid);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
             
+            reloadModel();
+
             var contextMenu = new Menu({
                 items : [
                     new MenuItem({ value: "edit1", caption: "Edit Watch Expression" }),
@@ -136,143 +184,124 @@ define(function(require, exports, module) {
             }, plugin);
             contextMenu.on("itemclick", function(e){
                 if (e.value == "edit1")
-                    datagrid.$dblclick(datagrid.$selected.childNodes[0]);
+                    datagrid.edit.startRename(0);
                 else if (e.value == "edit2")
-                    datagrid.$dblclick(datagrid.$selected.childNodes[1]);
+                    datagrid.edit.startRename(1);
                 else if (e.value == "remove")
-                    datagrid.remove();
+                    datagrid.execCommand("delete");
             });
             contextMenu.on("show", function(e) {
-                var selected = datagrid.selected;
-                var isNew    = selected && selected.getAttribute("new");
-                var isProp   = selected.parentNode.localName != "watches";
+                var selected = datagrid.selection.getCursor();
+                var isNew    = selected && selected.isNew;
+                var isProp   = selected.parent != model.root;
                 contextMenu.items[0].disabled = !selected || isProp;
                 contextMenu.items[1].disabled = !selected || !!isNew;
                 contextMenu.items[3].disabled = !selected || !!isNew || isProp;
             });
             
-            datagrid.setAttribute("contextmenu", contextMenu.aml);
+            datagridEl.setAttribute("contextmenu", contextMenu.aml);
             
-            datagrid.on("beforeinsert", function(e){
-                var node = e.xmlNode;
-
-                var event = {
-                    node   : node,
-                    expand : function(){
-                        var htmlNode = apf.xmldb.getHtmlNode(node, datagrid);
-                        if (htmlNode)
-                            datagrid.slideOpen(null, node, true);
+            datagrid.on("delete", function(e){
+                var nodes = datagrid.selection.getSelectedNodes();
+                nodes.forEach(function (node) {
+                    var idx = watches.indexOf(node);
+                    if (idx != -1) {
+                        model._signal("remove", node);
+                        watches.splice(idx, 1);
                     }
-                };
-                event.variable = findVariable(node);
-
-                emit("expand", event);
-                return false;
-            });
-            
-            datagrid.on("afterremove", function(e){
-                var idx = watches.indexOf(findVariable(e.args[0].args[0]));
-                watches.splice(idx, 1);
-                
+                });
+                reloadModel();
                 dirty = true;
                 settings.save();
             });
             
             var justEdited = false;
             
-            datagrid.on("afterchange", function(e){
-                var node    = e.xmlNode;
-                var name    = node.getAttribute("name");
-                var value   = node.getAttribute("value");
-                var isNew   = node.getAttribute("new");
-                var changed = e.args[1];
+            datagrid.on("rename", function(e){
+                var node    = e.node;
+                var name    = e.value;
+                var value   = node.value;
+                var isNew   = node.isNew;
+                var column  = e.column;
                 var parents = [];
                 var variable, oldValue;
                 
                 // Delete a watch by removing the expression
                 if (!name) {
-                    apf.xmldb.removeNode(node);
+                    datagrid.execCommand("delete");
                     return;
                 }
                 
                 // If we've filled a new watch remove the new attribute
                 if (isNew) {
-                    apf.xmldb.removeAttribute(node, "new");
-                    
-                    var newNode = apf.getXml("<variable new='new' name='' "
-                        + "value='' ref='new" + (count++) + "' />");
-                        newNode = ui.xmldb.appendChild(model.data, newNode, model.data.firstChild);
-                    model.appendXml(newNode); //apf hack
-                    
                     variable = new Variable({
                         name  : name,
                         value : value,
-                        ref   : node.getAttribute("ref")
+                        ref   : node.ref
                     });
                     watches.push(variable);
-                    
-                    dirty = true;
-                    settings.save();
                 }
                 else {
-                    variable = findVariable(node, parents);
+                    variable = node;
                     
-                    if (changed == "value") {
-                        oldValue = variable.value
+                    if (column.value == "value") {
+                        oldValue = variable.value;
                         variable.value = value;
-                        
-                        dirty = true;
-                        settings.save();
                     }
                     else {
                         variable.name = name;
                         isNew = true;
                     }
+                    
+                    if (variable.error) {
+                        isNew = true;
+                        variable.ref = null;
+                    }
                 }
+                
+                dirty = true;
+                settings.save();
+                reloadModel();
                 
                 setWatch(variable, value, isNew, oldValue, node, parents);
             });
             
-            datagrid.on("before.edit", function(e){
+            datagrid.on("beforeRename", function(e){
                 if (!plugin.enabled)
-                    return false;
+                    return e.allowRename = false;
                 
                 // Don't allow setting the value of new variables
-                if (e.heading.caption == "Value" 
-                  && datagrid.selected.getAttribute("ref").substr(0,3) == "new") {
-                    datagrid.$dblclick(datagrid.$selected.firstChild)
-                    return false;
+                if (e.column.caption == "Value" 
+                  && (e.node.ref + "").substr(0,3) == "new") {
+                    datagrid.edit.startRename(0);
+                    return e.allowRename = false;
                 }
                 
                 // When editing a property name, always force editing the value
-                if (e.heading.caption == "Expression"
-                  && datagrid.selected.parentNode.localName != "watches") {
-                    datagrid.$dblclick(datagrid.$selected.childNodes[1])
-                    return false;
+                if (e.column.caption == "Expression"
+                  && e.node.parent != model.root) {
+                    datagrid.edit.startRename(1);
+                    return e.allowRename = false;
                 }
             });
             
-            datagrid.on("editor.create", function(e){
-                var tb = e.editor;
-                
-                tb.on("keydown", function(e){
-                    if (e.keyCode == 13) {
-                        justEdited = true;
-                        setTimeout(function(){ justEdited = false }, 500);
-                    }
-                });
+            datagrid.on("rename", function(e){
+                justEdited = true;
+                setTimeout(function(){ justEdited = false }, 500);
             });
             
-            datagrid.on("keydown", function(e){
-                if (keys[e.keyCode] && keys[e.keyCode].length == 1
-                  && datagrid.$selected && !justEdited)
-                    datagrid.$dblclick(datagrid.$selected.firstChild)
-            });
+            datagrid.container.addEventListener("keydown", function(e){
+                var cursor = datagrid.selection.getCursor();
+                var key = keys[e.keyCode] || "";
+                if (key.length == 1 || key.substr(0, 3) == "num" && cursor && !justEdited)
+                    datagrid.edit.startRename(cursor, 0);
+            }, true);
             
-            datagrid.on("keyup", function(e){
-                if (e.keyCode == 13 && datagrid.$selected && !justEdited)
-                    datagrid.$dblclick(datagrid.$selected.firstChild)
-            });
+            datagrid.container.addEventListener("keyup", function(e){
+                var cursor = datagrid.selection.getCursor();
+                if (e.keyCode == 13 && cursor && !justEdited)
+                    datagrid.edit.startRename(cursor, 0);
+            }, true);
         }
         
         /***** Methods *****/
@@ -285,27 +314,30 @@ define(function(require, exports, module) {
             });
             watches.push(variable);
             
-            var newNode = ui.xmldb.appendChild(model.data, apf.getXml(variable.xml), model.data.firstChild);
-            // model.appendXml(newNode); //apf hack
+            reloadModel();
             
             dirty = true;
             settings.save();
             
-            setWatch(variable, null, true, null, newNode, []);
+            setWatch(variable, null, true, null, {}, []);
         }
         
         function setWatch(variable, value, isNew, oldValue, node, parents){
             if (!dbg)
                 return; // We've apparently already disconnected.
             
+            variable.status = "pending";
             // Editing watches in the current or global frame
             // Execute expression
             if (isNew) {
                 dbg.evaluate(variable.name, debug.activeFrame, 
                   !debug.activeFrame, true, function(err, serverVariable){
                     if (err) {
-                        variable.value      = err.message;
-                        variable.properties = null
+                        variable.json = {
+                            name  : variable.name,
+                            value : err.message,
+                            error : true
+                        };
                         updateVariable(variable, [], node, true);
                         return;
                     }
@@ -314,7 +346,7 @@ define(function(require, exports, module) {
 
                     updateVariable(variable, 
                         variable.properties || [], node);
-                })
+                });
             }
             // Set new value of a property
             else {
@@ -322,7 +354,7 @@ define(function(require, exports, module) {
                   value, debug.activeFrame, function(err){
                     if (err) {
                         variable.value = oldValue;
-                        apf.xmldb.setAttribute(node, "value", oldValue);
+                        updateVariable(variable, [], node, true);
                         return;
                     }
                         
@@ -345,10 +377,7 @@ define(function(require, exports, module) {
         
         function updateAll(){
             watches.forEach(function(variable){
-                var node = findVariableXml(variable);
-                if (!node) return;
-                
-                setWatch(variable, undefined, true, null, node, []);
+                setWatch(variable, undefined, true, null, variable, []);
             });
         }
         
@@ -366,58 +395,26 @@ define(function(require, exports, module) {
             }
         }
         
-        function findVariableXml(variable){
-            return model.queryNode("//variable[@ref=" 
-                + util.escapeXpathString(String(variable.ref)) + "]");
-        }
-        
-        function updateVariableXml(node, variable, oldVar){
-            node.setAttribute("value", oldVar.value = variable.value);
-            node.setAttribute("type",  oldVar.type  = variable.type);
-            node.setAttribute("ref",   oldVar.ref   = variable.ref);
-            apf.xmldb.setAttribute(node, "children", oldVar.children = variable.children);
-        }
-        
         function updateVariable(variable, properties, node, error){
             // Pass node for recursive trees
-            if (!node)
-                node = findVariableXml(variable);
-            if (!node || !node.parentNode)
-                return;
-            
-            // Update xml node
-            node.setAttribute("ref", variable.ref);
-            node.setAttribute("value", variable.value);
-            node.setAttribute("error", error ? "1" : "0");
             variable.error = error;
-            apf.xmldb.setAttribute(node, "type", variable.type);
-            
-            var htmlNode = apf.xmldb.findHtmlNode(node, datagrid);
-            htmlNode.childNodes[1].setAttribute("title", variable.value);
-            
-            if (node.childNodes.length && variable.properties
-              && node.childNodes.length == variable.properties.length) {
-                var vars = node.selectNodes("variable");
-                
-                variable.properties.forEach(function(prop, i){
-                    var oldVar = variable.findVariable(null, prop.name);
-                    updateVariableXml(vars[i], prop, oldVar);
-                    
-                    if (oldVar.properties) {
-                        emit("expand", {
-                            node     : vars[i],
-                            variable : oldVar,
-                            expand   : function(){}
-                        });
-                    }
-                })
-            }
-            else {
-                apf.mergeXml(apf.getXml("<p>" + properties.join("") + "</p>"), 
-                    node, {clearContents : true});
-                apf.xmldb.applyChanges("insert", node);
-                //model.appendXml(properties.join(""), node);
-            }
+            if (!variable.parent || variable.parent == model.root)
+                reloadModel();
+            else
+                model.updateNode(variable);
+        }
+
+        function reloadModel() {
+            model.newWatchNode = model.newWatchNode || {
+                name: model.emptyMessage,
+                className: "newwatch",
+                fullWidth: true,
+                isNew: true,
+            };
+            model.setRoot({
+                items: [].concat(watches, model.newWatchNode),
+                $sorted: true
+            });
         }
         
         /***** Lifecycle *****/
