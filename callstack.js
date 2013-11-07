@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "util", "ui", "tabManager", "debugger", "save", "Menu",
-        "MenuItem"
+        "DebugPanel", "util", "ui", "tabManager", "debugger", "save", "panels",
+        "Menu", "MenuItem"
     ];
     main.provides = ["callstack"];
     return main;
@@ -13,6 +13,7 @@ define(function(require, exports, module) {
         var save       = imports.save;
         var debug      = imports.debugger;
         var tabs       = imports.tabManager;
+        var panels     = imports.panels;
         var Menu       = imports.Menu;
         var MenuItem   = imports.MenuItem;
         
@@ -182,6 +183,10 @@ define(function(require, exports, module) {
             datagrid.setOption("maxLines", 200);
             modelFrames.rowHeight = 18;
             datagrid.setDataProvider(modelFrames);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
             
             // Update markers when a document becomes available
             tabs.on("tabAfterActivateSync", function(e) {
@@ -197,10 +202,6 @@ define(function(require, exports, module) {
                 var frame = datagrid.selection.getCursor();
                 setActiveFrame(frame, true);
             });
-            
-            // datagrid.on("contextmenu", function(){
-            //     return false;
-            // });
             
             var contextMenu = new Menu({
                 items : [
@@ -300,7 +301,7 @@ define(function(require, exports, module) {
         /***** Helper Functions *****/
         
         function addMarker(session, type, row) {
-            var marker = session.addMarker(new Range(row, 0, row + 1, 0), "ace_" + type, "line");
+            var marker = session.addMarker(new Range(row, 0, row, 1), "ace_" + type, "fullLine");
             session.addGutterDecoration(row, type);
             session["$" + type + "Marker"] = {lineMarker: marker, row: row};
         }

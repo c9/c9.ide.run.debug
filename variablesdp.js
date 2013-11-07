@@ -33,13 +33,15 @@ define(function(require, exports, module) {
         };
         
         this.hasChildren = function(node) {
-            return node.children || node.tagName == "scope";
+            return node.status === "loaded"
+                ? (node.variables || node.properties || node.items || []).length
+                : node.children || node.tagName == "scope";
         };
         
         this.getCaptionHTML = function(node) {
             if (node.tagName == "scope")
                 return node.name || "Scope";
-            return node.name || "";
+            return node.name + "";
         };
         
         this.sort = function(children) {
@@ -51,7 +53,7 @@ define(function(require, exports, module) {
                 if (!aIsSpecial && bIsSpecial) return -1;
                 if (aIsSpecial && bIsSpecial) return a.index - b.index;
                 
-                return compare(a.name || "", b.name || "");
+                return compare(a.name + "", b.name + "");
             });
         };
         
@@ -67,7 +69,6 @@ define(function(require, exports, module) {
         this.getIconHTML = function(node) {
             return node.className == "newwatch" ? "" : "<span class='dbgVarIcon'></span>";
         };
-        
         
         this.getClassName = function(node) {
             return (node.className || "")

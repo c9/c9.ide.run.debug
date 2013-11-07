@@ -48,13 +48,13 @@ define(function(require, exports, module) {
             
             plugin.addElement(model);
             
-//            ide.on("afterfilesave", function(e) {
-//                var doc = e.doc;
-//                if (!doc || !doc.acesession)
-//                    return;
-//                if (doc.acesession.$breakpoints.length)
-//                    _self.updateBreakpointModel(doc.acesession);
-//            });
+            // ide.on("afterfilesave", function(e) {
+            //     var doc = e.doc;
+            //     if (!doc || !doc.acesession)
+            //         return;
+            //     if (doc.acesession.$breakpoints.length)
+            //         _self.updateBreakpointModel(doc.acesession);
+            // });
     
             tabs.on("tabAfterActivate", function(e){
                 var tab = e.tab;
@@ -103,14 +103,16 @@ define(function(require, exports, module) {
                     var tab = tabs.findTab(bp.path);
                     if (tab) {
                         var session = tab.document.getSession();
-                        var len     = session.session.getLength();
-                        
-                        if (bp.actual.line == len) {
-                            bp.actual.line = len - 1;
-                        }
-                        else if (bp.actual.line > len) {
-                            clearBreakpoint(bp);
-                            return;
+                        if (session) {
+                            var len = session.session.getLength();
+                            
+                            if (bp.actual.line == len) {
+                                bp.actual.line = len - 1;
+                            }
+                            else if (bp.actual.line > len) {
+                                clearBreakpoint(bp);
+                                return;
+                            }
                         }
                     }
                 }

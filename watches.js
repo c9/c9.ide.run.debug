@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "util", "debugger", "ace", "commands",
-        "menus", "Menu", "MenuItem", "Divider"
+        "menus", "Menu", "MenuItem", "Divider", "panels"
     ];
     main.provides = ["watches"];
     return main;
@@ -18,6 +18,7 @@ define(function(require, exports, module) {
         var Menu       = imports.Menu;
         var MenuItem   = imports.MenuItem;
         var Divider    = imports.Divider;
+        var panels     = imports.panels;
         
         var keys       = require("ace/lib/keys");
         var markup     = require("text!./watches.xml");
@@ -105,6 +106,8 @@ define(function(require, exports, module) {
             });
             
             plugin.on("expand", function(e) {
+                if (e.variable.parent == model.root)
+                    return e.expand && e.expand(e.variable.error);
                 dbg.getProperties(e.variable, function(err, properties){
                     updateVariable(e.variable, properties);
                     e.expand && e.expand();
@@ -175,6 +178,10 @@ define(function(require, exports, module) {
             datagrid.setOption("maxLines", 200);
             datagrid.setDataProvider(model);
             datagrid.edit = new TreeEditor(datagrid);
+            panels.on("afterAnimate", function(e){
+                if (panels.isActive("debugger"))
+                    datagrid && datagrid.resize();
+            });
             
             reloadModel();
 
@@ -196,7 +203,7 @@ define(function(require, exports, module) {
             });
             contextMenu.on("show", function(e) {
                 var selected = datagrid.selection.getCursor();
-                var isNew    = selected && selected.status  == "pending";
+                var isNew    = selected && selected.isNew;
                 var isProp   = selected.parent != model.root;
                 contextMenu.items[0].disabled = !selected || isProp;
                 contextMenu.items[1].disabled = !selected || !!isNew;
@@ -351,8 +358,11 @@ define(function(require, exports, module) {
                 dbg.evaluate(variable.name, debug.activeFrame, 
                   !debug.activeFrame, true, function(err, serverVariable){
                     if (err) {
-                        variable.value      = err.message;
-                        variable.properties = null;
+                        variable.json = {
+                            name  : variable.name,
+                            value : err.message,
+                            error : true
+                        };
                         updateVariable(variable, [], node, true);
                         return;
                     }
@@ -423,7 +433,8 @@ define(function(require, exports, module) {
             model.newWatchNode = model.newWatchNode || {
                 name: model.emptyMessage,
                 className: "newwatch",
-                isNew: true
+                fullWidth: true,
+                isNew: true,
             };
             model.setRoot({
                 items: [].concat(watches, model.newWatchNode),
