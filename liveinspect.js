@@ -93,6 +93,7 @@ define(function(require, exports, module) {
             
             // get respective HTML elements
             windowHtml = container.$ext;
+            windowHtml.style.position = "absolute";
             
             ace.getElement("menu", function(menu) {
                 menu.on("prop.visible", function(e){
