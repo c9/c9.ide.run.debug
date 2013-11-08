@@ -114,6 +114,7 @@
 }
 
 /** liveinspect **/
+
 .liveinspect {
     box-shadow: @liveinspect-shadow;
     z-index : 100000;
@@ -132,9 +133,20 @@
     border-radius: 3px;
 }
 
-.liveinspect .return{
-    border-bottom : 0;
-}
 .liveinspect.immediate .null{
     color : @liveinspect-null;
+}
+
+.liveinspect.dark{
+    box-shadow: @liveinspect-dark-shadow;
+    background-color: @liveinspect-dark-background;
+    border: 1px solid @liveinspect-dark-border-color;
+}
+
+.liveinspect.immediate.dark .null{
+    color : @liveinspect-dark-null;
+}
+
+.liveinspect .return, .liveinspect.dark .ace_dark .return{
+    border-bottom : 0;
 }

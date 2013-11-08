@@ -22,10 +22,12 @@ define(function(require, exports, module) {
         
         var plugin = new Plugin("Ajax.org", main.consumes);
         var emit   = plugin.getEmitter();
+        emit.setMaxListeners(1000);
         
         var stripPrefix               = (options.basePath || "");
         var breakOnExceptions         = false;
         var breakOnUncaughtExceptions = false;
+        var breakpointQueue           = [];
         
         var TYPE = "v8";
         
@@ -518,6 +520,12 @@ define(function(require, exports, module) {
         }
     
         function onAfterCompile(e) {
+            var queue = breakpointQueue;
+            breakpointQueue = [];
+            queue.forEach(function(i){
+                setBreakpoint(null, i[0], i[1]);
+            });
+            
             emit("sourcesCompile", {source: createSource(e.data.script)})
         }
     
@@ -848,12 +856,7 @@ define(function(require, exports, module) {
             
             if (!scriptId) {
                 // Wait until source is parsed
-                plugin.on("sourcesCompile", function wait(e){
-                    if (e.source.path.indexOf(path) > -1) {
-                        plugin.off("sourcesCompile", wait);
-                        setBreakpoint(null, bp, callback);
-                    }
-                });
+                breakpointQueue.push([bp, callback]);
                 callback && callback(new Error("Source not available yet. Queuing request."));
                 return false;
             }
@@ -872,6 +875,10 @@ define(function(require, exports, module) {
         }
         
         function changeBreakpoint(bp, callback){
+            if (breakpointQueue.some(function(i){
+                return i[0] === bp;
+            })) return;
+            
             v8dbg.changebreakpoint(bp.id, bp.enabled, 
                 bp.condition, bp.ignoreCount, function(info){
                     callback && callback(null, bp, info);
@@ -879,6 +886,13 @@ define(function(require, exports, module) {
         }
         
         function clearBreakpoint(bp, callback){
+            if (breakpointQueue.some(function(i, index){
+                if (i[0] === bp) {
+                    breakpointQueue.splice(index, 1);
+                    return true;
+                }
+            })) return;
+            
             v8dbg.clearbreakpoint(bp.id, callback)
         }
         

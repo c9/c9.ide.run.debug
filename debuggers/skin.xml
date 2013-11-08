@@ -191,7 +191,7 @@
                 display : inline-block;
                 width : 12px;
                 height : 15px;
-                margin : -1px 3px -3px 3px;
+                margin : -1px 4px -3px 3px;
                 background : url("images/@{datagrid-arrow}") no-repeat 0 4px;
             }
     

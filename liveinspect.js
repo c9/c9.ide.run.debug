@@ -31,7 +31,7 @@ define(function(require, exports, module) {
         var marker            = null;
         
         var isContextMenuVisible = false;
-        var dbg, container, worker;
+        var dbg, worker, theme;
         
         var loaded = false;
         function load() {
@@ -78,6 +78,15 @@ define(function(require, exports, module) {
                 ace.on("changeSelection", onEditorClick);
                 ace.on("mousewheel", onEditorClick);
             }, plugin);
+            
+            ace.on("themeChange", function(e){
+                theme = e.theme;
+                if (!theme || !drawn) return;
+                
+                windowHtml.className = "liveinspect immediate "
+                    + (theme.isDark ? "dark" : "");
+                windowHtml.firstChild.className = (theme.isDark ? "ace_dark" : "");
+            }, plugin);
         }
         
         var drawn = false;
@@ -86,14 +95,15 @@ define(function(require, exports, module) {
             drawn = true;
             
             // Create UI elements
-            var markup = require("text!./liveinspect.xml");
-            ui.insertMarkup(null, markup, plugin);
-            
-            container = plugin.getElement("winLiveInspect");
+            windowHtml = document.body.appendChild(document.createElement("div"));
             
             // get respective HTML elements
-            windowHtml = container.$ext;
             windowHtml.style.position = "absolute";
+            windowHtml.className = "liveinspect immediate "
+                + (theme.isDark ? "dark" : "");
+            windowHtml.innerHTML = "<div class='" 
+                + (!theme || theme.isDark ? "ace_dark" : "") 
+                + "'></div>";
             
             ace.getElement("menu", function(menu) {
                 menu.on("prop.visible", function(e){
@@ -102,7 +112,7 @@ define(function(require, exports, module) {
             });
             
             // when hovering over the inspector window we should ignore all further listeners
-            container.$ext.addEventListener("mousemove", function(){
+            windowHtml.addEventListener("mousemove", function(){
                 if (activeTimeout) {
                     clearTimeout(activeTimeout);
                     activeTimeout = null;
@@ -177,7 +187,7 @@ define(function(require, exports, module) {
             // see whether we hover over the editor or the quickwatch window
             var mouseMoveAllowed = false;
     
-            var eles = [ currentTab.editor.ace.container, container.$ext ];
+            var eles = [ currentTab.editor.ace.container, windowHtml ];
             // only the visible ones
             eles.filter(function (ele) { return ele.offsetWidth || ele.offsetHeight; })
                 .forEach(function (ele) {
@@ -199,7 +209,8 @@ define(function(require, exports, module) {
             if (mouseMoveAllowed) return;
     
             clearTimeout(activeTimeout);
-            activeTimeout = container.visible ? setTimeout(hide, 400) : null;
+            activeTimeout = windowHtml.style.display == "block" 
+                ? setTimeout(hide, 400) : null;
         };
     
         /**
@@ -217,7 +228,8 @@ define(function(require, exports, module) {
             
             var expr = data.value;
             // already visible, and same expression?
-            if (container && container.visible && expr === currentExpression)
+            if (windowHtml && windowHtml.style.display == "block" 
+              && expr === currentExpression)
                 return;
     
             // if there is any modal window open, then don't show
@@ -237,8 +249,8 @@ define(function(require, exports, module) {
             // evaluate the expression in the debugger, and receive model as callback
             evaluator.evaluate(expr, {
                 addWidget : function(state){
-                    container.$int.innerHTML = "";
-                    container.$int.appendChild(state.el);
+                    windowHtml.firstChild.innerHTML = "";
+                    windowHtml.firstChild.appendChild(state.el);
                 },
                 session : { repl: { onWidgetChanged : function(){
                     
@@ -278,13 +290,13 @@ define(function(require, exports, module) {
                 windowHtml.style.top       = (coords.pageY + ace.renderer.lineHeight) + "px";
     
                 // show window
-                container.show();
+                windowHtml.style.display = "block";
             }
         };
     
         function hide () {
-            if (container && container.visible)
-                container.hide();
+            if (windowHtml)
+                windowHtml.style.display = "none";
             
             if (marker) {
                 marker.session.removeMarker(marker.id);
