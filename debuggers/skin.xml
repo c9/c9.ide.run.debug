@@ -4,17 +4,14 @@
         <a:style><![CDATA[
             .blackdg{
                 position: relative;
-                /*background-color: #303130;*/
                 overflow : hidden;
     
                 font-family: Tahoma, Arial;
                 font-size: 8pt;
     
                 padding: 0;
-                /*color : #333;*/
-                color : #e1e1e1;
+                color : @datagrid-color;
                 
-                /*border-bottom: 10px solid rgb(255, 0, 0);*/
                 min-height : 45px;
             }
     
@@ -23,26 +20,18 @@
                 z-index : 10;
                 white-space : nowrap;
                 overflow: hidden;
-                /*background: rgb(61, 61, 61);*/
-                /*border-bottom: 1px solid rgb(36, 35, 35);*/
-                /*display: none;*/
-                /*border: 1px solid rgb(82, 82, 82);*/
-                /*border-width: 0 0 1px 0;*/
-                background: rgb(46, 46, 46);
-                border-bottom: 1px solid rgb(41, 41, 41);
+                background: @datagrid-heading-background;
+                border-bottom: 1px solid @datagrid-heading-border-color;
             }
     
             .blackdg .tree-headings .tree-column{
                 overflow : hidden;
                 text-overflow : ellipsis;
-                color: rgb(150, 150, 150);
-                
-                /*border: 1px solid rgb(82, 82, 82);*/
-                /*border-width: 0px 1px 0 0;*/
+                color: @datagrid-heading-color;
             }
             
             .tree-headings>.tree-column {
-                background: rgba(0, 0, 0, 0);
+                background: transparent;
                 display: inline-block;
                 padding: 2px 4px 1px 3px;
                 -moz-box-sizing: border-box;
@@ -63,8 +52,8 @@
             .blackdg .tree-headings .tree-column.hover,
             .blackdg .tree-headings .tree-column.down,
             .blackdg .tree-headings .tree-column.drag{
-                color : rgb(199, 198, 198);
-                background: rgb(51, 51, 51);
+                color : @datagrid-heading-hover-color;
+                background: @datagrid-heading-hover-background;
             }
     
             .blackdg .tree-headings .tree-column.drag{
@@ -200,35 +189,38 @@
     
             .blackdg .toggler{
                 display : inline-block;
-                width : 15px;
+                width : 12px;
                 height : 15px;
-                margin : -1px 2px -3px 1px;
+                margin : -1px 3px -3px 3px;
+                background : url("images/@{datagrid-arrow}") no-repeat 0 4px;
             }
     
             .blackdg .toggler.closed{
-                background-image : url(images/plus_dark.png);
-                background-position: 50%;
             }
     
             .blackdg .toggler.open{
-                background-image : url(images/min_dark.png);
-                background-position: 50%;
+                background-position: -10px 4px;
+            }
+            
+            .ace_tree_focus .selected .toggler{
+                background-image : url("images/@{datagrid-arrow-focus-selected}");
             }
     
             .blackdg .loading .toggler{
-                background : url(images/file-tree-load-spinner-dark.gif) no-repeat 0 0;
+                background : url("images/@{datagrid-spinner}") no-repeat 0 0;
                 width : 16px;
                 height : 16px;
                 top : -1px !important;
                 left : -2px;
                 vertical-align : top;
-                margin-right : 1px !important;
+                margin-right : 2px !important;
+                margin-left : 1px !important;
             }
             .blackdg .loading.selected .toggler{
-                background : url(images/file-tree-load-spinner-dark-unfocus.gif) no-repeat 0 0;
+                background : url("images/@{datagrid-selected-spinner}") no-repeat 0 0;
             }
             .ace_tree_focus .loading.selected .toggler{
-                background : url(images/file-tree-load-spinner-dark-selected.gif) no-repeat 0 0;
+                background : url("images/@{datagrid-selected-focus-spinner}") no-repeat 0 0;
             }
             
             .blackdg .row>span{
@@ -239,23 +231,8 @@
                 text-overflow: ellipsis;
             }
                 
-            .blackdg{
-                color : #ccc;
-            }
             .ace_tree_focus{
             }
-            
-            /*.blackdg .tree-headings div u,*/
-            /*.blackdg .tree-headings div,*/
-            /*.blackdg .records,*/
-            /*.blackdg .records .row span u,*/
-            /*.blackdg .records .selected, */
-            /*.blackdg .records .selected span{*/
-            /*    color : #999;*/
-            /*}*/
-            /*.blackdg .records .row span u{*/
-            /*    color : #ddd;*/
-            /*}*/
             
             .blackdg .records .row,
             .blackdg .records .row span{
@@ -267,20 +244,18 @@
             .blackdgDisabled .records .row span{
                 opacity : 0.5;
             }
-            /*.blackdg .row:nth-child(4n-1) span{*/
-            /*    background : rgba(255,255,255,0.05);*/
-            /*}*/
             .blackdg .row span.colsel{
                 background : rgba(0,0,0,0.15);
             }
             .blackdg .selected,
             .blackdgDisabled .selected{
-                background-color : rgb(61, 61, 61);
+                color: @datagrid-selected-color;
+                background-color : @datagrid-selected-background;
                 vertical-align : top;
             }
             .ace_tree_focus .selected{
-                background-color : #748512;
-                color : #f1f1f1;
+                color : @datagrid-selected-focus-color;
+                background-color : @datagrid-selected-focus-background;
             }
             .blackdg .records{
                 padding-top : 0;
@@ -295,35 +270,6 @@
                 background: url(icons/debugger/genericvariable_obj.gif);
                 margin: -1px 2px -5px -3px;
             }
-            
-            /*.blackdg {*/
-            /*    overflow : hidden;*/
-            /*    font-family: Tahoma, Arial;*/
-            /*    font-size: 8pt;*/
-            /*    padding: 0;*/
-            /*    color : #333;*/
-            /*}*/
-    
-            /*.blackdg .tree-headings {*/
-            /*    height : 20px;*/
-            /*    z-index : 10;*/
-            /*    white-space : nowrap;*/
-            /*}*/
-    
-            /*.blackdg .records {*/
-            /*    white-space : nowrap;*/
-            /*    display:block;*/
-            /*    margin:0;*/
-            /*}*/
-    
-            /*.blackdg div.records .treecell strong {*/
-            /*    top : 0px;*/
-            /*}*/
-    
-            /*.draggrid .treecell .iconCell,*/
-            /*.blackdg .records span.treecell .iconCell {*/
-            /*    padding : 2px 0 1px 24px;*/
-            /*}*/
         ]]></a:style>
     
     
@@ -378,14 +324,14 @@
                 overflow: auto;
                 position: relative;
                 cursor: default;
-                color: rgba(255,255,255,0.8);
+                color: @breakpoint-list-color;
             }
     
             .listBP .bpItem{
                 padding    : 2px 2px 2px 22px;
                 position : relative;
-                border-bottom: 1px solid rgb(41, 41, 41);
-                border-top: 1px solid rgba(71, 71, 71, 0.5);
+                border-bottom: 1px solid @breakpoint-list-item-border-bottom;
+                border-top: 1px solid @breakpoint-list-item-border-top;
             }
             .listBP .bpItem:first-child{
                 border-top-color : transparent;
@@ -394,9 +340,9 @@
                 border-bottom-color : transparent;
             }
             .listBP .bpItem:hover{
-                background-color: #748512;
-                color: #f1f1f1;
-                border-top: 1px solid rgba(255,2552,255, 0.14);
+                color: @breakpoint-list-item-hover-color;
+                background-color: @breakpoint-list-item-hover-background;
+                border-top: 1px solid @breakpoint-list-item-hover-border-top;
             }
     
             .listBP .content{
@@ -412,12 +358,12 @@
                 font-size: 10px;
                 white-space: nowrap;
                 overflow: hidden;
-                color: rgba(157, 189, 30, 1);
+                color: @breakpoint-list-code-color;
                 text-overflow: ellipsis;
             }
             
             .listBP .bpItem:hover .content div{
-                color : #f1f1f1;
+                color : @breakpoint-list-code-hover-color;
             }
     
             .listBP .checkbox {

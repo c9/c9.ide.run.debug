@@ -1,6 +1,5 @@
 .has_apf .blackdg, .listBP {
-    /*background: rgb(58, 58, 58);*/
-    background: rgb(49, 49, 49);
+    background: @datagrid-background;
 }
 
 .debugcontainer .scroller{
@@ -14,8 +13,8 @@
 }
 
 .panelsbuttonDown.debugger, .panelsbuttonDown.debugger:hover{
-    border-bottom: 1px solid rgb(27, 27, 27);
-    box-shadow: 1px -1px rgba(255,255,255,0.06) inset, 1px 0 rgba(255,255,255,0.06);
+    /*border-bottom: 1px solid rgb(27, 27, 27);*/
+    box-shadow: 1px -1px @border-highlight inset, 1px 0 @border-highlight;
     padding-bottom: 7px;
 }
 
@@ -48,13 +47,13 @@
     display : none;
 }
 .blackdg .newwatch{
-    color : #999;
+    color : @datagrid-watch-new;
 }
 .blackdg.ace_tree_focus .newwatch.selected{
-    color : #b7c594 !important;
+    color : @datagrid-watch-new-focus !important;
 }
 .blackdg .watcherror{
-    color : yellow;
+    color : @datagrid-watch-error;
 }
 
 
