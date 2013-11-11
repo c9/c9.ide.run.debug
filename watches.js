@@ -134,7 +134,7 @@ define(function(require, exports, module) {
                 menus.addItemToMenu(menu, new ui.item({
                     caption : "Add As Watch Expression",
                     command : "addwatchfromselection"
-                }), 50, plugin);
+                }), 600, plugin);
             });
             
             // restore the variables from the IDE settings
