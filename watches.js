@@ -193,9 +193,9 @@ define(function(require, exports, module) {
             }, plugin);
             contextMenu.on("itemclick", function(e){
                 if (e.value == "edit1")
-                    datagrid.edit.startRename(0);
+                    datagrid.edit.startRename(null, 0);
                 else if (e.value == "edit2")
-                    datagrid.edit.startRename(1);
+                    datagrid.edit.startRename(null, 1);
                 else if (e.value == "remove")
                     datagrid.execCommand("delete");
             });
@@ -255,7 +255,7 @@ define(function(require, exports, module) {
                     
                     if (column.value == "value") {
                         oldValue = variable.value;
-                        variable.value = value;
+                        variable.value = name;
                     }
                     else {
                         variable.name = name;
@@ -282,14 +282,14 @@ define(function(require, exports, module) {
                 // Don't allow setting the value of new variables
                 if (e.column.caption == "Value" 
                   && (e.node.ref + "").substr(0,3) == "new") {
-                    datagrid.edit.startRename(0);
+                    datagrid.edit.startRename(null, 0);
                     return e.allowRename = false;
                 }
                 
                 // When editing a property name, always force editing the value
                 if (e.column.caption == "Expression"
                   && e.node.parent != model.root) {
-                    datagrid.edit.startRename(1);
+                    datagrid.edit.startRename(null, 1);
                     return e.allowRename = false;
                 }
             });
