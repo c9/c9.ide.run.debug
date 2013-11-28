@@ -299,14 +299,14 @@ define(function(require, exports, module) {
                 setTimeout(function(){ justEdited = false }, 500);
             });
             
-            datagrid.container.addEventListener("keydown", function(e){
+            datagrid.textInput.getElement().addEventListener("keydown", function(e){
                 var cursor = datagrid.selection.getCursor();
                 var key = keys[e.keyCode] || "";
                 if (key.length == 1 || key.substr(0, 3) == "num" && cursor && !justEdited)
                     datagrid.edit.startRename(cursor, 0);
             }, true);
             
-            datagrid.container.addEventListener("keyup", function(e){
+            datagrid.textInput.getElement().addEventListener("keyup", function(e){
                 var cursor = datagrid.selection.getCursor();
                 if (e.keyCode == 13 && cursor && !justEdited)
                     datagrid.edit.startRename(cursor, 0);
