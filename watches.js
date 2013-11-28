@@ -38,9 +38,7 @@ define(function(require, exports, module) {
         var count   = 0;
         var watches = [];
         var dirty   = false;
-        var dbg;
-        var model, datagrid; // UI Elements
-        var errorWatch;
+        var dbg, model, datagrid, errorWatch;
         
         var loaded = false;
         function load(){

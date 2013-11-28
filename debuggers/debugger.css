@@ -30,19 +30,6 @@
     background-position : 0 -38px !important;
 }
 
-.blackdg .ace_tree-editor{
-    margin      : 0 0 0 -3px;
-    background  : white;
-    padding     : 0;
-    border      : 0;
-    box-shadow  : 0px 0px 10px 1px rgba(0,0,0,0.5) inset;
-    color       : #333;
-}
-.blackdg .ace_tree-editor input::selection{
-    background: #6c9700;
-    color : #f1f1f1;
-}
-
 .blackdg .newwatch strong{
     display : none;
 }
