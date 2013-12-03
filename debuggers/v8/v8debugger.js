@@ -69,12 +69,12 @@ define(function(require, exports, module) {
             getSources(function(err, sources) {
                 getFrames(function(err, frames) {
                     updateBreakpoints(breakpoints, function(err, breakpoints) {
-                        handleDebugBreak(breakpoints, reconnect, function(){
+                        handleDebugBreak(breakpoints, reconnect, frames[0], function(){
                             attached = true;
                             emit("attach", { breakpoints: breakpoints });
                         }, 
                         function() {
-                            if (reconnect && frames && frames.length)
+                            if (frames && frames.length) //reconnect && 
                                 activeFrame = frames[0];
                             
                             // This check is for when the process is not 
@@ -153,8 +153,7 @@ define(function(require, exports, module) {
         /**
          * Detects a break on a frame or a known breakpoint, otherwise resumes
          */
-        function handleDebugBreak(breakpoints, reconnect, attach, callback) {
-            var frame = activeFrame;
+        function handleDebugBreak(breakpoints, reconnect, frame, attach, callback) {
             if (!v8dbg) {
                 console.error("No debugger is set");
                 attach();
@@ -523,10 +522,10 @@ define(function(require, exports, module) {
             var queue = breakpointQueue;
             breakpointQueue = [];
             queue.forEach(function(i){
-                setBreakpoint(null, i[0], i[1]);
+                setBreakpoint(i[0]);
             });
             
-            emit("sourcesCompile", {source: createSource(e.data.script)})
+            emit("sourcesCompile", {source: createSource(e.data.script)});
         }
     
         function onChangeFrame(frame, silent) {
@@ -640,7 +639,11 @@ define(function(require, exports, module) {
             if (v8ds)
                 v8ds.detach();
             
-            v8ds = new V8DebuggerService(new Socket(runner.debugport, reconnect));
+            var socket = new Socket(runner.debugport, reconnect);
+            socket.on("error", function(err) {
+                emit("error", err);
+            });
+            v8ds = new V8DebuggerService(socket);
             v8ds.attach(0, function(err){
                 if (err) return callback(err);
 
