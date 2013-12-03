@@ -1,6 +1,5 @@
 .has_apf .blackdg, .listBP {
-    /*background: rgb(58, 58, 58);*/
-    background: rgb(49, 49, 49);
+    background: @datagrid-background;
 }
 
 .debugcontainer .scroller{
@@ -14,8 +13,8 @@
 }
 
 .panelsbuttonDown.debugger, .panelsbuttonDown.debugger:hover{
-    border-bottom: 1px solid rgb(27, 27, 27);
-    box-shadow: 1px -1px rgba(255,255,255,0.06) inset, 1px 0 rgba(255,255,255,0.06);
+    /*border-bottom: 1px solid rgb(27, 27, 27);*/
+    box-shadow: 1px -1px @border-highlight inset, 1px 0 @border-highlight;
     padding-bottom: 7px;
 }
 
@@ -31,30 +30,17 @@
     background-position : 0 -38px !important;
 }
 
-.blackdg .ace_tree-editor{
-    margin      : 0 0 0 -3px;
-    background  : white;
-    padding     : 0;
-    border      : 0;
-    box-shadow  : 0px 0px 10px 1px rgba(0,0,0,0.5) inset;
-    color       : #333;
-}
-.blackdg .ace_tree-editor input::selection{
-    background: #6c9700;
-    color : #f1f1f1;
-}
-
 .blackdg .newwatch strong{
     display : none;
 }
 .blackdg .newwatch{
-    color : #999;
+    color : @datagrid-watch-new;
 }
 .blackdg.ace_tree_focus .newwatch.selected{
-    color : #b7c594 !important;
+    color : @datagrid-watch-new-focus !important;
 }
 .blackdg .watcherror{
-    color : yellow;
+    color : @datagrid-watch-error;
 }
 
 
@@ -115,26 +101,39 @@
 }
 
 /** liveinspect **/
+
 .liveinspect {
-    box-shadow: 0 5px 13px 0px rgba(0, 0, 0, 0.7);
+    box-shadow: @liveinspect-shadow;
     z-index : 100000;
-    background-color: rgb(42, 43, 35);
+    background-color: @liveinspect-background;
     position: absolute;
     cursor: auto;
     padding: 1px 6px 1px 1px;
     font-size: 11px;
     font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
-    border: 1px solid rgba(235, 255, 0, 0.1);
+    border: 1px solid @liveinspect-border-color;
     margin : 0 0 0 -1px;
     max-height : 150px;
     overflow : auto;
     max-width : 800px;
     margin-right : 50px;
+    border-radius: 3px;
 }
 
-.liveinspect .return{
-    border-bottom : 0;
-}
 .liveinspect.immediate .null{
-    color : rgb(200,200,200);
+    color : @liveinspect-null;
+}
+
+.liveinspect.dark{
+    box-shadow: @liveinspect-dark-shadow;
+    background-color: @liveinspect-dark-background;
+    border: 1px solid @liveinspect-dark-border-color;
+}
+
+.liveinspect.immediate.dark .null{
+    color : @liveinspect-dark-null;
+}
+
+.liveinspect .return, .liveinspect.dark .ace_dark .return{
+    border-bottom : 0;
 }

@@ -38,9 +38,7 @@ define(function(require, exports, module) {
         var count   = 0;
         var watches = [];
         var dirty   = false;
-        var dbg;
-        var model, datagrid; // UI Elements
-        var errorWatch;
+        var dbg, model, datagrid, errorWatch;
         
         var loaded = false;
         function load(){
@@ -195,9 +193,9 @@ define(function(require, exports, module) {
             }, plugin);
             contextMenu.on("itemclick", function(e){
                 if (e.value == "edit1")
-                    datagrid.edit.startRename(0);
+                    datagrid.edit.startRename(null, 0);
                 else if (e.value == "edit2")
-                    datagrid.edit.startRename(1);
+                    datagrid.edit.startRename(null, 1);
                 else if (e.value == "remove")
                     datagrid.execCommand("delete");
             });
@@ -257,7 +255,7 @@ define(function(require, exports, module) {
                     
                     if (column.value == "value") {
                         oldValue = variable.value;
-                        variable.value = value;
+                        variable.value = name;
                     }
                     else {
                         variable.name = name;
@@ -284,14 +282,14 @@ define(function(require, exports, module) {
                 // Don't allow setting the value of new variables
                 if (e.column.caption == "Value" 
                   && (e.node.ref + "").substr(0,3) == "new") {
-                    datagrid.edit.startRename(0);
+                    datagrid.edit.startRename(null, 0);
                     return e.allowRename = false;
                 }
                 
                 // When editing a property name, always force editing the value
                 if (e.column.caption == "Expression"
                   && e.node.parent != model.root) {
-                    datagrid.edit.startRename(1);
+                    datagrid.edit.startRename(null, 1);
                     return e.allowRename = false;
                 }
             });
@@ -301,14 +299,14 @@ define(function(require, exports, module) {
                 setTimeout(function(){ justEdited = false }, 500);
             });
             
-            datagrid.container.addEventListener("keydown", function(e){
+            datagrid.textInput.getElement().addEventListener("keydown", function(e){
                 var cursor = datagrid.selection.getCursor();
                 var key = keys[e.keyCode] || "";
                 if (key.length == 1 || key.substr(0, 3) == "num" && cursor && !justEdited)
                     datagrid.edit.startRename(cursor, 0);
             }, true);
             
-            datagrid.container.addEventListener("keyup", function(e){
+            datagrid.textInput.getElement().addEventListener("keyup", function(e){
                 var cursor = datagrid.selection.getCursor();
                 if (e.keyCode == 13 && cursor && !justEdited)
                     datagrid.edit.startRename(cursor, 0);

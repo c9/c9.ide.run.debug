@@ -1,8 +1,7 @@
 /*global describe it before after  =*/
-
-require([
 "use client";
 
+require([
     "lib/architect/architect", 
     "lib/chai/chai", 
     "text!plugins/c9.ide.layout.classic/skins.xml",
@@ -18,7 +17,7 @@ require([
 
     var bar, column, devnull;
     
-    architect.resolveConfig([
+    expect.setupArchitectTest([
         {
             packagePath  : "plugins/c9.core/c9",
             workspaceId  : "ubuntu/ip-10-35-77-180",
@@ -139,11 +138,7 @@ require([
             provides : [],
             setup    : main
         }
-    ], function (err, config) {
-        if (err) throw err;
-        var app = architect.createApp(config);
-        app.on("service", function(name, plugin){ plugin.name = name; });
-    });
+    ], architect);
     
     function main(options, imports, register) {
         var run      = imports.run;

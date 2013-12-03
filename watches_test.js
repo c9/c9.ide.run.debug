@@ -8,7 +8,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
 
     var EventEmitter = events.EventEmitter;
     
-    architect.resolveConfig([
+    expect.setupArchitectTest([
         {
             packagePath : "plugins/c9.core/c9",
             startdate   : new Date(),
@@ -72,11 +72,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
             provides : [],
             setup    : main
         }
-    ], function (err, config) {
-        if (err) throw err;
-        var app = architect.createApp(config);
-        app.on("service", function(name, plugin){ plugin.name = name; });
-    });
+    ], architect);
     
     function main(options, imports, register) {
         var watches     = imports.watches;

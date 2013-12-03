@@ -195,9 +195,12 @@ define(function(require, exports, module) {
                           && meta.className.indexOf("breakpoint") === -1; 
                     },
                     onclick     : function(){
+                        var path = meta.ace.session.c9doc.tab.path;
+                        if (!path)
+                            return;
                         // Add hidden breakpoint
                         var breakpoint = new Breakpoint({
-                           path    : meta.ace.session.c9doc.tab.path,
+                           path    : path,
                            line    : meta.line,
                            column  : 0,
                            hidden  : true,
