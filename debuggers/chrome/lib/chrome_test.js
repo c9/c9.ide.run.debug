@@ -1,6 +1,6 @@
 /*global describe it before */
 
-"use server";
+"use client";
 "use mocha";
 
 require([
