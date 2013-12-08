@@ -86,7 +86,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             settings.on("read", function(){
-                settings.setDefaults("user/debug", [["sourcemaps", "auto"]]);
+                settings.setDefaults("project/debug", [["sourcemaps", "auto"]]);
             }, plugin);
             
             // - [Hook debugger plugin] Setting a breakpoint via Ace
