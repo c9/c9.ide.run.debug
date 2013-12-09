@@ -237,7 +237,6 @@ define(function(require, exports, module) {
                       style         : "position:relative",
                       skin          : "list_dark",
                       maxitems      : "10",
-                      disabled      : "true" ,
                       each          : "[source]",
                       caption       : "[@name]",
                       autoselect    : "false",
