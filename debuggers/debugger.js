@@ -14,6 +14,7 @@ define(function(require, exports, module) {
         var panels    = imports.panels;
         var commands  = imports.commands;
         var run       = imports.run;
+        var layout    = imports.layout;
         
         var markup = require("text!./debugger.xml");
         var css    = require("text!./debugger.css");
@@ -232,6 +233,13 @@ define(function(require, exports, module) {
                 //@todo
                 emit("detach", e);
             }, plugin);
+            
+            dbg.on("error", function(err) {
+                if (err.code == "ECONNREFUSED")
+                    layout.showError("Could not connect debugger to the debugger proxy");
+                else
+                    layout.showError(err.message);
+            });
             
             // When hitting a breakpoint or exception or stepping
             function startDebugging(e){
