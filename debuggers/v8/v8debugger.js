@@ -188,12 +188,13 @@ define(function(require, exports, module) {
                     resume(callback);
                 }
                 else {
+                    onChangeFrame(frame);
                     attach();
                     callback();
                 }
             }
             
-            // @todo this is probably a timing issue
+            // @todo this is probably a timing issue - probably solved now
             if (frame) {
                 var test = { path: frame.path, line: frame.line };
                 for (var bpi, i = 0, l = breakpoints.length; i < l; i++) {
@@ -207,6 +208,7 @@ define(function(require, exports, module) {
                             evaluate(bpi.condition, frame, false, true, checkEval);
                         }
                         else {
+                            onChangeFrame(frame);
                             attach();
                             callback();
                         }
