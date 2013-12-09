@@ -74,9 +74,6 @@ define(function(require, exports, module) {
                             emit("attach", { breakpoints: breakpoints });
                         }, 
                         function() {
-                            if (frames && frames.length) //reconnect && 
-                                activeFrame = frames[0];
-                            
                             // This check is for when the process is not 
                             // started with debug-brk
                             if (activeFrame) {
@@ -220,6 +217,7 @@ define(function(require, exports, module) {
             
             // Resume the process
             if (reconnect) {
+                onChangeFrame(frame);
                 attach();
                 callback();
             }
