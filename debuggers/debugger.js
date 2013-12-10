@@ -36,7 +36,7 @@ define(function(require, exports, module) {
         var pauseOnBreaks = 0;
         var state         = "disconnected";
         var sources       = [];
-        var running, activeFrame, dbg;
+        var running, activeFrame, dbg, name;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
@@ -164,7 +164,9 @@ define(function(require, exports, module) {
             });
             
             btnOutput.on("click", function(){
-                commands.exec("showoutput");
+                commands.exec("showoutput", null, {
+                    id: name
+                });
             });
             
             btnImmediate.on("click", function(){
@@ -201,6 +203,7 @@ define(function(require, exports, module) {
             btnStepOver.setAttribute("disabled", notConnected || state != "stopped");
             btnStepInto.setAttribute("disabled", notConnected || state != "stopped");
             btnStepOut.setAttribute("disabled",  notConnected || state != "stopped");
+            btnOutput.setAttribute("disabled",  notConnected);
         }
         
         function initializeDebugger(){
@@ -500,6 +503,8 @@ define(function(require, exports, module) {
                 
                 process.meta.$debugger = true;
             }
+            
+            name = process.name;
             
             // Hook for plugins to delay or cancel debugger attaching
             // Whoever cancels is responible for calling the callback
