@@ -367,14 +367,15 @@ define(function(require, exports, module) {
                 }
             });
             
+            var hbox1 = debug.getElement("hbox");
             var hbox2 = debug.getElement("hbox2");
-            btnBreakpoints = hbox2.insertBefore(new ui.button({
+            btnBreakpoints = hbox1.insertBefore(new ui.button({
                 id       : "btnBreakpoints",
                 tooltip  : "Deactivate Breakpoints",
                 icon     : "toggle_breakpoints2.png",
                 skinset  : "default",
                 skin     : "c9-menu-btn"
-            }), hbox2.selectSingleNode("a:divider"));
+            }), hbox1.selectSingleNode("a:divider").nextSibling);
             btnBpRemove = hbox2.insertBefore(new ui.button({
                 id       : "btnBpRemove",
                 tooltip  : "Clear All Breakpoints",

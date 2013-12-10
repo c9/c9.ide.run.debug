@@ -30,7 +30,13 @@
           skin     = "c9-menu-btn"
           command  = "stepout"
           disabled = "true" />
-          <br />
+        <a:divider  skin="c9-divider" style="margin:0 3px 0 3px" />
+        <a:button id="btnPause" 
+          tooltip  = "Don't pause on exceptions"
+          icon     = "exception_break.png" 
+          class    = "pause0"
+          skinset  = "default"
+          skin     = "c9-menu-btn" />
     </a:bar>
     <a:bar id="hbox2" 
       class   = "fakehbox aligncenter debugger_buttons bottombuttons basic" 
@@ -39,12 +45,6 @@
       bottom  = "0"
       right   = "0"
       left    = "0">
-        <a:button id="btnPause" 
-          tooltip  = "Don't pause on exceptions"
-          icon     = "exception_break.png" 
-          class    = "pause0"
-          skinset  = "default"
-          skin     = "c9-menu-btn" />
         <a:divider  skin="c9-divider" />
         <a:button id="btnOutput" 
           caption  = "Output"
