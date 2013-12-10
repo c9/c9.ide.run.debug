@@ -656,7 +656,13 @@ define(function(require, exports, module) {
                 v8dbg.addEventListener("afterCompile", onAfterCompile);
                 
                 onChangeFrame(null);
-                sync(breakpoints, reconnect, callback);
+                
+                // This fixes reconnecting. I dont understand why, but without
+                // this timeout during reconnect the getSources() call never
+                // returns
+                setTimeout(function(){
+                    sync(breakpoints, reconnect, callback);
+                });
             });
         }
     

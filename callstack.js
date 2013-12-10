@@ -69,7 +69,6 @@ define(function(require, exports, module) {
                 width   : "30"
             }];
             
-            
             // Set and clear the dbg variable
             debug.on("attach", function(e){
                 dbg = e.implementation;
