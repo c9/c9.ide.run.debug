@@ -1,4 +1,4 @@
-module.exports = function (vfs, register) { 
+module.exports = function (vfs, options, register) { 
     var net    = require("net");
     var Stream = require("stream")
     var client, stream;
