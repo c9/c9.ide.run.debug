@@ -12,7 +12,7 @@
     bottom : 24px;
 }
 
-.panelsbuttonDown.debugger, .panelsbuttonDown.debugger:hover{
+.panelsbar .panelsbuttonDown.debugger, .panelsbar .panelsbuttonDown.debugger:hover{
     /*border-bottom: 1px solid rgb(27, 27, 27);*/
     box-shadow: 1px -1px @border-highlight inset, 1px 0 @border-highlight;
     padding-bottom: 7px;
