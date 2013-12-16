@@ -64,7 +64,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         //Mock Plugins
         {
             consumes : ["apf", "ui", "Plugin"],
-            provides : ["commands", "layout", "watcher", "auth.bootstrap",
+            provides : ["commands", "layout", "watcher", "auth.bootstrap", "info",
                 "preferences", "anims", "menus", "clipboard", "immediate", "run", "dialog.alert"],
             setup    : expect.html.mocked
         },
