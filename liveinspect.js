@@ -231,7 +231,7 @@ define(function(require, exports, module) {
             if (windowHtml && windowHtml.style.display == "block" 
               && expr === currentExpression)
                 return;
-    
+
             // if there is any modal window open, then don't show
             var windows = getNumericProperties(document.querySelectorAll(".winadv") || {})
                 .filter(function (w) {
