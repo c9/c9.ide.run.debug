@@ -43,6 +43,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
             baseProc: baseProc
         },
         "plugins/c9.ide.editors/tabmanager",
+        "plugins/c9.ide.ui/focus",
         "plugins/c9.ide.editors/pane",
         "plugins/c9.ide.editors/tab",
         "plugins/c9.vfs.client/vfs_client",
