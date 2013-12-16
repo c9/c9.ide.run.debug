@@ -11,11 +11,8 @@ define(function(require, exports, module) {
     (function() {
             
         this.getChildren = function(node) {
-            if (node.status === "pending" || node.status === "loading")
-                return null;
-            
             var children = node.variables || node.properties || node.items;
-            if (!children)
+            if (!children && node.status === undefined)
                 node.status = "pending";
             var ch = children && children[0] && children[0];
             if (ch) {
