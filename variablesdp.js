@@ -54,8 +54,6 @@ define(function(require, exports, module) {
             });
         };
         
-        this.getChildrenAsync = null;
-        
         this.updateNode = function(node) {
             var isOpen = node.isOpen;
             this.close(node, null, true);

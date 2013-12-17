@@ -55,7 +55,7 @@ define(function(require, exports, module) {
                 width   : "50"
             }];
             
-            model.getChildrenAsync = function(node, callback) {
+            model.loadChildren = function(node, callback) {
                 emit("expand", {
                     node: node,
                     expand: callback

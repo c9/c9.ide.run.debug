@@ -48,7 +48,7 @@ define(function(require, exports, module) {
             model = new TreeData();
             model.emptyMessage = "Type your expression here...";
             
-            model.getChildrenAsync = function(node, callback) {
+            model.loadChildren = function(node, callback) {
                 if (node.className == "newwatch")
                     return callback(true);
                     
