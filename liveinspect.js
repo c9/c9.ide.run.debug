@@ -100,7 +100,7 @@ define(function(require, exports, module) {
             // get respective HTML elements
             windowHtml.style.position = "absolute";
             windowHtml.className = "liveinspect immediate "
-                + (theme.isDark ? "dark" : "");
+                + (!theme || theme.isDark ? "dark" : "");
             windowHtml.innerHTML = "<div class='" 
                 + (!theme || theme.isDark ? "ace_dark" : "") 
                 + "'></div>";
