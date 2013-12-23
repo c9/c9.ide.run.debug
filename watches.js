@@ -49,7 +49,7 @@ define(function(require, exports, module) {
             model.emptyMessage = "Type your expression here...";
             
             model.loadChildren = function(node, callback) {
-                if (node.className == "newwatch")
+                if (node.isNew)
                     return callback(true);
                     
                 emit("expand", {

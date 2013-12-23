@@ -62,7 +62,7 @@ define(function(require, exports, module) {
         };
         
         this.getIconHTML = function(node) {
-            return node.className == "newwatch" ? "" : "<span class='dbgVarIcon'></span>";
+            return node.isNew ? "" : "<span class='dbgVarIcon'></span>";
         };
         
         this.getClassName = function(node) {
