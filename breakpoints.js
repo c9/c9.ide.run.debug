@@ -616,18 +616,19 @@ define(function(require, exports, module) {
          * Adds and event listener to an ace session that updates breakpoints
          */
         function decorateDocument(doc) {
-            var session = doc.getSession()
+            var session = doc.getSession();
             if (session.hasBreakpoints)
                 return;
 
+            var aceSession = session.session;
             // A file was loaded that doesn't exists and is already destroyed
-            if (!session.session) 
+            if (!aceSession) 
                 return;
                 
-            session.session.on("change", function(e) {
-                var breakpoints = session.session.$breakpoints;
+            aceSession.on("change", function(e) {
+                var breakpoints = aceSession.$breakpoints;
                 
-                if (!breakpoints.length) //!session.c9doc.isInited || 
+                if (!breakpoints.length || !aceSession.c9doc.hasValue())
                     return;
                 
                 var delta = e.data;
