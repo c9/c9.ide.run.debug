@@ -284,11 +284,13 @@ define(function(require, exports, module) {
         }
         
         function fetchSource(path, callback){
-            var sources = debug.sources || [];
-            for (var i = 0, l = sources.length; i < l; i++) {
-                if (sources[i].path == path) {
-                    debug.getSource(sources[i], callback);
-                    return;
+            if (debug.state !== "disconnected") {
+                var sources = debug.sources || [];
+                for (var i = 0, l = sources.length; i < l; i++) {
+                    if (sources[i].path == path) {
+                        debug.getSource(sources[i], callback);
+                        return;
+                    }
                 }
             }
             
@@ -364,7 +366,7 @@ define(function(require, exports, module) {
             
             // Fetch the source of the generated file
             fetchSource(path, function(err, source){
-                if (err) return;
+                if (err) return callback(err);
                 
                 detectMap(path, source, callback);
             });
