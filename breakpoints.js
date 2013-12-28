@@ -11,7 +11,7 @@ define(function(require, exports, module) {
         var DebugPanel = imports.DebugPanel;
         var settings   = imports.settings;
         var ui         = imports.ui;
-        var ace        = imports.ace;
+        var aceHandle  = imports.ace;
         var tabs       = imports.tabManager;
         var debug      = imports.debugger;
         var MenuItem   = imports.MenuItem;
@@ -181,10 +181,10 @@ define(function(require, exports, module) {
             });
             
             // Wait for the gutter menu
-            ace.on("draw", function() {
+            aceHandle.on("draw", function() {
                 
                 // We need the gutter context menu
-                var menu = ace.gutterContextMenu;
+                var menu = aceHandle.gutterContextMenu;
                 var meta = menu.meta;
                 
                 menu.append(new MenuItem({
