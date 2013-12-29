@@ -68,6 +68,10 @@ define(function(require, exports, module) {
                 updateDocument(tab.document);
             });
             
+            aceHandle.on("create", function(e) {
+                e.editor.on("createAce", decorateAce, plugin);
+            }, plugin);
+            
             debug.on("attach", function(e){
                 dbg = e.implementation;
                 
@@ -334,7 +338,7 @@ define(function(require, exports, module) {
                     }
                     
                     item.setAttribute("disabled", length ? false : true);
-                })
+                });
             });
             
             menu.on("itemclick", function(e){
@@ -412,7 +416,7 @@ define(function(require, exports, module) {
                 focusselect : "true",
                 htmlNode    : hInput,
                 "initial-message": "Your Expression"
-            })
+            });
             
             codebox.ace.commands.addCommands([
                 {
@@ -599,7 +603,7 @@ define(function(require, exports, module) {
             hCondition.style.top = (pos.top + 3) + "px"; // line position
             
             // Set current value
-            codebox.setValue(breakpoint.condition ||  "")
+            codebox.setValue(breakpoint.condition ||  "");
             
             var node = hCondition.getElementsByTagName("div")[0].firstChild;
             node.nodeValue = node.nodeValue.replace(/\d+/, line + 1);
