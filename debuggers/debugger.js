@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Panel", "settings", "ui", "layout", "immediate", "run", "panels", 
-        "tabManager", "commands"//, "quickwatch"
+        "tabManager", "commands", "dialog.confirm"
     ];
     main.provides = ["debugger"];
     return main;
@@ -15,6 +15,7 @@ define(function(require, exports, module) {
         var commands  = imports.commands;
         var run       = imports.run;
         var layout    = imports.layout;
+        var confirm   = imports["dialog.confirm"].show;
         
         var markup = require("text!./debugger.xml");
         var css    = require("text!./debugger.css");
@@ -36,7 +37,7 @@ define(function(require, exports, module) {
         var pauseOnBreaks = 0;
         var state         = "disconnected";
         var sources       = [];
-        var running, activeFrame, dbg, name;
+        var running, activeFrame, dbg, name, process;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
@@ -440,8 +441,10 @@ define(function(require, exports, module) {
             });
         }
         
-        function debug(process, reconnect, callback){
+        function debug(p, reconnect, callback){
             var err;
+            
+            process = p;
             
             if (typeof reconnect == "function") {
                 callback  = reconnect;
@@ -528,6 +531,27 @@ define(function(require, exports, module) {
             
             if (settings.getBool("user/debug/@autoshow"))
                 panels.deactivate("debugger");
+        }
+        
+        function checkAttached(callback){
+            if (state != "disconnected") {
+                confirm("The debugger is already connected to another process.",
+                    "Would you like to stop the existing process?",
+                    "Click OK to stop the existing process and start the new "
+                    + "process with the debugger attached. Click Cancel to "
+                    + " prevent starting the new process.",
+                    function(){ // Confirm
+                        process.stop(function(){
+                            callback();
+                        });
+                    },
+                    function(){ // Cancel
+                        // Do Nothing
+                    });
+            }
+            else {
+                callback();
+            }
         }
         
         /***** Lifecycle *****/
@@ -868,6 +892,15 @@ define(function(require, exports, module) {
             evaluate : function(expression, frame, global, disableBreak, callback){ 
                 dbg.evaluate(expression, frame, global, disableBreak, callback); 
             },
+            
+            /**
+             * Check whether a debugger is already attached. If the debugger is
+             * already attached it will present a dialog to the user asking 
+             * how to handle the situation.
+             * @param {Function} callback  Called when the user chooses to run
+             * the new process.
+             */
+            checkAttached : checkAttached,
             
             /**
              * Displays a frame in the ace editor.
