@@ -123,19 +123,22 @@ define(function(require, exports, module) {
                 
                 var loc = bp.actual || bp;
                 var bps = findBreakpoints(bp.path, loc.line);
+                
                 if (bps.length > 1) {
-                    var bpi, condition, ignoreCount;
-                    for (var i = 0, l = bps.length; i < l; i++) {
+                    for (var bpi, i = 0, l = bps.length; i < l; i++) {
                         bpi = bps[i];
+                        if (bpi == bp) continue;
                         
-                        if (bpi.condition) condition = bpi.condition;
-                        if (bpi.ignoreCount) ignoreCount = bpi.ignoreCount;
-                        if (bpi != bp)
-                            clearBreakpoint(bpi, false, true);
+                        if (bpi.actual && bpi.actual.line != bpi.line) {
+                            bpi.invalid = true;
+                        }
+                        else {
+                            bp.invalid = true;
+                        }
                     }
-                    //@todo should this be reset on the server?
-                    bp.condition   = condition;
-                    bp.ignoreCount = ignoreCount;
+                }
+                else {
+                    bp.invalid = false;
                 }
                 
                 redrawBreakpoint(bp);
@@ -535,9 +538,12 @@ define(function(require, exports, module) {
         function editBreakpoint(action, editor, line){
             var session   = editor.session;
             var path      = session.c9doc.tab.path;
-            var obp       = findBreakpoint(path, line);
             var removed   = false;
             var enabled   = true;
+            
+            var obp = findBreakpoint(path, line, true).filter(function(b){
+                return b.invalid && b.line != line ? false : true;
+            })[0];
             
             function createBreakpoint(condition){
                 var caption = basename(path);
@@ -688,10 +694,12 @@ define(function(require, exports, module) {
                 if (bp.path != path)
                     return;
 
-                rows[((bp.actual || bp).line)] 
+                var loc = bp.invalid ? bp : (bp.actual || bp);
+                rows[loc.line] 
                     = " ace_breakpoint"
                         + (bp.condition ? " condition" : "")
-                        + (bp.enabled ? "" : " disabled ");
+                        + (bp.enabled ? "" : " disabled ")
+                        + (bp.invalid ? " invalid" : "");
             });
 
             session.session.$breakpoints = rows;
@@ -756,7 +764,7 @@ define(function(require, exports, module) {
         function setBreakpoint(breakpoint, noEvent){
             // Ignore if the breakpoint already exists
             for (var i = 0, l = breakpoints.length, bp; i < l; i++) {
-                if ((bp = breakpoints[i]).equals(breakpoint)) {
+                if ((bp = breakpoints[i]).equals(breakpoint, true)) {
                     return;
                 }
             }

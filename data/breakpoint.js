@@ -54,10 +54,10 @@ define(function(require, exports, module) {
     
     Breakpoint.prototype = new Data([
         "id", "path", "text", "line", "column", "serverOnly", "actual",
-        "content", "enabled", "sourcemap", "condition", "hidden"
+        "content", "enabled", "sourcemap", "condition", "hidden", "invalid"
     ]);
         
-    Breakpoint.prototype.equals = function(breakpoint){
+    Breakpoint.prototype.equals = function(breakpoint, ignoreInvalid){
         if (!breakpoint) return false;
         
         if (this.data.id && this.data.id === breakpoint.id) 
@@ -69,7 +69,7 @@ define(function(require, exports, module) {
         if (this.data.sourcemap)
             left[this.data.sourcemap.source + ":" + this.data.sourcemap.line] = true;
             
-        if (this.data.actual)
+        if (this.data.actual && (!this.data.invalid || !ignoreInvalid))
             left[this.data.path + ":" + this.data.actual.line] = true;
         
         if (left[breakpoint.path + ":" + breakpoint.line])
