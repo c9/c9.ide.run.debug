@@ -175,7 +175,7 @@ define(function(require, exports, module) {
                 
                 draw();
             }, 250);
-        };
+        }
     
         /**
          * onDocumentMove handler to clear the timeout
@@ -211,14 +211,14 @@ define(function(require, exports, module) {
             clearTimeout(activeTimeout);
             activeTimeout = windowHtml.style.display == "block" 
                 ? setTimeout(hide, 400) : null;
-        };
+        }
     
         /**
          * When clicking in the editor window, hide live inspect
          */
         function onEditorClick() {
             hide();
-        };
+        }
     
         /**
          * Execute live watching
@@ -245,6 +245,11 @@ define(function(require, exports, module) {
             // if (mnuCtxEditor && mnuCtxEditor.visible) {
             //     return;
             // }
+            
+            // show spinner while evaluating
+            windowHtml.firstChild.innerHTML = '<div class="session_btn running" style="margin:0">'
+                +'<strong style="left:18px"></strong></div>';
+            done();
     
             // evaluate the expression in the debugger, and receive model as callback
             evaluator.evaluate(expr, {
@@ -283,16 +288,16 @@ define(function(require, exports, module) {
                 var coords = ace.renderer.textToScreenCoordinates(pos.sl, pos.sc);
                 
                 windowHtml.style.maxWidth  = Math.min(800, window.innerWidth 
-                    - coords.pageX - 30) + "px"
+                    - coords.pageX - 30) + "px";
                 windowHtml.style.maxHeight = Math.min(250, window.innerHeight 
-                    - coords.pageY - ace.renderer.lineHeight - 10) + "px"
+                    - coords.pageY - ace.renderer.lineHeight - 10) + "px";
                 windowHtml.style.left      = coords.pageX + "px";
                 windowHtml.style.top       = (coords.pageY + ace.renderer.lineHeight) + "px";
     
                 // show window
                 windowHtml.style.display = "block";
             }
-        };
+        }
     
         function hide () {
             if (windowHtml)
@@ -305,7 +310,7 @@ define(function(require, exports, module) {
             
             if (activeTimeout)
                 activeTimeout = clearTimeout(activeTimeout);
-        };
+        }
     
         function addMarker(data) {
             if (marker)
@@ -330,13 +335,13 @@ define(function(require, exports, module) {
                 session : session,
                 range   : range
             };
-        };
+        }
     
         function getNumericProperties (obj) {
             return Object.keys(obj)
                 .filter(function (k) { return !isNaN(k); })
                 .map(function (k) { return obj[k]; });
-        };
+        }
         
         /***** Lifecycle *****/
         
