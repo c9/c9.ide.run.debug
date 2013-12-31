@@ -29,7 +29,7 @@ define(function(require, exports, module) {
         var currentExpression = null;
         var currentTab        = null;
         var marker            = null;
-        var evalId            = 0;
+        var evalCounter       = 0;
         
         var SHOW_TIMEOUT      = 350;
         
@@ -199,7 +199,7 @@ define(function(require, exports, module) {
             // see whether we hover over the editor or the quickwatch window
             var mouseMoveAllowed = false;
     
-            var eles = [ currentTab.editor.ace.container, windowHtml ];
+            var eles = [ currentTab.editor.ace.renderer.scroller, windowHtml ];
             // only the visible ones
             eles.filter(function (ele) { return ele.offsetWidth || ele.offsetHeight; })
                 .forEach(function (ele) {
@@ -266,7 +266,7 @@ define(function(require, exports, module) {
             if (!marker)
                 return;
             
-            marker.evalId = ++evalId;
+            var evalId = ++evalCounter;
     
             // evaluate the expression in the debugger, and receive model as callback
             evaluator.evaluate(expr, {
@@ -287,7 +287,7 @@ define(function(require, exports, module) {
                         done();
                 }
             }, function(){
-                if (marker && marker.evalId == evalId)
+                if (marker && evalId === evalCounter)
                     done();
             });
             
