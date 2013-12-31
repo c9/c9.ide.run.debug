@@ -31,6 +31,8 @@ define(function(require, exports, module) {
         var marker            = null;
         var evalId            = 0;
         
+        var SHOW_TIMEOUT      = 350;
+        
         var isContextMenuVisible = false;
         var dbg, worker, theme;
         
@@ -184,7 +186,7 @@ define(function(require, exports, module) {
                     hide();
                 
                 draw();
-            }, 250);
+            }, SHOW_TIMEOUT);
         }
     
         /**
