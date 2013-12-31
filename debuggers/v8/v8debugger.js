@@ -715,7 +715,7 @@ define(function(require, exports, module) {
         }
         
         function getFrames(callback, silent) {
-            v8dbg.backtrace(null, null, null, true, function(body, refs) {
+            v8dbg.backtrace(0, 1000, null, true, function(body, refs) {
                 function ref(id) {
                     for (var i = 0; i < refs.length; i++) {
                         if (refs[i].handle == id) {
