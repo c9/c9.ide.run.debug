@@ -48,6 +48,7 @@ define(function(require, exports, module) {
             
             modelFrames  = new TreeData();
             modelFrames.emptyMessage = "No callstack to display";
+            modelFrames.$sortNodes   = false;
             
             modelFrames.$sorted = false;
             modelFrames.columns = [{

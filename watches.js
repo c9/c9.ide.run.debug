@@ -47,6 +47,7 @@ define(function(require, exports, module) {
             
             model = new TreeData();
             model.emptyMessage = "Type your expression here...";
+            model.$sortNodes   = false;
             
             model.loadChildren = function(node, callback) {
                 if (node.isNew)
