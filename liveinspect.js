@@ -29,6 +29,9 @@ define(function(require, exports, module) {
         var currentExpression = null;
         var currentTab        = null;
         var marker            = null;
+        var evalCounter       = 0;
+        
+        var SHOW_TIMEOUT      = 350;
         
         var isContextMenuVisible = false;
         var dbg, worker, theme;
@@ -164,8 +167,17 @@ define(function(require, exports, module) {
                     return hide();
 
                 var pos = ev.getDocumentPosition();
-                if (pos.column == ev.editor.session.getLine(pos.row).length)
+                var line = ev.editor.session.getLine(pos.row);
+                if (pos.column == line.length || pos.column < line.search(/\S/))
                     return hide();
+                    
+                if (!ev.editor.selection.isEmpty()) {
+                    var range = ev.editor.getSelectionRange();
+                    var selectionVisible = range.end.row > ev.editor.getFirstVisibleRow()
+                        && range.start.row < ev.editor.getLastVisibleRow();
+                    if (!selectionVisible)
+                        return hide();
+                }
 
                 worker.emit("inspect", { data: { row: pos.row, column: pos.column } });
 
@@ -174,7 +186,7 @@ define(function(require, exports, module) {
                     hide();
                 
                 draw();
-            }, 250);
+            }, SHOW_TIMEOUT);
         }
     
         /**
@@ -187,7 +199,7 @@ define(function(require, exports, module) {
             // see whether we hover over the editor or the quickwatch window
             var mouseMoveAllowed = false;
     
-            var eles = [ currentTab.editor.ace.container, windowHtml ];
+            var eles = [ currentTab.editor.ace.renderer.scroller, windowHtml ];
             // only the visible ones
             eles.filter(function (ele) { return ele.offsetWidth || ele.offsetHeight; })
                 .forEach(function (ele) {
@@ -250,6 +262,11 @@ define(function(require, exports, module) {
             windowHtml.firstChild.innerHTML = '<div class="session_btn running" style="margin:0">'
                 +'<strong style="left:18px"></strong></div>';
             done();
+            
+            if (!marker)
+                return;
+            
+            var evalId = ++evalCounter;
     
             // evaluate the expression in the debugger, and receive model as callback
             evaluator.evaluate(expr, {
@@ -260,15 +277,18 @@ define(function(require, exports, module) {
                 session : { repl: { onWidgetChanged : function(){
                     
                 }}},
-                setError : function(){
-                    hide();
+                setError : function(err){
+                    windowHtml.firstChild.innerHTML = '<span class="error"><span>';
+                    windowHtml.querySelector(".error").textContent =
+                        err && err.message || "error";
                 },
                 setWaiting : function(show){
                     if (!show)
                         done();
                 }
             }, function(){
-                done();
+                if (marker && evalId === evalCounter)
+                    done();
             });
             
             function done(){
