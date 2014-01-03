@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Panel", "settings", "ui", "layout", "immediate", "run", "panels", 
-        "tabManager", "commands", "dialog.confirm"
+        "Panel", "settings", "ui", "immediate", "run", "panels", 
+        "tabManager", "commands", "dialog.confirm", "dialog.error"
     ];
     main.provides = ["debugger"];
     return main;
@@ -14,7 +14,7 @@ define(function(require, exports, module) {
         var panels    = imports.panels;
         var commands  = imports.commands;
         var run       = imports.run;
-        var layout    = imports.layout;
+        var showError = imports["dialog.error"].show;
         var confirm   = imports["dialog.confirm"].show;
         
         var markup = require("text!./debugger.xml");
@@ -240,9 +240,9 @@ define(function(require, exports, module) {
             
             dbg.on("error", function(err) {
                 if (err.code == "ECONNREFUSED")
-                    layout.showError("Could not connect debugger to the debugger proxy");
+                    showError("Could not connect debugger to the debugger proxy");
                 else
-                    layout.showError(err.message);
+                    showError(err.message);
             });
             
             // When hitting a breakpoint or exception or stepping

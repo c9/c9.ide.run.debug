@@ -130,7 +130,7 @@ require([
             consumes : ["apf", "ui", "Plugin"],
             provides : [
                 "commands", "watcher", "anims", "save", "preferences", 
-                "panels", "layout", "menus", "clipboard"
+                "panels", "layout", "menus", "clipboard", "dialog.error"
             ],
             setup    : expect.html.mocked
         },
