@@ -54,7 +54,7 @@ var MessageReader = module.exports = function(socket, callback) {
     };
     
     this.destroy = function() {
-        this.$socket.removeListener("data", this.$cbReceive);
+        this.$socket && this.$socket.removeListener("data", this.$cbReceive);
         delete this.$socket;
         delete this.$callback;
         this.$received = "";

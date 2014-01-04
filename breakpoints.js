@@ -891,7 +891,8 @@ define(function(require, exports, module) {
                 updateBreakpoint({id: bp.id, enabled: false}, "disable", force);
             });
             
-            list.setAttribute("class", "listBPDisabled");
+            if (drawn)
+                list.setAttribute("class", "listBPDisabled");
             
             enableBreakpoints = false;
             toggleBreakpoints(false);
@@ -904,7 +905,7 @@ define(function(require, exports, module) {
             plugin.once("draw", draw);
         });
         plugin.on("enable", function(){
-            if (!enableBreakpoints)
+            if (!enableBreakpoints && drawn)
                 list.setAttribute("class", "listBPDisabled");
         });
         plugin.on("disable", function(){
