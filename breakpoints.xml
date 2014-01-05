@@ -8,18 +8,9 @@
         <a:item value="enable-all">Enable All Breakpoints</a:item>
         <a:item value="disable-all">Disable All Breakpoints</a:item>
     </a:menu>
-    <a:list id="list"
-      autoselect   = "false"
-      reselectable = "true"
+    <a:bar id="list"
       skinset      = "debugger"
       skin         = "breakpoints"
-      border       = "0"
-      mode         = "check"
-      each         = "[breakpoint]"
-      checked      = "[@enabled]">
-        <a:caption>
-            [@text]:{parseInt([@line])+1}
-            <div>[@content]</div>
-        </a:caption>
-    </a:list>
+      border       = "0">
+    </a:bar>
 </a:application>

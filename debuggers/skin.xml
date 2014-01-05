@@ -71,7 +71,8 @@
             .listBP .bpItem:last-child{
                 border-bottom-color : transparent;
             }
-            .listBP .bpItem:hover{
+            .listBP .bpItem:hover,
+            .listBP .bpItem.hover{
                 color: @breakpoint-list-item-hover-color;
                 background-color: @breakpoint-list-item-hover-background;
                 border-top: 1px solid @breakpoint-list-item-hover-border-top;
@@ -94,7 +95,8 @@
                 text-overflow: ellipsis;
             }
             
-            .listBP .bpItem:hover .content div{
+            .listBP .bpItem:hover .content div,
+            .listBP .bpItem.hover .content div{
                 color : @breakpoint-list-code-hover-color;
             }
     
@@ -143,16 +145,25 @@
                 display             : none;
             }
     
-            .listBP .bpItem:hover .btnclose {
+            .listBP .bpItem:hover .btnclose,
+            .listBP .bpItem.hover .btnclose {
                 display: block;
             }
     
-            .listBP .bpItem .btnclose:hover {
+            .listBP .bpItem .btnclose:hover,
+            .listBP .bpItem .btnclose.hover {
                 background-position : 0 -19px;
             }
     
             .listBP .bpItem .btnclose:active {
                 background-position : 0 -38px;
+            }
+            
+            /*workaround for ace tree pointer event limitations*/
+            .listBP { cursor   : pointer; }
+            .listBP .btnclose, .listBP .checkbox { 
+                pointer-events : auto; 
+                cursor         : default;
             }
         ]]></a:style>
     

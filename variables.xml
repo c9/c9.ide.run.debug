@@ -1,12 +1,6 @@
 <a:application xmlns:a="http://ajax.org/2005/aml">
-    <a:script><![CDATA[
-        function scopesort(value, args, xmlNode) {
-            return (xmlNode.tagName == "scope" ? 1 : 0) + value.toLowerCase();
-        }
-    ]]></a:script>
     <a:bar id="datagrid"
       border     = "0"
-      skinset    = "debugger"
-      empty-message = "No variables to display">
+      skinset    = "debugger">
     </a:bar>
 </a:application>

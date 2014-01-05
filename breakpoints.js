@@ -21,6 +21,11 @@ define(function(require, exports, module) {
         
         var basename   = require("path").basename;
         
+        
+        var Tree       = require("ace_tree/tree");
+        var TreeData   = require("ace_tree/data_provider");
+        var escapeHTML = require("ace/lib/lang").escapeHTML;
+        
         /***** Initialization *****/
         
         var deps   = main.consumes.slice(0, main.consumes.length - 1);
@@ -35,7 +40,7 @@ define(function(require, exports, module) {
         var enableBreakpoints = true;
         
         var dbg;
-        var list, menu, model, hCondition, hInput; // UI Elements
+        var list, listEl, menu, model, hCondition, hInput; // UI Elements
         var btnBreakpoints, btnBpRemove, codebox;
         var conditionBreakpoint;
         
@@ -44,9 +49,26 @@ define(function(require, exports, module) {
             if (loaded) return false;
             loaded = true;
             
-            model = new ui.model();
+            model = new TreeData();
+            model.$sortNodes = false;
+            model.renderRow = function(row, html, config) {
+                var bp = this.visibleItems[row];
+                html.push('<div class="', this.getClassName(bp), '">',
+                    '<span class="checkbox">&nbsp;</span>',
+                    '<div class="content">',
+                        escapeHTML(bp.text) + ":", bp.line + 1,
+                    '<div>',
+                        escapeHTML(bp.content) + "&nbsp;",
+                    '</div></div>',
+                    '<strong class="btnclose"> </strong>',
+                '</div>');
+            };
             
-            plugin.addElement(model);
+            model.getClassName = function(node) {
+                return "bpItem " + (node.enabled ? "checked " : " ") + node.className;
+            };
+            
+            model.rowHeight = 39;
             
             // ide.on("afterfilesave", function(e) {
             //     var doc = e.doc;
@@ -161,8 +183,8 @@ define(function(require, exports, module) {
                 breakpoints = (bps || []).map(function(bp){
                     return new Breakpoint(bp);
                 });
-                model.load("<breakpoints>" 
-                    + breakpoints.join("") + "</breakpoints>");
+                model.setRoot(breakpoints);
+                model.visibleItems = breakpoints;
                 
                 // update the currently active document
                 if (tabs.focussedTab && tabs.focussedTab.editor.type == "ace") {
@@ -173,7 +195,7 @@ define(function(require, exports, module) {
                 toggleBreakpoints(enableBreakpoints);
                 
                 if (!enableBreakpoints && drawn)
-                    list.setAttribute("class", "listBPDisabled");
+                    list.renderer.setStyle("listBPDisabled");
             });
             
             settings.on("write", function (e) {
@@ -288,48 +310,51 @@ define(function(require, exports, module) {
             var markup = require("text!./breakpoints.xml");
             ui.insertMarkup(options.aml, markup, plugin);
             
-            list = plugin.getElement("list");
-            list.setAttribute("model", model);
-            list.$isWindowContainer = false; //apf hack
-            
+            listEl = plugin.getElement("list");
+            list = new Tree(listEl.$ext);
+            list.setTheme({cssClass: "blackdg"});
+            list.setOption("maxLines", 200);
+            list.setDataProvider(model);
+
             list.on("click", function(e){
-                var selected = list.selected;
-                if (!selected || e.htmlEvent.target == e.htmlEvent.currentTarget)
+                var bp = e.getNode();
+                if (!bp)
                     return;
 
-                var className = e.htmlEvent.target.className || "";
-                if (className.indexOf("btnclose") != -1) {
-                    clearBreakpoint(findBreakpoint(selected));
-                }
-                else if (className.indexOf("checkbox") == -1)
-                    gotoBreakpoint(selected);
+                var className = e.domEvent.target.className || "";
+                if (className.indexOf("btnclose") != -1)
+                    clearBreakpoint(bp);
+                else if (className.indexOf("checkbox") != -1)
+                    list._signal("afterCheck", {node: bp});
+                else
+                    gotoBreakpoint(bp);
             });
 
             // Breakpoint is removed
-            list.on("afterremove", function(e){
-                var bp = findBreakpoint(e.xmlNode);
-                clearBreakpoint(bp, true);
+            list.on("delete", function(e){
+                var bp = findBreakpoint(e.node);
+                clearBreakpoint(bp);
             });
             
             // Breakpoint is enabled / disabled
-            list.on("aftercheck", function(e){
-                var bp = findBreakpoint(e.xmlNode);
+            list.on("afterCheck", function(e){
+                var bp = findBreakpoint(e.node);
                 
                 if (!bp.enabled)
-                    enableBreakpoint(bp, true);
+                    enableBreakpoint(bp);
                 else
-                    disableBreakpoint(bp, true);
+                    disableBreakpoint(bp);
             });
     
             menu = plugin.getElement("menu");
         
-            list.setAttribute("contextmenu", menu);
+            listEl.setAttribute("contextmenu", menu);
             
             if (!enableBreakpoints)
-                list.setAttribute("class", "listBPDisabled");
+                list.renderer.setStyle("listBPDisabled");
             
             menu.on("prop.visible", function(){
-                var length = list.length;
+                var length = model.visibleItems.length;
                 
                 menu.childNodes.forEach(function(item){
                     if (item.localName == "divider") return;
@@ -345,11 +370,12 @@ define(function(require, exports, module) {
             });
             
             menu.on("itemclick", function(e){
-                if (!list.selected)
+                var bp = list.selection.getCursor();
+                if (!bp)
                     return;
 
                 if (e.value == "remove") {
-                    clearBreakpoint(findBreakpoint(list.selected));
+                    clearBreakpoint(findBreakpoint(bp));
                 }
                 else if (e.value == "remove-all") {
                     for (var i = breakpoints.length - 1; i >= 0; i--) {
@@ -726,37 +752,28 @@ define(function(require, exports, module) {
         /***** Methods *****/
         
         function setCondition(breakpoint, condition, ignoreXml) {
-            if (!ignoreXml) {
-                var bp = findBreakpointXml(breakpoint, true);
-                ui.xmldb.setAttribute(bp, "condition", condition);
-            }
-            
             breakpoint.data.condition = condition;
             updateBreakpoint(breakpoint, "condition");
+            
+            ignoreXml || model._signal("change");
             
             return true;
         }
         
         function enableBreakpoint(breakpoint, ignoreXml) {
-            if (!ignoreXml) {
-                var bp = findBreakpointXml(breakpoint, true);
-                ui.xmldb.setAttribute(bp, "enabled", "true");
-            }
-            
             breakpoint.data.enabled = true;
             updateBreakpoint(breakpoint, "enable");
+            
+            ignoreXml || model._signal("change");
             
             return true;
         }
         
         function disableBreakpoint(breakpoint, ignoreXml){
-            if (!ignoreXml) {
-                var bp = findBreakpointXml(breakpoint, true);
-                ui.xmldb.setAttribute(bp, "enabled", "false");
-            }
-            
             breakpoint.data.enabled = false;
             updateBreakpoint(breakpoint, "disable");
+            
+            ignoreXml || model._signal("change");
             
             return true;
         }
@@ -776,9 +793,8 @@ define(function(require, exports, module) {
             if (!(breakpoint instanceof Breakpoint))
                 breakpoint = new Breakpoint(breakpoint);
             
-            // Add to the model and array
-            model.appendXml(breakpoint.xml);
             breakpoints.push(breakpoint);
+            model._signal("change");
             
             if (!noEvent) // Prevent recursion during init
                 updateBreakpoint(breakpoint, "add");
@@ -787,14 +803,11 @@ define(function(require, exports, module) {
         }
         
         function clearBreakpoint(breakpoint, ignoreXml, silent){
-            if (!ignoreXml) {
-                var bp = findBreakpointXml(breakpoint);
-                bp && apf.xmldb.removeNode(bp);
-            }
-            
             breakpoints.remove(breakpoint);
             if (!silent)
                 updateBreakpoint(breakpoint, "remove");
+            
+            ignoreXml || model._signal("change");
         }
         
         function redrawBreakpoint(bp){
@@ -803,20 +816,13 @@ define(function(require, exports, module) {
             
             updateDocument(tab.document);
             
-            var bpx = findBreakpointXml(bp);
-            bpx.setAttribute("line", bp.line);
-            ui.xmldb.setAttribute(bpx, "text", bp.text);
+            model._signal("change", bp);
         }
         
-        function findBreakpointXml(breakpoint){
-            return model.queryNode("breakpoint[@path=" 
-                + util.escapeXpathString(String(breakpoint.path)) 
-                + " and @line='" + breakpoint.line + "']");
-        }
         function findBreakpoint(path, line, multi){
             if (typeof path == "object") {
-                line = parseInt(path.getAttribute("line"), 10);
-                path = path.getAttribute("path");
+                line = path.line;
+                path = path.path;
             }
             
             var match = { line: line, path: path};
@@ -877,7 +883,7 @@ define(function(require, exports, module) {
                     updateBreakpoint({id: bp.id, enabled: true}, "enable", force);
             });
             
-            list.setAttribute("class", "");
+            list.renderer.unsetStyle("listBPDisabled");
             
             toggleBreakpoints(true);
         }
@@ -892,7 +898,7 @@ define(function(require, exports, module) {
             });
             
             if (drawn)
-                list.setAttribute("class", "listBPDisabled");
+                list.renderer.setStyle("listBPDisabled");
             
             enableBreakpoints = false;
             toggleBreakpoints(false);
@@ -906,7 +912,7 @@ define(function(require, exports, module) {
         });
         plugin.on("enable", function(){
             if (!enableBreakpoints && drawn)
-                list.setAttribute("class", "listBPDisabled");
+                list.renderer.setStyle("listBPDisabled");
         });
         plugin.on("disable", function(){
             

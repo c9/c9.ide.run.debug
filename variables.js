@@ -267,6 +267,10 @@ define(function(require, exports, module) {
          **/
         plugin.freezePublicAPI({
             /**
+             * @ignore
+             */
+            get model() { return model },
+            /**
              * Sets the frame that the variables and scopes are displayed for.
              * @param {debugger.Frame} frame  The frame to display the variables and scopes from.
              */
