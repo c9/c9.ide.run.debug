@@ -56,9 +56,9 @@ define(function(require, exports, module) {
                 html.push('<div class="', this.getClassName(bp), '">',
                     '<span class="checkbox">&nbsp;</span>',
                     '<div class="content">',
-                        escapeHTML(bp.text) + ":", bp.line + 1,
+                        escapeHTML(bp.text || "") + ":", bp.line + 1,
                     '<div>',
-                        escapeHTML(bp.content) + "&nbsp;",
+                        escapeHTML(bp.content || "") + "&nbsp;",
                     '</div></div>',
                     '<strong class="btnclose"> </strong>',
                 '</div>');
