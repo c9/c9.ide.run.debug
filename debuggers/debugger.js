@@ -171,8 +171,9 @@ define(function(require, exports, module) {
             });
             
             btnImmediate.on("click", function(){
-                commands.exec("showimmediate");
-                tabs.focussedTab.editor.setActiveEvaluator("debugger");
+                commands.exec("showimmediate", null, {
+                    evaluator: "debugger"
+                });
             });
             
             // Update button state
