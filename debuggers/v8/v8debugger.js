@@ -537,7 +537,8 @@ define(function(require, exports, module) {
         /***** Socket *****/
         
         function Socket(port, reconnect) {
-            var emit    = this.getEmitter();
+            var plugin  = new Plugin();
+            var emit    = plugin.getEmitter();
             var state, stream;
             
             var PROXY = require("text!../netproxy.js")
@@ -545,7 +546,7 @@ define(function(require, exports, module) {
                 .replace(/[\n\r]/g, "")
                 .replace(/\{PORT\}/, port);
             
-            this.__defineGetter__("state", function(){ return state; });
+            plugin.__defineGetter__("state", function(){ return state; });
             
             function connect() {
                 if (state) 
@@ -605,33 +606,36 @@ define(function(require, exports, module) {
                 stream && stream.end();
                 state = null;
                 emit("end", err);
-            };
+            }
         
             function send(msg) {
                 stream && stream.write(msg, "utf8");
-            };
+            }
 
-            // Backward compatibility
-            this.addEventListener  = this.on;
-            this.removeListener    = this.off;
-            this.setMinReceiveSize = function(){};
+            plugin.freezePublicAPI({
+                // Backward compatibility
+                addEventListener  : plugin.on,
+                removeListener    : plugin.off,
+                setMinReceiveSize : function(){},
+                
+                /**
+                 * 
+                 */
+                connect : connect,
+                
+                /**
+                 * 
+                 */
+                close : close,
+                
+                /**
+                 * 
+                 */
+                send : send
+            });
             
-            /**
-             * 
-             */
-            this.connect = connect;
-            
-            /**
-             * 
-             */
-            this.close = close;
-            
-            /**
-             * 
-             */
-            this.send = send;
-        };
-        Socket.prototype = new Plugin();
+            return plugin;
+        }
         
         /***** Methods *****/
         
