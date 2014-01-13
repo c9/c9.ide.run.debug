@@ -28,6 +28,11 @@ define(function(require, exports, module) {
         var breakOnExceptions         = false;
         var breakOnUncaughtExceptions = false;
         var breakpointQueue           = [];
+        var connected                 = 0;
+        
+        var DISCONNECTED = 0;
+        var CONNECTED    = 1;
+        var CONNECTING   = 2;
         
         var TYPE = "v8";
         
@@ -537,8 +542,8 @@ define(function(require, exports, module) {
         /***** Socket *****/
         
         function Socket(port, reconnect) {
-            var plugin  = new Plugin();
-            var emit    = plugin.getEmitter();
+            var socket  = new Plugin();
+            var emit    = socket.getEmitter();
             var state, stream;
             
             var PROXY = require("text!../netproxy.js")
@@ -546,14 +551,24 @@ define(function(require, exports, module) {
                 .replace(/[\n\r]/g, "")
                 .replace(/\{PORT\}/, port);
             
-            plugin.__defineGetter__("state", function(){ return state; });
+            socket.__defineGetter__("state", function(){ return state; });
             
-            function connect() {
+            function connect(force) {
                 if (state) 
                     return;
                 
-                if (reconnect)
-                    connectToPort();
+                connected = CONNECTING;
+                
+                if (reconnect && !force) {
+                    connectToPort(function(err){
+                        if (!err) return;
+                        
+                        if (err.code == "ECONNREFUSED")
+                            connect(true);
+                        else
+                            return emit("err", err);
+                    });
+                }
                 else {
                     proc.spawn("node", {
                         args: ["-e", PROXY]
@@ -570,6 +585,10 @@ define(function(require, exports, module) {
                             connectToPort();
                         });
                         
+                        process.on("exit", function(){
+                            connected = DISCONNECTED;
+                        });
+                        
                         // Make sure the process keeps running
                         process.unref();
                     });
@@ -578,10 +597,10 @@ define(function(require, exports, module) {
                 state = "connecting";
             }
             
-            function connectToPort(){
+            function connectToPort(callback){
                 net.connect(port + 1, {}, function(err, s){
                     if (err)
-                        return emit("error", err);
+                        return callback ? callback(err) : emit("error", err);
                     
                     stream = s;
                     stream.on("data", function(data) {
@@ -597,8 +616,12 @@ define(function(require, exports, module) {
                     if (reconnect)
                         emit("data", "Content-Length:0\r\n\r\n");
                     
+                    connected = CONNECTED;
+                    
                     state = "connected";
                     emit("connect");
+                    
+                    callback && callback();
                 });
             }
         
@@ -612,10 +635,10 @@ define(function(require, exports, module) {
                 stream && stream.write(msg, "utf8");
             }
 
-            plugin.freezePublicAPI({
+            socket.freezePublicAPI({
                 // Backward compatibility
-                addEventListener  : plugin.on,
-                removeListener    : plugin.off,
+                addEventListener  : socket.on,
+                removeListener    : socket.off,
                 setMinReceiveSize : function(){},
                 
                 /**
@@ -634,7 +657,7 @@ define(function(require, exports, module) {
                 send : send
             });
             
-            return plugin;
+            return socket;
         }
         
         /***** Methods *****/
@@ -1057,12 +1080,24 @@ define(function(require, exports, module) {
          */
         plugin.freezePublicAPI({
             /**
+             * 
+             */
+            DISCONNECTED: DISCONNECTED,
+            /**
+             * 
+             */
+            CONNECTED: CONNECTED,
+            /**
+             * 
+             */
+            CONNECTING: CONNECTING,
+            /**
              * The type of the debugger implementation. This is the identifier 
              * with which the runner selects the debugger implementation.
              * @property {String} type
              * @readonly
              */
-            type : TYPE,
+            type: TYPE,
             /**
              * @property {null|"running"|"stopped"} state  The state of the debugger process
              * <table>
@@ -1074,6 +1109,10 @@ define(function(require, exports, module) {
              * @readonly
              */
             get state(){ return state; },
+            /**
+             * 
+             */
+            get connected(){ return connected; },
             /**
              * Whether the debugger will break when it encounters any exception.
              * This includes exceptions in try/catch blocks.

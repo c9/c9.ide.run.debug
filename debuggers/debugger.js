@@ -444,6 +444,10 @@ define(function(require, exports, module) {
         function debug(p, reconnect, callback){
             var err;
             
+            if (reconnect && process == p && dbg.connected) {
+                return; // We're already connecting / connected
+            }
+            
             process = p;
             
             if (typeof reconnect == "function") {
