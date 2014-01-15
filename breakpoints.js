@@ -617,6 +617,9 @@ define(function(require, exports, module) {
         }
         
         function showConditionDialog(ace, createBreakpoint, path, line, breakpoint){
+            if (!breakpoint)
+                breakpoint = createBreakpoint();
+            
             drawCondition();
             
             // Attach dialog to ace
@@ -639,9 +642,6 @@ define(function(require, exports, module) {
             
             var node = hCondition.getElementsByTagName("div")[0].firstChild;
             node.nodeValue = node.nodeValue.replace(/\d+/, line + 1);
-            
-            if (!breakpoint)
-                breakpoint = createBreakpoint();
             
             conditionBreakpoint = breakpoint;
             
