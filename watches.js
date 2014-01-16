@@ -252,11 +252,12 @@ define(function(require, exports, module) {
                     watches.push(variable);
                 }
                 else {
-                    variable = node;
+                    // variable = node;
+                    variable = findVariable(node.ref, parents);
                     
                     if (column.value == "value") {
                         oldValue = variable.value;
-                        variable.value = name;
+                        value    = variable.value = name;
                     }
                     else {
                         variable.name = name;
