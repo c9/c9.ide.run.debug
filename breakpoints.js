@@ -404,7 +404,7 @@ define(function(require, exports, module) {
             var hbox2 = debug.getElement("hbox2");
             btnBreakpoints = hbox1.insertBefore(new ui.button({
                 id       : "btnBreakpoints",
-                tooltip  : "Deactivate Breakpoints",
+                tooltip  : "Deactivate All Breakpoints",
                 icon     : "toggle_breakpoints2.png",
                 skinset  : "default",
                 skin     : "c9-menu-btn"
@@ -417,6 +417,9 @@ define(function(require, exports, module) {
                 skin     : "c9-menu-btn"
             }), hbox2.selectSingleNode("a:divider"));
             plugin.addElement(btnBreakpoints, btnBpRemove);
+            
+            if (!enableBreakpoints)
+                toggleBreakpoints(enableBreakpoints);
             
             btnBreakpoints.on("click", function(){
                 toggleBreakpoints();
@@ -479,8 +482,8 @@ define(function(require, exports, module) {
                     : "toggle_breakpoints1.png");
                 btnBreakpoints.setAttribute("tooltip", 
                     enableBreakpoints
-                        ? "Deactivate Breakpoints"
-                        : "Activate Breakpoints"
+                        ? "Deactivate All Breakpoints"
+                        : "Activate All Breakpoints"
                 );
             }
             
@@ -488,6 +491,12 @@ define(function(require, exports, module) {
                 activateAll();
             else
                 deactivateAll();
+            
+            tabs.getPanes().forEach(function(pane){
+                var tab = pane.getTab();
+                if (tab.editorType == "ace")
+                    updateDocument(tab.document);
+            });
         }
         
         // Breakpoints
@@ -706,7 +715,7 @@ define(function(require, exports, module) {
         }
         
         function updateDocument(doc) {
-            if (doc.editor.type != "ace")
+            if (!doc.editor || doc.editor.type != "ace")
                 return;
                 
             var session = doc.getSession();
@@ -724,7 +733,7 @@ define(function(require, exports, module) {
                 rows[loc.line] 
                     = " ace_breakpoint"
                         + (bp.condition ? " condition" : "")
-                        + (bp.enabled ? "" : " disabled ")
+                        + (bp.enabled && enableBreakpoints ? "" : " disabled ")
                         + (bp.invalid ? " invalid" : "");
             });
 

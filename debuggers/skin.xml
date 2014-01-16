@@ -82,7 +82,7 @@
                 cursor : pointer;
                 font-family : Arial, Tahoma;
                 font-size : 12px;
-                padding : 3px 0 0 0;
+                padding : 3px 0 0 2px;
             }
     
             .listBP .content div{
@@ -102,11 +102,11 @@
     
             .listBP .checkbox {
                 width      : 21px;
-                height     : 19px;
-                background : url("icons/toggle_breakpoints2.png") no-repeat 0 0;
+                height     : 17px;
+                background : url("images/checkbox_black.png") no-repeat 3px 0;
                 display : block;
                 position : absolute;
-                left : 0px;
+                left : 1px;
                 top : 4px;
             }
     
@@ -120,7 +120,7 @@
             }
     
             .listBP .checked .checkbox {
-                background : url("icons/toggle_breakpoints1.png") no-repeat 0 0;
+                background-position: 3px -51px;
             }
     
             .listBP .checked .checkbox:hover{
