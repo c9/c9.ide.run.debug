@@ -124,8 +124,6 @@ define(function(require, exports, module) {
             // Create UI elements
             ui.insertMarkup(options.aml, markup, plugin);
         
-            datagrid = plugin.getElement("datagrid");
-            
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
             datagrid.setTheme({cssClass: "blackdg"});
