@@ -581,7 +581,7 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Generic Debugger for Cloud9 IDE. This plugin is responsible for 
+         * Generic Debugger for Cloud9. This plugin is responsible for 
          * binding the different debug panels to a debugger implementation.
          * 
          * The default debug panels are:

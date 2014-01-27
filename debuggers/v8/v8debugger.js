@@ -1066,9 +1066,9 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * Debugger implementation for Cloud9 IDE. When you are implementing a 
+         * Debugger implementation for Cloud9. When you are implementing a 
          * custom debugger, implement this API. If you are looking for the
-         * debugger interface of Cloud9 IDE, check out the {@link debugger}.
+         * debugger interface of Cloud9, check out the {@link debugger}.
          * 
          * This interface is defined to be as stateless as possible. By 
          * implementing these methods and events you'll be able to hook your

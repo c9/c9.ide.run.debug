@@ -1,5 +1,5 @@
 /**
- * node debugger Module for the Cloud9 IDE
+ * node debugger Module for the Cloud9
  *
  * @copyright 2010, Ajax.org B.V.
  * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
@@ -844,7 +844,7 @@ define(function(require, exports, module) {
         /***** Register and define API *****/
         
         /**
-         * V8 Debugger Plugin for Cloud9 IDE. This plugin is as stateless as
+         * V8 Debugger Plugin for Cloud9. This plugin is as stateless as
          * possible.
          * 
          * @property state {null|"running"|"stopped"} state of the debugged process
