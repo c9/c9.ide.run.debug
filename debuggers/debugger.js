@@ -240,8 +240,11 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("error", function(err) {
-                if (err.code == "ECONNREFUSED")
-                    showError("Could not connect debugger to the debugger proxy");
+                if (err.code == "ECONNREFUSED") {
+                    // Ignore error if process has stopped
+                    if (process.running >= process.STARTING)
+                        showError("Could not connect debugger to the debugger proxy");
+                }
                 else
                     showError(err.message);
             });
