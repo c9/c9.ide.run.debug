@@ -494,7 +494,7 @@ define(function(require, exports, module) {
             
             tabs.getPanes().forEach(function(pane){
                 var tab = pane.getTab();
-                if (tab.editorType == "ace")
+                if (tab && tab.editorType == "ace")
                     updateDocument(tab.document);
             });
         }
