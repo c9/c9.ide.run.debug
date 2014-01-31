@@ -47,6 +47,7 @@ define(function(require, exports, module) {
         }
         
         var hasChildren = {
+            "regexp"   : 32,
             "error"    : 16,
             "object"   : 8,
             "function" : 4
@@ -264,6 +265,9 @@ define(function(require, exports, module) {
                 
                 case "error":
                     return value.value || "[Error]";
+                    
+                case "regexp":
+                    return value.text;
     
                 case "boolean":
                 case "number":
@@ -991,13 +995,7 @@ define(function(require, exports, module) {
         }
         
         function setLocalVariable(variable, value, scopeNumber, frameIndex, callback) {
-            v8dbg.setvariablevalue(variable.name, value, scopeNumber, frameIndex, 
-              function(body, refs, error){
-                // lookup([variable.ref], false, function(err, properties){
-                //     variable.properties = properties;
-                //     callback(null, variable);
-                // });
-                
+            v8dbg.simpleevaluate(value, null, true, [], function(body, refs, error){
                 if (error) {
                     var err = new Error(error.message);
                     err.name  = error.name;
@@ -1005,8 +1003,23 @@ define(function(require, exports, module) {
                     return callback(err);
                 }
                 
-                callback(null, body.newValue);
-            });
+                v8dbg.setvariablevalue(variable.name, body, scopeNumber, frameIndex, 
+                  function(body, refs, error){
+                    // lookup([variable.ref], false, function(err, properties){
+                    //     variable.properties = properties;
+                    //     callback(null, variable);
+                    // });
+                    
+                    if (error) {
+                        var err = new Error(error.message);
+                        err.name  = error.name;
+                        err.stack = error.stack;
+                        return callback(err);
+                    }
+                    
+                    callback(null, body.newValue);
+                });
+            })
         }
         
         function setAnyVariable(variable, parent, value, callback){

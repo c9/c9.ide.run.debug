@@ -230,19 +230,19 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         this.$send(msg, callback);
     };
     
-    this.setvariablevalue = function(name, type, scopeNumber, frameIndex, callback) {
+    this.setvariablevalue = function(name, value, scopeNumber, frameIndex, callback) {
         var msg = new V8Message("request");
         msg.command = "setVariableValue";
         
-        var value;
-        if (type == "undefined")
-            value = { type: type };
-        else if (type == "null")
-            value = { value: null };
-        else if (type.charAt(0) == "\"")
-            value = { value: JSON.parse(type) };
-        else
-            value = { value: type };
+        // var value;
+        // if (type == "undefined")
+        //     value = { type: type };
+        // else if (type == "null")
+        //     value = { value: null };
+        // else if (type.charAt(0) == "\"")
+        //     value = { value: JSON.parse(type) };
+        // else
+        //     value = { value: type };
         
         msg.arguments = {
             name: name,
