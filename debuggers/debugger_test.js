@@ -36,7 +36,7 @@ require([
         "plugins/c9.ide.ui/lib_apf",
         {
             packagePath : "plugins/c9.core/settings",
-            settings : "<settings><auto><console>" + JSON.stringify({
+            settings : { state: { console: {
                 type  : "pane", 
                 skin  : "tab_console",
                 nodes : [
@@ -53,7 +53,7 @@ require([
                         }
                     }
                 ]
-            }) + "</console></auto><!--editors><ace theme='ace/theme/monokai' /></editors--></settings>"
+            } } }
         },
         {
             packagePath  : "plugins/c9.ide.ui/ui",
