@@ -422,8 +422,11 @@ define(function(require, exports, module) {
                 return;
 
             tabs.open(state, function(err, tab, done){
+                if (err)
+                    return console.error(err);
                 if (!done)
                     return;
+                tabs.focusTab(tab);
                     
                 // If we need to load the contents ourselves, lets.
                 dbg.getSource(source, function(err, value){

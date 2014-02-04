@@ -205,6 +205,7 @@ define(function(require, exports, module) {
                     tabs.open(e.state, function(err, tab, done){
                         if (err || !done) 
                             return e.callback(err, tab);
+                        tabs.focusTab(tab);
                         
                         fetchSource(e.state.path, function(err, value){
                             if (err) return;
