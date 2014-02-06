@@ -514,8 +514,11 @@ define(function(require, exports, module) {
                     updateBreakpointAtDebugger(bp, action);
                 }, 500);
             
-            if (action == "enable" || action == "disable" 
-              || action == "condition" || action == "ignoreCount") {
+            if (action == "enable" || action == "disable") {
+                if (enableBreakpoints)
+                    dbg.changeBreakpoint(bp);
+            }
+            else if (action == "condition" || action == "ignoreCount") {
                 dbg.changeBreakpoint(bp);
             }
             else if (action == "add") {
@@ -548,8 +551,10 @@ define(function(require, exports, module) {
                 e.stop();
                 
                 var line      = e.getDocumentPosition().row;
-                var className = editor.session.getBreakpoints()[line];
+                // var className = editor.session.getBreakpoints()[line];
                 var action;
+                
+                var bp = findBreakpoint(e.editor.session.c9doc.tab.path, line);
                 
                 // Show condition dialog
                 if (e.getAccelKey()) {
@@ -557,13 +562,13 @@ define(function(require, exports, module) {
                 }
                 // Toggle disabled/enabled
                 else if (e.getShiftKey()) {
-                    action = className && className.indexOf("disabled") > -1
+                    action = !bp || !bp.enabled//className && className.indexOf("disabled") > -1
                         ? "enable" : "disable";
                 } 
                 // Toggle add/remove
                 else {
-                    action = !className ? "create" : 
-                        (className.indexOf("disabled") > -1 ? "enable" : "remove");
+                    action = !bp ? "create" : 
+                        (!bp.enabled ? "enable" : "remove");
                 }
                 
                 editBreakpoint(action, editor, line);
@@ -597,6 +602,8 @@ define(function(require, exports, module) {
             
             // Show condition dialog
             if (action == "edit") {
+                if (!enableBreakpoints)
+                    activateAll();
                 showConditionDialog(editor, createBreakpoint, path, line, obp);
                 return;
             }
@@ -605,6 +612,11 @@ define(function(require, exports, module) {
                 enabled = action == "enable";
                 removed = false;
             } 
+            // Create
+            else if (action == "create") {
+                if (!enableBreakpoints)
+                    activateAll();
+            }
             // Toggle add/remove
             else {
                 removed = action == "remove";
