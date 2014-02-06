@@ -756,18 +756,17 @@ define(function(require, exports, module) {
                     return {};
                 }
     
-                var frames;
+                var frames = [];
                 if (body && body.totalFrames > 0) {
-                    frames = body && body.frames.map(function(frame){
-                        return createFrame(frame, ref(frame.script.ref));
-                    }) || [];
+                    body && body.frames.map(function(frame){
+                        var script = ref(frame.script.ref);
+                        if (!script.name.match(/^native /))
+                            frames.push(createFrame(frame, script));
+                    });
         
                     var topFrame = frames[0];
                     if (topFrame)
                         topFrame.istop = true;
-                }
-                else {
-                    frames = [];
                 }
                 
                 emit("getFrames", { frames: frames });
