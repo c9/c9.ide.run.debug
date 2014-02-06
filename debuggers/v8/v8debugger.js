@@ -170,8 +170,10 @@ define(function(require, exports, module) {
                 attach();
                 
                 // If we reconnect to a break then don't resume.
-                if (reconnect)
+                if (reconnect) {
+                    onChangeFrame(frame);
                     callback();
+                }
                 else
                     resume(callback);
                     
