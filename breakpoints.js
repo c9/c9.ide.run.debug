@@ -63,6 +63,9 @@ define(function(require, exports, module) {
                     '<strong class="btnclose"> </strong>',
                 '</div>');
             };
+            model.getEmptyMessage = function(){
+                return "No breakpoints";
+            };
             
             model.getClassName = function(node) {
                 return "bpItem " + (node.enabled ? "checked " : " ") + node.className;

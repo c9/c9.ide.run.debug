@@ -253,6 +253,10 @@ define(function(require, exports, module) {
             if (windows.length)
                 return;
             
+            // Filter functions, literals
+            if (data.value.match(/^function(?: |\()|^[\d\.\-\^]+$|^\".*\"$/))
+                return;
+            
             // if context menu open, then also disable
             // if (mnuCtxEditor && mnuCtxEditor.visible) {
             //     return;
