@@ -447,7 +447,7 @@ define(function(require, exports, module) {
                 name         : options.name || "anonymous",
                 path         : path,
                 text         : strip(options.text || "anonymous"),
-                debug        : path.charAt(0) == "/" || path.match(/ \(old\)$/) ? true : false,
+                debug        : path.charAt(0) != "/" || path.match(/ \(old\)$/) ? true : false,
                 lineOffset   : options.lineOffset,
                 customSyntax : "javascript"
             });
@@ -855,13 +855,13 @@ define(function(require, exports, module) {
             v8dbg.changelive(script.id, newSource, previewOnly, function(e) {
                 var data = e;
                 
-                /*
-                e.result.stack_modified: false
-                e.result.stack_update_needs_step_in: false
-                */
+                function cb(){
+                    emit("setScriptSource", data);
+                    callback(null, data);
+                }
                 
                 if (e.stepin_recommended)
-                    stepInto(callback.bind(this, data));
+                    stepInto(cb);
                 else if (e.result.stack_modified === false) {
                     getFrames(function(err, frames){
                         onChangeFrame(frames[0]);
@@ -870,9 +870,10 @@ define(function(require, exports, module) {
                             frames : frames
                         });
                     });
+                    cb();
                 }
                 else
-                    callback(data);
+                    cb();
             });
         };
         

@@ -409,7 +409,7 @@ define(function(require, exports, module) {
             }
         }
         
-                /**
+        /**
          * Assumptions:
          *  - .index stays the same
          *  - sequence in the array stays the same

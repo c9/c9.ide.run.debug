@@ -1,13 +1,13 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "util", "settings", "ui", "tabManager", "debugger", "ace",
-        "MenuItem", "Divider"
+        "DebugPanel", "settings", "ui", "tabManager", "debugger", "ace",
+        "MenuItem", "Divider", "save"
     ];
     main.provides = ["breakpoints"];
     return main;
 
     function main(options, imports, register) {
-        var util       = imports.util;
+        var save       = imports.save;
         var DebugPanel = imports.DebugPanel;
         var settings   = imports.settings;
         var ui         = imports.ui;
@@ -89,13 +89,25 @@ define(function(require, exports, module) {
                 var ace = tab.editor.ace;
                 
                 decorateAce(ace);
-                decorateDocument(tab.document);
                 updateDocument(tab.document);
+                decorateDocument(tab.document);
             });
             
             aceHandle.on("create", function(e) {
                 e.editor.on("createAce", decorateAce, plugin);
             }, plugin);
+            
+            save.on("afterSave", function(e){
+                var doc = e.document;
+                if (dbg) {
+                    dbg.on("setScriptSource", function(){
+                        updateMovedBreakpoints(doc);
+                    });
+                }
+                else {
+                    updateMovedBreakpoints(doc);
+                }
+            });
             
             debug.on("attach", function(e){
                 dbg = e.implementation;
@@ -684,11 +696,16 @@ define(function(require, exports, module) {
             // A file was loaded that doesn't exists and is already destroyed
             if (!aceSession) 
                 return;
-                
+            
             aceSession.on("change", function(e) {
                 var breakpoints = aceSession.$breakpoints;
+                var doc         = aceSession.c9doc;
                 
-                if (!breakpoints.length || !aceSession.c9doc.hasValue())
+                if (!breakpoints.length || !doc.hasValue())
+                    return;
+                
+                var bpsInDoc = findBreakpoints(doc.tab.path);
+                if (!bpsInDoc.length) 
                     return;
                 
                 var delta = e.data;
@@ -706,24 +723,61 @@ define(function(require, exports, module) {
                 else {
                     firstRow = range.start.row;
                 }
+                
+                var i;
+                var lines = [];
+                
+                bpsInDoc.forEach(function(bp){ 
+                    lines[bp.moved || (bp.actual || 0).line || (bp.sourcemap || 0).line || bp.line] = bp;
+                });
     
                 if (delta.action[0] == "i") {
                     var args = Array(len);
                     args.unshift(firstRow, 0);
                     breakpoints.splice.apply(breakpoints, args);
+                    
+                    // Insert should move breakpoints out of the way
+                    for (i = firstRow; i < lines.length; i++) {
+                        if (lines[i]) {
+                            changed = true;
+                            lines[i].moved = i + len;
+                        }
+                    }
                 }
                 else {
                     var rem = breakpoints.splice(firstRow + 1, len);
+                    
+                    // Remove deletes breakpoints
+                    var max = firstRow + len + 1;
+                    for (i = firstRow; i < max; i++) {
+                        if (lines[i]) {
+                            changed = true;
+                            lines[i].moved = -1;
+                        }
+                    }
     
                     if (!breakpoints[firstRow]) {
-                        for (var i = rem.length; i--; ) {
+                        for (i = rem.length; i--; ) {
                             if (rem[i]) {
+                                changed = true;
                                 breakpoints[firstRow] = rem[i];
+                                lines[firstRow + i + 1].moved = firstRow;
                                 break;
                             }
                         }
                     }
+                    
+                    // Move other breakpoints
+                    for (i = max; i < lines.length; i++) {
+                        if (lines[i]) {
+                            changed = true;
+                            lines[i].moved = i - len;
+                        }
+                    }
                 }
+                
+                if (changed)
+                    settings.save();
             });
             
             session.hasBreakpoints = true;
@@ -741,11 +795,11 @@ define(function(require, exports, module) {
                 return;
     
             breakpoints.forEach(function(bp){
-                if (bp.path != path)
+                if (bp.path != path || bp.sourcemap && bp.sourcemap.path != path || bp.moved == -1)
                     return;
 
-                var loc = bp.invalid ? bp : (bp.actual || bp);
-                rows[loc.line] 
+                var loc = bp.invalid ? bp : (bp.actual || bp.sourcemap || bp);
+                rows[bp.moved || loc.line] 
                     = " ace_breakpoint"
                         + (bp.condition ? " condition" : "")
                         + (bp.enabled && enableBreakpoints ? "" : " disabled ")
@@ -755,7 +809,24 @@ define(function(require, exports, module) {
             session.session.$breakpoints = rows;
             session.session._emit("changeBreakpoint", {});
         }
-
+        
+        function updateMovedBreakpoints(doc){
+            var bpsInDoc = findBreakpoints(doc.tab.path);
+            bpsInDoc.forEach(function(bp){ 
+                if (bp.moved) {
+                    if (bp.moved == -1)
+                        clearBreakpoint(bp);
+                    else if (bp.moved != bp.line) {
+                        clearBreakpoint(bp);
+                        bp.line   = bp.moved;
+                        bp.actual = null;
+                        setBreakpoint(bp);
+                    }
+                    bp.moved = null;
+                }
+            });
+        }
+        
         function updateBreakpoint(breakpoint, action, force){
             //This can be optimized, currently rereading everything
             var tab = tabs.findTab(breakpoint.path);
@@ -849,7 +920,8 @@ define(function(require, exports, module) {
                 path = path.path;
             }
             
-            var match = { line: line, path: path};
+            var match = { path: path };
+            if (line || line === 0) match.line = line;
             
             var bp, list = [];
             for (var i = 0, l = breakpoints.length; i < l; i++) {

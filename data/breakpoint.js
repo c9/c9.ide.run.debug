@@ -54,7 +54,8 @@ define(function(require, exports, module) {
     
     Breakpoint.prototype = new Data([
         "id", "path", "text", "line", "column", "serverOnly", "actual",
-        "content", "enabled", "sourcemap", "condition", "hidden", "invalid"
+        "content", "enabled", "sourcemap", "condition", "hidden", "invalid",
+        "moved"
     ]);
         
     Breakpoint.prototype.equals = function(breakpoint, ignoreInvalid){
@@ -63,24 +64,28 @@ define(function(require, exports, module) {
         if (this.data.id && this.data.id === breakpoint.id) 
             return true;
         
+        var matchLine = breakpoint.line !== undefined;
+        
         var left = {};
-        left[this.data.path + ":" + this.data.line] = true;
+        left[this.data.path + ":" + (matchLine ? this.data.moved || this.data.line : "")] = true;
         
         if (this.data.sourcemap)
-            left[this.data.sourcemap.source + ":" + this.data.sourcemap.line] = true;
+            left[this.data.sourcemap.source + ":" 
+                + (matchLine ? this.data.moved || this.data.sourcemap.line : "")] = true;
             
         if (this.data.actual && (!this.data.invalid || !ignoreInvalid))
-            left[this.data.path + ":" + this.data.actual.line] = true;
+            left[this.data.path + ":" 
+                + (matchLine ? this.data.moved || this.data.actual.line : "")] = true;
         
-        if (left[breakpoint.path + ":" + breakpoint.line])
+        if (left[breakpoint.path + ":" + (matchLine ? breakpoint.moved || breakpoint.line : "")])
             return true;
             
         var sm = breakpoint.sourcemap;
-        if (sm && left[sm.source + ":" + sm.line])
+        if (sm && left[sm.source + ":" + (matchLine ? breakpoint.moved || sm.line : "")])
             return true;
             
         var actual = breakpoint.actual;
-        if (actual && left[actual.path + ":" + actual.line])
+        if (actual && left[actual.path + ":" + (matchLine ? breakpoint.moved || actual.line : "")])
             return true;
         
         return false;
