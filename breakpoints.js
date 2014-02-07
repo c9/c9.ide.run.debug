@@ -766,6 +766,9 @@ define(function(require, exports, module) {
                             }
                         }
                     }
+                    else {
+                        lines[firstRow].moved = firstRow;
+                    }
                     
                     // Move other breakpoints
                     for (i = max; i < lines.length; i++) {
