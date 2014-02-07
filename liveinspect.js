@@ -254,7 +254,7 @@ define(function(require, exports, module) {
                 return;
             
             // Filter functions, literals
-            if (data.value.match(/^function(?: |\()|^[\d\.\-\^]+$|^\".*\"$/))
+            if (data.value.match(/^function(?: |\()|^[\d\.\-\^]+$|^\".*\"$|^\[.*\]$|^\{.*\}$|^\/.*\/$/))
                 return;
             
             // if context menu open, then also disable

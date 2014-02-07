@@ -853,7 +853,26 @@ define(function(require, exports, module) {
             newSource = NODE_PREFIX + newSource + NODE_POSTFIX;
             
             v8dbg.changelive(script.id, newSource, previewOnly, function(e) {
-                callback(e);
+                var data = e;
+                
+                /*
+                e.result.stack_modified: false
+                e.result.stack_update_needs_step_in: false
+                */
+                
+                if (e.stepin_recommended)
+                    stepInto(callback.bind(this, data));
+                else if (e.result.stack_modified === false) {
+                    getFrames(function(err, frames){
+                        onChangeFrame(frames[0]);
+                        emit("break", {
+                            frame  : activeFrame,
+                            frames : frames
+                        });
+                    });
+                }
+                else
+                    callback(data);
             });
         };
         
@@ -861,7 +880,7 @@ define(function(require, exports, module) {
             var frameIndex = frame && typeof frame == "object" ? frame.index : frame;
             v8dbg.restartframe(frameIndex, function(body){
                 if (body.result && body.result.stack_update_needs_step_in) {
-                    stepInto();
+                    stepInto(callback.bind(this, body));
                 }
                 else {
                     callback.apply(this, arguments);

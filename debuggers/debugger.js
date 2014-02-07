@@ -390,9 +390,7 @@ define(function(require, exports, module) {
             var state = {
                 path       : path,
                 active     : true,
-                value      : source.path && source.path.charAt(0) == "/" 
-                    ? undefined 
-                    : -1,
+                value      : source.debug ? -1 : undefined,
                 document   : {
                     title  : path.substr(path.lastIndexOf("/") + 1),
                     meta   : {
