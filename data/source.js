@@ -35,7 +35,7 @@ define(function(require, exports, module) {
     }
     
     Source.prototype = new Data([
-        "id", "name", "path", "text", "lineOffset", "debug"
+        "id", "name", "path", "text", "lineOffset", "debug", "customSyntax"
     ]);
         
     Source.prototype.equals = function(source){

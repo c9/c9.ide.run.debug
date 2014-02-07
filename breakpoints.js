@@ -907,7 +907,8 @@ define(function(require, exports, module) {
                     updateBreakpoint({id: bp.id, enabled: true}, "enable", force);
             });
             
-            list.renderer.unsetStyle("listBPDisabled");
+            if (drawn)
+                list.renderer.unsetStyle("listBPDisabled");
             
             toggleBreakpoints(true);
         }

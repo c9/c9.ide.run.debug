@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "debugger", "net", "proc"];
+    main.consumes = ["Plugin", "debugger", "net", "proc", "util"];
     main.provides = ["v8debugger"];
     return main;
     
@@ -7,6 +7,7 @@ define(function(require, exports, module) {
         var Plugin   = imports.Plugin;
         var net      = imports.net;
         var proc     = imports.proc;
+        var util     = imports.util;
         var debug    = imports["debugger"];
         
         var Frame           = require("../../data/frame");
@@ -29,6 +30,12 @@ define(function(require, exports, module) {
         var breakOnUncaughtExceptions = false;
         var breakpointQueue           = [];
         var connected                 = 0;
+        
+        var NODE_PREFIX  = "(function (exports, require, module, __filename, __dirname) { ";
+        var NODE_POSTFIX = "\n});";
+        
+        var RE_NODE_PREFIX  = new RegExp("^" + util.escapeRegExp(NODE_PREFIX));
+        var RE_NODE_POSTFIX = new RegExp(util.escapeRegExp(NODE_POSTFIX) + "$");
         
         var DISCONNECTED = 0;
         var CONNECTED    = 1;
@@ -434,13 +441,15 @@ define(function(require, exports, module) {
         }
         
         function createSource(options) {
+            var path = getLocalScriptPath(options);
             return new Source({
-                id          : options.id,
-                name        : options.name || "anonymous",
-                path        : getLocalScriptPath(options),
-                text        : strip(options.text || "anonymous"),
-                debug       : true,
-                lineOffset  : options.lineOffset
+                id           : options.id,
+                name         : options.name || "anonymous",
+                path         : path,
+                text         : strip(options.text || "anonymous"),
+                debug        : path.charAt(0) == "/" || path.match(/ \(old\)$/) ? true : false,
+                lineOffset   : options.lineOffset,
+                customSyntax : "javascript"
             });
         }
         
@@ -742,8 +751,12 @@ define(function(require, exports, module) {
             v8dbg.scripts(4, [source.id], true, function(scripts) {
                 if (!scripts.length)
                     return callback(new Error("File not found : " + source.path));
+                    
+                var source = scripts[0].source
+                    .replace(RE_NODE_PREFIX, "")
+                    .replace(RE_NODE_POSTFIX, "");
 
-                callback(null, scripts[0].source);
+                callback(null, source);
             });
         }
         
@@ -837,8 +850,6 @@ define(function(require, exports, module) {
         }
         
         function setScriptSource(script, newSource, previewOnly, callback) {
-            var NODE_PREFIX = "(function (exports, require, module, __filename, __dirname) { ";
-            var NODE_POSTFIX = "\n});";
             newSource = NODE_PREFIX + newSource + NODE_POSTFIX;
             
             v8dbg.changelive(script.id, newSource, previewOnly, function(e) {

@@ -387,8 +387,6 @@ define(function(require, exports, module) {
             if (!source)
                 source = { id : scriptId };
             
-            var isFileFromWorkspace = path.charAt(0) == "/";
-            
             var state = {
                 path       : path,
                 active     : true,
@@ -398,11 +396,12 @@ define(function(require, exports, module) {
                 document   : {
                     title  : path.substr(path.lastIndexOf("/") + 1),
                     meta   : {
-                        ignoreState : isFileFromWorkspace ? 0 : 1
+                        ignoreState : source.debug ? 1 : 0
                     },
                     ace    : {
-                        scriptId    : scriptId,
-                        lineoffset  : 0
+                        scriptId     : scriptId,
+                        lineoffset   : 0,
+                        customSyntax : source.customSyntax
                     }
                 }
             };
