@@ -15,8 +15,6 @@ define(function(require, exports, module) {
         
         var counter = 0;
         
-        // @todo reconnect logic
-
         function Socket(port, reconnect) {
             var socket  = new Plugin();
             var emit    = socket.getEmitter();
@@ -44,7 +42,6 @@ define(function(require, exports, module) {
             }, socket);
             c9.on("back", function(){
                 if (away) {
-                    // reconnect = true;
                     connectToPort(function(err){
                         if (err) {
                             if (err.code == "ECONNREFUSED") {
