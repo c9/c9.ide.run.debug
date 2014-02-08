@@ -33,7 +33,7 @@ define(function(require, module, exports) {
                 ui.insertByIndex(e.html, amlFrame.$ext, index, false);
                 plugin.addElement(amlFrame);
                 
-                emit("draw", { aml: amlFrame, html: amlFrame.$int }, true);
+                emit.sticky("draw", { aml: amlFrame, html: amlFrame.$int });
             }
             
             /***** Methods *****/

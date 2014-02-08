@@ -186,7 +186,7 @@ define(function(require, exports, module) {
             
             updateButtonState(state);
             
-            emit("drawPanels", { html: scroller, aml: bar }, true);
+            emit.sticky("drawPanels", { html: scroller, aml: bar });
         }
         
         /***** Methods *****/
