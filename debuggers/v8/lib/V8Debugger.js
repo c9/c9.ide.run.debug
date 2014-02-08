@@ -342,7 +342,7 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         if (callback)
             this.$pending[msg.seq] = callback;
             
-        this.$service.debuggerCommand(this.tabId, msg.stringify());
+        this.$service.debuggerCommand(this.tabId, msg);
     };
 
 }).call(V8Debugger.prototype);

@@ -17,6 +17,7 @@ var DevToolsMessage = require("./DevToolsMessage");
 var StandaloneV8DebuggerService = module.exports = function(socket) {
     this.$socket = socket;
     this.$attached = false;
+    this.$pending = [];
 };
 
 (function() {
@@ -36,6 +37,14 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
             callback();
         });
         this.$socket.connect();
+        
+        this.$socket.on("beforeBack", function(){
+            if (self.$pending.length) {
+                self.$pending.forEach(function(item){
+                    self.debuggerCommand(item[0], item[1], true);
+                });
+            }
+        });
     };
 
     this.detach = function(tabId, callback) {
@@ -60,10 +69,24 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         catch(ex) {
             return;
         }
+        
+        for (var i = 0; i < this.$pending.length; i++) {
+            if (this.$pending[i][1].seq == content.request_seq) {
+                this.$pending.splice(i, 1);
+                break;
+            }
+        }
+        
         this.emit("debugger_command_0", {data: content});
     };
 
-    this.debuggerCommand = function(tabId, v8Command) {
+    this.debuggerCommand = function(tabId, v8Command, noPending) {
+        if (!noPending)
+            this.$pending.push([tabId, v8Command]);
+        
+        if (typeof v8Command != "string")
+            v8Command = v8Command.stringify();
+            
         this.$send(v8Command);
     };
 

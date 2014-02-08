@@ -1,13 +1,14 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Panel", "settings", "ui", "immediate", "run", "panels", 
-        "tabManager", "commands", "dialog.confirm", "dialog.error"
+        "Panel", "settings", "ui", "immediate", "run", "panels", "tabManager", 
+        "commands", "dialog.confirm", "dialog.error", "debugger.socket"
     ];
     main.provides = ["debugger"];
     return main;
 
     function main(options, imports, register) {
         var Panel     = imports.Panel;
+        var Socket    = imports["debugger.socket"];
         var settings  = imports.settings;
         var ui        = imports.ui;
         var tabs      = imports.tabManager;
@@ -37,7 +38,7 @@ define(function(require, exports, module) {
         var pauseOnBreaks = 0;
         var state         = "disconnected";
         var sources       = [];
-        var running, activeFrame, dbg, name, process;
+        var running, activeFrame, dbg, name, process, socket;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
@@ -247,6 +248,10 @@ define(function(require, exports, module) {
                 }
                 else
                     showError(err.message);
+            });
+            
+            dbg.on("getBreakpoints", function(){
+                return emit("getBreakpoints");
             });
             
             // When hitting a breakpoint or exception or stepping
@@ -471,6 +476,9 @@ define(function(require, exports, module) {
                     // Detach from runner
                     dbg.detach();
                     
+                    // Unload the socket
+                    socket.unload();
+                    
                     // Remove all the set events
                     plugin.cleanUp(true);
                 }
@@ -504,7 +512,7 @@ define(function(require, exports, module) {
                 
                 process.on("back", function(){
                     updatePanels("enable", dbg.state);
-                    debug(process, true, function(){});
+                    // debug(process, true, function(){});
                 });
                 
                 process.on("stopped", function(){
@@ -525,8 +533,11 @@ define(function(require, exports, module) {
             }) === false)
                 return;
             
+            // Create the socket
+            socket = new Socket(runner.debugport, reconnect);
+            
             // Attach the debugger to the running process
-            dbg.attach(runner, emit("getBreakpoints"), reconnect, callback);
+            dbg.attach(socket, reconnect, callback);
         }
         
         function stop(){
@@ -534,6 +545,9 @@ define(function(require, exports, module) {
             
             // Detach from runner
             dbg && dbg.detach();
+            
+            // Unload the socket
+            socket.unload();
             
             updatePanels("disable", "disconnected");
             

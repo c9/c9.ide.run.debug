@@ -43,7 +43,7 @@ EventEmitter._dispatchEvent = function(eventName, e) {
     var e = e || {};
     e.type = eventName;
 
-    for (var i = 0, l = listeners.length; i < l; i++)
+    for (var i = listeners.length - 1; i >= 0; i--)
         listeners[i](e);
 };
 

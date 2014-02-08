@@ -5,8 +5,6 @@ define(function(require, exports, module) {
     
     function main(options, imports, register) {
         var Plugin   = imports.Plugin;
-        var net      = imports.net;
-        var proc     = imports.proc;
         var util     = imports.util;
         var debug    = imports["debugger"];
         
@@ -36,10 +34,6 @@ define(function(require, exports, module) {
         
         var RE_NODE_PREFIX  = new RegExp("^" + util.escapeRegExp(NODE_PREFIX));
         var RE_NODE_POSTFIX = new RegExp(util.escapeRegExp(NODE_POSTFIX) + "$");
-        
-        var DISCONNECTED = 0;
-        var CONNECTED    = 1;
-        var CONNECTING   = 2;
         
         var TYPE = "v8";
         
@@ -123,8 +117,10 @@ define(function(require, exports, module) {
                 
                 remoteBreakpoints.forEach(function(rbp){
                     var bp;
-                    if ((bp = find(rbp)))
-                        found.push(bp);
+                    if ((bp = find(rbp))) {
+                        if (rbp.enabled == bp.enabled)
+                            found.push(bp);
+                    }
                     else
                         notfound.push(rbp);
                 });
@@ -554,137 +550,19 @@ define(function(require, exports, module) {
                 emit("frameActivate", { frame: frame });
         }
     
-        /***** Socket *****/
-        
-        function Socket(port, reconnect) {
-            var socket  = new Plugin();
-            var emit    = socket.getEmitter();
-            var state, stream;
-            
-            var PROXY = require("text!../netproxy.js")
-                .replace(/\/\/.*/g, "")
-                .replace(/[\n\r]/g, "")
-                .replace(/\{PORT\}/, port);
-            
-            socket.__defineGetter__("state", function(){ return state; });
-            
-            function connect(force) {
-                if (state) 
-                    return;
-                
-                connected = CONNECTING;
-                
-                if (reconnect && !force) {
-                    connectToPort(function(err){
-                        if (!err) return;
-                        
-                        if (err.code == "ECONNREFUSED")
-                            connect(true);
-                        else
-                            return emit("err", err);
-                    });
-                }
-                else {
-                    proc.spawn("node", {
-                        args: ["-e", PROXY]
-                    }, function(err, process){
-                        if (err)
-                            return emit("error", err);
-                        
-                        process.stdout.once("data", function(data){
-                            connectToPort();
-                        });
-                            
-                        process.stderr.once("data", function(data){
-                            // Perhaps there's alrady a proxy running
-                            connectToPort();
-                        });
-                        
-                        process.on("exit", function(){
-                            connected = DISCONNECTED;
-                        });
-                        
-                        // Make sure the process keeps running
-                        process.unref();
-                    });
-                }
-                
-                state = "connecting";
-            }
-            
-            function connectToPort(callback){
-                net.connect(port + 1, {}, function(err, s){
-                    if (err)
-                        return callback ? callback(err) : emit("error", err);
-                    
-                    stream = s;
-                    stream.on("data", function(data) {
-                        emit("data", data);
-                    });
-                    stream.on("end", function(err){
-                        emit("end", err);
-                    });
-                    stream.on("error", function(err){
-                        emit("error", err);
-                    });
-                    
-                    if (reconnect)
-                        emit("data", "Content-Length:0\r\n\r\n");
-                    
-                    connected = CONNECTED;
-                    
-                    state = "connected";
-                    emit("connect");
-                    
-                    callback && callback();
-                });
-            }
-        
-            function close(err) {
-                stream && stream.end();
-                state = null;
-                emit("end", err);
-            }
-        
-            function send(msg) {
-                stream && stream.write(msg, "utf8");
-            }
-
-            socket.freezePublicAPI({
-                // Backward compatibility
-                addEventListener  : socket.on,
-                removeListener    : socket.off,
-                setMinReceiveSize : function(){},
-                
-                /**
-                 * 
-                 */
-                connect : connect,
-                
-                /**
-                 * 
-                 */
-                close : close,
-                
-                /**
-                 * 
-                 */
-                send : send
-            });
-            
-            return socket;
-        }
-        
         /***** Methods *****/
         
-        function attach(runner, breakpoints, reconnect, callback) {
+        function attach(socket, reconnect, callback) {
             if (v8ds)
                 v8ds.detach();
             
-            var socket = new Socket(runner.debugport, reconnect);
+            socket.on("back", function(err) {
+                sync(emit("getBreakpoints"), true, callback);
+            }, plugin);
             socket.on("error", function(err) {
                 emit("error", err);
-            });
+            }, plugin);
+            
             v8ds = new V8DebuggerService(socket);
             v8ds.attach(0, function(err){
                 if (err) return callback(err);
@@ -703,7 +581,7 @@ define(function(require, exports, module) {
                 // this timeout during reconnect the getSources() call never
                 // returns
                 setTimeout(function(){
-                    sync(breakpoints, reconnect, callback);
+                    sync(emit("getBreakpoints"), reconnect, callback);
                 });
             });
         }
@@ -1124,18 +1002,6 @@ define(function(require, exports, module) {
          * @class debugger.implementation
          */
         plugin.freezePublicAPI({
-            /**
-             * 
-             */
-            DISCONNECTED: DISCONNECTED,
-            /**
-             * 
-             */
-            CONNECTED: CONNECTED,
-            /**
-             * 
-             */
-            CONNECTING: CONNECTING,
             /**
              * The type of the debugger implementation. This is the identifier 
              * with which the runner selects the debugger implementation.
