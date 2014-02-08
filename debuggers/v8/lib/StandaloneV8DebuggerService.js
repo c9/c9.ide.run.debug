@@ -81,7 +81,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
     };
 
     this.debuggerCommand = function(tabId, v8Command, noPending) {
-        if (!noPending)
+        if (!noPending && v8Command.command != "scripts")
             this.$pending.push([tabId, v8Command]);
         
         if (typeof v8Command != "string")

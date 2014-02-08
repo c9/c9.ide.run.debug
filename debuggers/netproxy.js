@@ -39,8 +39,12 @@ debugClient = net.connect(port);
 
 var gotData;
 debugClient.on("data", function(data){
-    if (browserClient)
+    if (browserClient) {
         browserClient.write(data);
+        if (buffer.length > 10)
+            buffer.shift();
+        buffer.push(data);
+    }
     else
         buffer.push(data);
     
