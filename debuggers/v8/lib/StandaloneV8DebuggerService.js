@@ -38,6 +38,16 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         });
         this.$socket.connect();
         
+        this.$socket.on("end", function(){
+            self.$pending.forEach(function(item){
+                self.emit("debugger_command_0", { data: {
+                    request_seq: item[1].seq,
+                    success: false,
+                    message: "Debug Session Ended"
+                }});
+            });
+        });
+            
         this.$socket.on("beforeBack", function(){
             if (self.$pending.length) {
                 self.$pending.forEach(function(item){
