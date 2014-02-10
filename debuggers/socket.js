@@ -101,7 +101,7 @@ define(function(require, exports, module) {
                             console.warn("netproxy reported error " + data)
                             connectToPort();
                         });
-                        
+
                         process.on("exit", function(){
                             connected = DISCONNECTED;
                             state     = "disconnected";

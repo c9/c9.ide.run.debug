@@ -4,9 +4,6 @@ var port = parseInt("{PORT}", 10);
 var buffer = [];
 var browserClient, debugClient;
 
-var MAX_RETRIES = 18;
-var RETRY_INTERVAL = 300;
-
 var server = net.createServer(function(client) {
     if (browserClient)
         browserClient.destroy(); // Client is probably unloaded because a new client is connecting
@@ -30,7 +27,7 @@ var server = net.createServer(function(client) {
 });
 
 // Start listening for browser clients
-server.listen(port + 1, "localhost", function() {
+server.listen(port + 1, function() {
     start();
 });
 
@@ -54,12 +51,12 @@ function tryConnect(retries, callback) {
             return callback(e);
         
         setTimeout(function() {
-            tryConnect(retries - 1, callback);
-        }, RETRY_INTERVAL);
+            tryConnect(retries-1, callback);
+        }, 500);
     }
 }
 
-tryConnect(MAX_RETRIES, function(err, connection) {
+tryConnect(6, function(err, connection) {
     if (err)
         return errHandler(err);
         
@@ -79,7 +76,7 @@ tryConnect(MAX_RETRIES, function(err, connection) {
     function errHandler(e){
         //console.error("ERROR", e, "port", port);
         if (!gotData) {
-            console.error("-1", e);
+            console.error("-1");
         }
         process.exit(0);
     }
