@@ -742,6 +742,8 @@ define(function(require, exports, module) {
                     stepInto(cb);
                 else if (e.result.stack_modified === false) {
                     getFrames(function(err, frames){
+                        if (!activeFrame || !frames.length)
+                            return; // debugger isn't active
                         onChangeFrame(frames[0]);
                         emit("break", {
                             frame  : activeFrame,
