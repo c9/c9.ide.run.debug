@@ -333,7 +333,7 @@ define(function(require, exports, module) {
 
             list.on("click", function(e){
                 var bp = e.getNode();
-                if (!bp)
+                if (!bp || e.getButton())
                     return;
 
                 var className = e.domEvent.target.className || "";
