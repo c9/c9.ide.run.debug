@@ -86,7 +86,7 @@
             }
     
             .listBP .content div{
-                font-family: Monaco;
+                font-family: Ubuntu Mono, Menlo, Consolas, monospace;
                 padding: 3px 0 0 0;
                 font-size: 10px;
                 white-space: nowrap;

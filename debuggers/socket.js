@@ -92,6 +92,10 @@ define(function(require, exports, module) {
                         process.stdout.once("data", function(data){
                             connectToPort();
                         });
+                        
+                        process.stderr.once("data", function(data){
+                            console.log("PROXY ERROR:", data);
+                        });
                             
                         process.stderr.once("data", function(data){
                             // Perhaps there's alrady a proxy running
