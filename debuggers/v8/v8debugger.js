@@ -557,6 +557,8 @@ define(function(require, exports, module) {
             if (v8ds)
                 v8ds.detach();
             
+            socket = s;
+            
             socket.on("back", function(err) {
                 sync(emit("getBreakpoints"), true, callback);
             }, plugin);
