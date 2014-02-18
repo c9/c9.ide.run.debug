@@ -191,7 +191,11 @@ define(function(require, exports, module) {
             // Update markers when a document becomes available
             tabs.on("tabAfterActivateSync", function(e) {
                 updateMarker(activeFrame);
-            });
+            }, plugin);
+            tabs.on("open", function wait(e){
+                if (activeFrame)
+                    updateMarker(activeFrame);
+            }, plugin);
             
             // stack view
             datagrid.on("changeSelection", function(e) {
