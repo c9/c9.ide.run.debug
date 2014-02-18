@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "debugger", "net", "proc", "util"];
+    main.consumes = ["Plugin", "debugger", "net", "proc", "util", "c9"];
     main.provides = ["v8debugger"];
     return main;
     
@@ -7,6 +7,7 @@ define(function(require, exports, module) {
         var Plugin   = imports.Plugin;
         var util     = imports.util;
         var debug    = imports["debugger"];
+        var c9       = imports.c9;
         
         var Frame           = require("../../data/frame");
         var Source          = require("../../data/source");
@@ -23,7 +24,6 @@ define(function(require, exports, module) {
         var emit   = plugin.getEmitter();
         emit.setMaxListeners(1000);
 
-        var platform                  = options.platform;
         var stripPrefix               = options.basePath || "";
         var breakOnExceptions         = false;
         var breakOnUncaughtExceptions = false;
@@ -339,7 +339,7 @@ define(function(require, exports, module) {
         function getLocalScriptPath(script) {
             var scriptName = script.name || ("-anonymous-" + script.id);
             if (stripPrefix == "/") {
-                if (platform == "win32" &&  scriptName[1] == ":")
+                if (c9.platform == "win32" &&  scriptName[1] == ":")
                     scriptName = "/" + scriptName;
             } else if (scriptName.substring(0, stripPrefix.length) == stripPrefix)
                 scriptName = scriptName.substr(stripPrefix.length);
