@@ -37,7 +37,8 @@ define(function(require, exports, module) {
         
         var TYPE = "v8";
         
-        var v8dbg, v8ds, state, activeFrame, sources, attached = false;
+        var attached = false;
+        var v8dbg, v8ds, state, activeFrame, sources, socket;
         
         var scopeTypes = {
             "0" : "global",
@@ -552,7 +553,7 @@ define(function(require, exports, module) {
     
         /***** Methods *****/
         
-        function attach(socket, reconnect, callback) {
+        function attach(s, reconnect, callback) {
             if (v8ds)
                 v8ds.detach();
             
@@ -603,6 +604,9 @@ define(function(require, exports, module) {
                 v8dbg.removeEventListener("afterCompile", onAfterCompile);
             }
             
+            socket.unload();
+            
+            socket   = null;
             v8ds     = null;
             v8dbg    = null;
             attached = false;
