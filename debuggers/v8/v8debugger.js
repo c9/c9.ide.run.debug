@@ -22,8 +22,9 @@ define(function(require, exports, module) {
         var plugin = new Plugin("Ajax.org", main.consumes);
         var emit   = plugin.getEmitter();
         emit.setMaxListeners(1000);
-        
-        var stripPrefix               = (options.basePath || "");
+
+        var platform                  = options.platform;
+        var stripPrefix               = options.basePath || "";
         var breakOnExceptions         = false;
         var breakOnUncaughtExceptions = false;
         var breakpointQueue           = [];
@@ -337,7 +338,10 @@ define(function(require, exports, module) {
 
         function getLocalScriptPath(script) {
             var scriptName = script.name || ("-anonymous-" + script.id);
-            if (scriptName.substring(0, stripPrefix.length) == stripPrefix)
+            if (stripPrefix == "/") {
+                if (platform == "win32" &&  scriptName[1] == ":")
+                    scriptName = "/" + scriptName;
+            } else if (scriptName.substring(0, stripPrefix.length) == stripPrefix)
                 scriptName = scriptName.substr(stripPrefix.length);
                 
             // windows paths come here independantly from vfs
