@@ -144,7 +144,7 @@ define(function(require, exports, module) {
                     var tab = tabs.findTab(bp.path);
                     if (tab) {
                         var session = tab.document.getSession();
-                        if (session) {
+                        if (session && session.session) {
                             var len = session.session.getLength();
                             
                             if (bp.actual.line == len) {
