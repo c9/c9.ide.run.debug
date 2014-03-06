@@ -8,6 +8,9 @@ define(function(require, exports, module) {
         var net      = imports.net;
         var c9       = imports.c9;
         var proc     = imports.proc;
+        var nodeBin  = Array.isArray(options.nodeBin)
+            ? options.nodeBin[0]
+            : options.nodeBin || "node";
 
         var DISCONNECTED = 0;
         var CONNECTED    = 1;
@@ -83,7 +86,7 @@ define(function(require, exports, module) {
                     });
                 }
                 else {
-                    proc.spawn("node", {
+                    proc.spawn(nodeBin, {
                         args: ["-e", PROXY]
                     }, function(err, process){
                         if (err)
