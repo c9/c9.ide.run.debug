@@ -75,6 +75,8 @@ define(function(require, exports, module) {
          * Syncs the debug state to the client
          */
         function sync(breakpoints, reconnect, callback) {
+            if (!v8dbg)
+                return console.error("Sync called without v8dbg");
             getSources(function(err, sources) {
                 getFrames(function(err, frames) {
                     updateBreakpoints(breakpoints, function(err, breakpoints) {
