@@ -92,12 +92,13 @@ define(function(require, exports, module) {
                         if (err)
                             return emit("error", err);
                         
-                        process.stdout.once("data", function(data){
+                        process.stdout.once("data", function(data) {
                             connectToPort();
                         });
                         
-                        process.stderr.once("data", function(data){
-                            // Perhaps there's alrady a proxy running
+                        process.stderr.once("data", function(data) {
+                            // Perhaps there's already a proxy running
+                            console.warn("netproxy reported error " + data)
                             connectToPort();
                         });
                         
