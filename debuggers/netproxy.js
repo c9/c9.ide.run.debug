@@ -14,7 +14,7 @@ var server = net.createServer(function(client) {
         browserClient = null;
     });
     
-    browserClient.on("data", function(data){
+    browserClient.on("data", function(data) {
         debugClient.write(data);
     });
     
@@ -27,39 +27,72 @@ var server = net.createServer(function(client) {
 });
 
 // Start listening for browser clients
-server.listen(port + 1, function(){
-    console.log("1");
+server.listen(port + 1, function() {
+    start();
 });
 
 // Handle errors
 server.on("error", function(){ process.exit(0); });
 
-// Connect to the debugger
-debugClient = net.connect(port);
-
-var gotData;
-debugClient.on("data", function(data){
-    if (browserClient) {
-        browserClient.write(data);
-        if (buffer.length > 10)
-            buffer.shift();
-        buffer.push(data);
-    }
-    else
-        buffer.push(data);
+function tryConnect(retries, callback) {
+    if (!retries)
+        return callback(new Error("Can't connect to port " + port));
+        
+    var connection = net.connect(port);
     
-    gotData = true;
-});
-
-function errHandler(e){
-    if (!gotData) {
-        console.error("-1");
+    connection.on("connect", function() {
+        connection.removeListener("error", onError);
+        callback(null, connection);
+    });
+    
+    connection.addListener("error", onError);
+    function onError(e) {
+        if (e.code !== "ECONNREFUSED")
+            return callback(e);
+        
+        setTimeout(function() {
+            tryConnect(retries-1, callback);
+        }, 500);
     }
-    process.exit(0);
 }
 
-debugClient.on("error", errHandler);
-
-debugClient.on("end", function(data){
-    server.close();
+tryConnect(6, function(err, connection) {
+    if (err)
+        return errHandler(err);
+        
+    var gotData;
+    debugClient = connection;
+    
+    debugClient.on("data", function(data){
+        if (browserClient) {
+            browserClient.write(data);
+        } else {
+            buffer.push(data);
+        }
+        
+        gotData = true;
+    });
+    
+    function errHandler(e){
+        //console.error("ERROR", e, "port", port);
+        if (!gotData) {
+            console.error("-1");
+        }
+        process.exit(0);
+    }
+    
+    debugClient.on("error", errHandler);
+    
+    debugClient.on("end", function(data){
+        server.close();
+    });
+    
+    start();
 });
+
+
+var I=0;
+function start() {
+    if (++I == 2)
+        console.log("1");
+}
