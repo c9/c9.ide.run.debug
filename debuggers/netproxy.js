@@ -30,7 +30,7 @@ var server = net.createServer(function(client) {
 });
 
 // Start listening for browser clients
-server.listen(port + 1, function() {
+server.listen(port + 1, "localhost", function() {
     start();
 });
 
