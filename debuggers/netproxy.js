@@ -7,8 +7,6 @@ var browserClient, debugClient;
 var MAX_RETRIES = 18;
 var RETRY_INTERVAL = 300;
 
-console.log("hello");
-
 var log = console.log;
 
 console.warn = console.log = function() {
@@ -41,11 +39,11 @@ var server = net.createServer(function(client) {
 });
 
 var host = process.env.OPENSHIFT_DIY_IP || "127.0.0.1";
-console.log("started netproxy on ", host + ":" + (port+1));
+// console.log("started netproxy on ", host + ":" + (port+1));
 
 // Start listening for browser clients
 server.listen(port + 1, host, function() {
-    console.log("netproxy listening on port " + (port+1));
+    // console.log("netproxy listening on port " + (port+1));
     start();
 });
 
@@ -59,7 +57,7 @@ function tryConnect(retries, callback) {
     var connection = net.connect(port, host);
     
     connection.on("connect", function() {
-        console.log("netproxy connected to debugger");
+        // console.log("netproxy connected to debugger");
         connection.removeListener("error", onError);
         callback(null, connection);
     });
