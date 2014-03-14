@@ -92,14 +92,15 @@ define(function(require, exports, module) {
                         if (err)
                             return emit("error", err);
                         
-                        process.stdout.once("data", function(data) {
-                            connectToPort();
+                        process.stderr.on("data", function(data) {
+                            console.log("[netproxy]", data);
                         });
                         
-                        process.stderr.once("data", function(data) {
-                            // Perhaps there's already a proxy running
-                            console.warn("netproxy reported error " + data)
-                            connectToPort();
+                        process.stdout.on("data", function(data) {
+                            if (data.match(/ß/))
+                                connectToPort();
+                            else
+                                console.log("[netproxy] unexpected data", data);
                         });
                         
                         process.on("exit", function(){
