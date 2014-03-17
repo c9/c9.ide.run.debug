@@ -862,6 +862,8 @@ define(function(require, exports, module) {
         
         function listBreakpoints(callback){
             v8dbg.listbreakpoints(function(data){
+                if (!data) return callback(new Error("Not Connected"));
+                
                 breakOnExceptions         = data.breakOnExceptions;
                 breakOnUncaughtExceptions = data.breakOnUncaughtExceptions;
                 
