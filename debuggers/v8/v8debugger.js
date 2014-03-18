@@ -79,7 +79,7 @@ define(function(require, exports, module) {
                 return console.error("Sync called without v8dbg");
             getSources(function(err, sources) {
                 getFrames(function(err, frames) {
-                    updateBreakpoints(breakpoints, function(err, breakpoints) {
+                    updateBreakpoints(breakpoints, reconnect, function(err, breakpoints) {
                         handleDebugBreak(breakpoints, reconnect, frames[0], function(){
                             attached = true;
                             emit("attach", { breakpoints: breakpoints });
@@ -103,7 +103,7 @@ define(function(require, exports, module) {
             });
         }
         
-        function updateBreakpoints(breakpoints, callback){
+        function updateBreakpoints(breakpoints, reconnect, callback){
             function find(bp){
                 for (var i = 0, l = breakpoints.length; i < l; i++) {
                     if (breakpoints[i].equals(bp))
@@ -111,10 +111,20 @@ define(function(require, exports, module) {
                 }
             }
             
-            var list = breakpoints.slice(0);
+            var list    = breakpoints.slice(0);
+            var retries = 0;
             
-            listBreakpoints(function(err, remoteBreakpoints){
+            listBreakpoints(function handleBps(err, remoteBreakpoints){
                 if (err) return callback(err);
+                
+                // We should always have at least 1 breakpoint
+                if (!reconnect && !remoteBreakpoints.length && ++retries < 3) {
+                    setTimeout(function(){
+                        if (attached)
+                            listBreakpoints(handleBps);
+                    }, 100);
+                    return;
+                }
                 
                 var found    = [];
                 var notfound = [];
