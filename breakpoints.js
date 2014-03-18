@@ -728,7 +728,18 @@ define(function(require, exports, module) {
                 var lines = [];
                 
                 bpsInDoc.forEach(function(bp){ 
-                    lines[bp.moved || (bp.actual || 0).line || (bp.sourcemap || 0).line || bp.line] = bp;
+                    if (bp.moved == -1)
+                        return clearBreakpoint(bp);
+                    
+                    var line;
+                    !isNaN(line = bp.moved)
+                        || !isNaN(line = (bp.actual || 0).line)
+                        || !isNaN(line = (bp.sourcemap || 0).line)
+                        || (line = bp.line);
+                    
+                    if (line === null) debugger;
+                    
+                    lines[line] = bp;
                 });
     
                 if (delta.action[0] == "i") {
@@ -802,7 +813,8 @@ define(function(require, exports, module) {
                     return;
 
                 var loc = bp.invalid ? bp : (bp.actual || bp.sourcemap || bp);
-                rows[bp.moved || loc.line] 
+                var line; !isNaN(line = bp.moved) || (line = loc.line);
+                rows[line] 
                     = " ace_breakpoint"
                         + (bp.condition ? " condition" : "")
                         + (bp.enabled && enableBreakpoints ? "" : " disabled ")
@@ -816,7 +828,7 @@ define(function(require, exports, module) {
         function updateMovedBreakpoints(doc){
             var bpsInDoc = findBreakpoints(doc.tab.path);
             bpsInDoc.forEach(function(bp){ 
-                if (bp.moved) {
+                if (!isNaN(bp.moved)) {
                     if (bp.moved == -1)
                         clearBreakpoint(bp);
                     else if (bp.moved != bp.line) {
