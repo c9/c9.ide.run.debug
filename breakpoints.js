@@ -192,7 +192,7 @@ define(function(require, exports, module) {
                     ["active", "true"]
                 ]);
                 
-                var bps = settings.getJson("user/breakpoints");
+                var bps = settings.getJson("state/breakpoints");
                 
                 // bind it to the Breakpoint model
                 breakpoints = (bps || []).map(function(bp){
@@ -218,7 +218,7 @@ define(function(require, exports, module) {
                     var list = breakpoints.map(function(bp){
                         return bp.json;
                     });
-                    settings.setJson("user/breakpoints", list);
+                    settings.setJson("state/breakpoints", list);
                 }
                 
                 changed = false;
