@@ -415,19 +415,25 @@ define(function(require, exports, module) {
             return frame;
         }
         
-        function createVariable(options, name, scope){
-            var value = options.value;
+        function createVariable(options, name, scope, variable){
+            var value = options.value || options;
             
-            var variable = new Variable({
-                name      : name || options.name,
-                scope     : scope,
-                value     : formatType(value),
-                type      : value.type,
-                ref       : typeof value.ref == "number" 
-                    ? value.ref 
-                    : value.handle,
-                children  : hasChildren[value.type] ? true : false
-            });
+            if (variable) {
+                variable.value = formatType(options);
+                variable.type  = options.type;
+            }
+            else {
+                variable = new Variable({
+                    name      : name || options.name,
+                    scope     : scope,
+                    value     : formatType(value),
+                    type      : value.type,
+                    ref       : typeof value.ref == "number" 
+                        ? value.ref 
+                        : value.handle,
+                    children  : hasChildren[value.type] ? true : false
+                });
+            }
             
             if (value.prototypeObject)
                 variable.prototype = new Variable({
@@ -451,6 +457,10 @@ define(function(require, exports, module) {
                     ref     : value.constructorFunction.ref
                 });
             return variable;
+        }
+        
+        function updateVariable(variable, body){
+            return createVariable(body, null, null, variable);
         }
         
         function createSource(options) {
@@ -703,7 +713,24 @@ define(function(require, exports, module) {
         
         function getProperties(variable, callback) {
             v8dbg.lookup([variable.ref], false, function(body) {
-                var props = body[variable.ref].properties || [];
+                var data = body[variable.ref];
+                data && updateVariable(variable, data);
+                
+                var props = data.properties || [];
+                
+                if (props.length > 5000) {
+                    props = [createVariable({
+                        name       : "Too many properties",
+                        value      : { type: "string", value: "Found more than 5000 properties" },
+                        error      : true,
+                        properties : []
+                    })];
+                    
+                    variable.properties = props;
+                    callback(null, props, variable);
+                    return;
+                }
+                
                 lookup(props, false, function(err, properties){
                     variable.properties = properties;
                     callback(err, properties, variable);
