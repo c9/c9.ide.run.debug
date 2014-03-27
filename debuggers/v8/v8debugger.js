@@ -431,7 +431,8 @@ define(function(require, exports, module) {
                     ref       : typeof value.ref == "number" 
                         ? value.ref 
                         : value.handle,
-                    children  : hasChildren[value.type] ? true : false
+                    children  : options.children === false 
+                        ? false : (hasChildren[value.type] ? true : false)
                 });
             }
             
@@ -721,9 +722,8 @@ define(function(require, exports, module) {
                 if (props.length > 5000) {
                     props = [createVariable({
                         name       : "Too many properties",
-                        value      : { type: "string", value: "Found more than 5000 properties" },
-                        error      : true,
-                        properties : []
+                        value      : { type: "error", value: "Found more than 5000 properties" },
+                        children   : false
                     })];
                     
                     variable.properties = props;

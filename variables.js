@@ -91,6 +91,8 @@ define(function(require, exports, module) {
             // Variables
             plugin.on("expand", function(e){
                 if (e.node.tagName == "variable") {
+                    if (!e.node.children) return e.expand();
+                    
                     //<a:insert match="[item[@children='true']]" get="{adbg.loadObject(dbg, %[.])}" />
                     dbg.getProperties(e.node, function(err, properties){
                         if (err) return console.error(err);
