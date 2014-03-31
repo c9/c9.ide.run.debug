@@ -1021,7 +1021,7 @@ define(function(require, exports, module) {
             breakOnExceptions = enabled ? type == "all" : false;
             breakOnUncaughtExceptions = enabled ? type == "uncaught" : false;
             
-            v8dbg.setexceptionbreak(type, enabled, callback);
+            v8dbg.setexceptionbreak(enabled ? type : "all", enabled, callback);
         }
     
         /***** Lifecycle *****/
