@@ -701,7 +701,7 @@ define(function(require, exports, module) {
                 var breakpoints = aceSession.$breakpoints;
                 var doc         = aceSession.c9doc;
                 
-                if (!breakpoints.length || !doc.hasValue())
+                if (!breakpoints.length || !doc.tab.loaded || !doc.hasValue())
                     return;
                 
                 var bpsInDoc = findBreakpoints(doc.tab.path);
