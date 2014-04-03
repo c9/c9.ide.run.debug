@@ -737,7 +737,8 @@ define(function(require, exports, module) {
                         || !isNaN(line = (bp.sourcemap || 0).line)
                         || (line = bp.line);
                     
-                    if (line === null) debugger;
+                    if (line === null)
+                        return console.warn("Could not find breakpoint, file likely has unsaved changes");
                     
                     lines[line] = bp;
                 });
