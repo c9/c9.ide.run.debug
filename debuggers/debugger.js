@@ -307,7 +307,7 @@ define(function(require, exports, module) {
         }
         
         function updatePanels(action, runstate){
-            state = running != run.STOPPED ? runstate : "disconnected";
+            state = running != run.STOPPED && dbg.attached ? runstate : "disconnected";
             emit("stateChange", { state: state, action: action });
         }
         

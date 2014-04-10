@@ -28,7 +28,6 @@ define(function(require, exports, module) {
         var breakOnExceptions         = false;
         var breakOnUncaughtExceptions = false;
         var breakpointQueue           = [];
-        var connected                 = 0;
         
         var NODE_PREFIX  = "(function (exports, require, module, __filename, __dirname) { ";
         var NODE_POSTFIX = "\n});";
@@ -80,11 +79,11 @@ define(function(require, exports, module) {
             getSources(function(err, sources) {
                 getFrames(function(err, frames) {
                     updateBreakpoints(breakpoints, reconnect, function(err, breakpoints) {
-                        handleDebugBreak(breakpoints, reconnect, frames[0], function(){
-                            attached = true;
+                        handleDebugBreak(breakpoints, reconnect, frames[0], function(canAttach){
+                            attached = canAttach;
                             emit("attach", { breakpoints: breakpoints });
                         }, 
-                        function() {
+                        function(isResumed) {
                             // This check is for when the process is not 
                             // started with debug-brk
                             if (activeFrame) {
@@ -95,7 +94,7 @@ define(function(require, exports, module) {
                                 });
                             }
                             
-                            onChangeRunning();
+                            onChangeRunning(null, isResumed);
                             callback();
                         });
                     });
@@ -184,7 +183,7 @@ define(function(require, exports, module) {
             
             // If there's no breakpoint set
             if (!bp) {
-                attach();
+                attach(reconnect || 0);
                 
                 // If we reconnect to a break then don't resume.
                 if (reconnect) {
@@ -192,7 +191,7 @@ define(function(require, exports, module) {
                     callback();
                 }
                 else
-                    resume(callback);
+                    resume(callback.bind(this, true));
                     
                 return;
             }
@@ -209,13 +208,13 @@ define(function(require, exports, module) {
             function checkEval(err, variable){
                 if (err || isTruthy(variable)) {
                     onChangeFrame(null);
-                    attach();
-                    resume(callback);
+                    attach(true);
+                    resume(callback.bind(this, true));
                 }
                 else {
                     onChangeFrame(frame);
-                    attach();
-                    callback();
+                    attach(true);
+                    callback(false);
                 }
             }
             
@@ -234,8 +233,8 @@ define(function(require, exports, module) {
                         }
                         else {
                             onChangeFrame(frame);
-                            attach();
-                            callback();
+                            attach(true);
+                            callback(false);
                         }
                         return;
                     }
@@ -245,13 +244,13 @@ define(function(require, exports, module) {
             // Resume the process
             if (reconnect) {
                 onChangeFrame(frame);
-                attach();
-                callback();
+                attach(true);
+                callback(false);
             }
             else {
                 onChangeFrame(null);
-                attach();
-                resume(callback);
+                attach(true);
+                resume(callback.bind(this, true));
             }
         }
         
@@ -492,11 +491,11 @@ define(function(require, exports, module) {
         
         /***** Event Handler *****/
     
-        function onChangeRunning(e) {
+        function onChangeRunning(e, isResumed) {
             if (!v8dbg) {
                 state = null;
             } else {
-                state = v8dbg.isRunning() ? "running" : "stopped";
+                state = v8dbg.isRunning() || isResumed ? "running" : "stopped";
             }
     
             emit("stateChange", {state: state});
@@ -521,8 +520,11 @@ define(function(require, exports, module) {
         }
     
         function onBreak(e) {
-            if (!attached) 
+            if (!attached) {
+                if (attached === 0) 
+                    attached = true;
                 return;
+            }
             
             // @todo update breakpoint text?
             
@@ -1076,7 +1078,7 @@ define(function(require, exports, module) {
             /**
              * 
              */
-            get connected(){ return connected; },
+            get attached(){ return attached; },
             /**
              * Whether the debugger will break when it encounters any exception.
              * This includes exceptions in try/catch blocks.
