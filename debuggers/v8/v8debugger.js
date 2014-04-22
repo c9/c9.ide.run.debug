@@ -117,10 +117,9 @@ define(function(require, exports, module) {
                 if (err) return callback(err);
                 
                 // We should always have at least 1 breakpoint
-                if (!reconnect && !remoteBreakpoints.length && ++retries < 3) {
+                if (!reconnect && !remoteBreakpoints.length && ++retries < 10) {
                     setTimeout(function(){
-                        if (attached)
-                            listBreakpoints(handleBps);
+                        listBreakpoints(handleBps);
                     }, 100);
                     return;
                 }
