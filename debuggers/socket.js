@@ -49,6 +49,7 @@ define(function(require, exports, module) {
                         if (err) {
                             if (err.code == "ECONNREFUSED") {
                                 state = null;
+                                emit("end");
                                 connect(true);
                             }
                             else
@@ -79,8 +80,10 @@ define(function(require, exports, module) {
                         
                         state = null;
                         
-                        if (err.code == "ECONNREFUSED")
+                        if (err.code == "ECONNREFUSED") {
+                            emit("end");
                             connect(true);
+                        }
                         else
                             return emit("err", err);
                     });
@@ -123,9 +126,10 @@ define(function(require, exports, module) {
                     stream.on("data", function(data) {
                         emit("data", data);
                     });
-                    stream.on("end", function(err){
-                        emit("end", err);
-                    });
+                    // Don't call end because session will remain in between disconnects
+                    // stream.on("end", function(err){
+                    //     emit("end", err);
+                    // });
                     stream.on("error", function(err){
                         emit("error", err);
                     });
