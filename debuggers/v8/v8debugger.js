@@ -199,57 +199,60 @@ define(function(require, exports, module) {
             // this bp, is automatically created by v8 to stop on break
             if (bp.id === 1 && bp.serverOnly && bp.line === 0) {
                 // The breakpoint did it's job, now lets remove it
-                v8dbg.clearbreakpoint(1, function(){});
+                v8dbg.clearbreakpoint(1, wait);
                 breakpoints.remove(bp);
             }
+            else wait();
             
-            // Check if there is a real breakpoint here, so we don't resume
-            function checkEval(err, variable){
-                if (err || isTruthy(variable)) {
-                    onChangeFrame(null);
-                    attach(true);
-                    resume(callback.bind(this, true));
+            function wait(){
+                // Check if there is a real breakpoint here, so we don't resume
+                function checkEval(err, variable){
+                    if (err || isTruthy(variable)) {
+                        onChangeFrame(null);
+                        attach(true);
+                        resume(callback.bind(this, true));
+                    }
+                    else {
+                        onChangeFrame(frame);
+                        attach(true);
+                        callback(false);
+                    }
                 }
-                else {
+                
+                // @todo this is probably a timing issue - probably solved now
+                if (frame) {
+                    var test = { path: frame.path, line: frame.line };
+                    for (var bpi, i = 0, l = breakpoints.length; i < l; i++) {
+                        if ((bpi = breakpoints[i]).equals(test)) {
+                            // If it's not enabled let's continue
+                            if (!bpi.enabled)
+                                break;
+                              
+                            // Check a condition if it has it
+                            if (bpi.condition) {
+                                evaluate(bpi.condition, frame, false, true, checkEval);
+                            }
+                            else {
+                                onChangeFrame(frame);
+                                attach(true);
+                                callback(false);
+                            }
+                            return;
+                        }
+                    }
+                }
+                
+                // Resume the process
+                if (reconnect) {
                     onChangeFrame(frame);
                     attach(true);
                     callback(false);
                 }
-            }
-            
-            // @todo this is probably a timing issue - probably solved now
-            if (frame) {
-                var test = { path: frame.path, line: frame.line };
-                for (var bpi, i = 0, l = breakpoints.length; i < l; i++) {
-                    if ((bpi = breakpoints[i]).equals(test)) {
-                        // If it's not enabled let's continue
-                        if (!bpi.enabled)
-                            break;
-                          
-                        // Check a condition if it has it
-                        if (bpi.condition) {
-                            evaluate(bpi.condition, frame, false, true, checkEval);
-                        }
-                        else {
-                            onChangeFrame(frame);
-                            attach(true);
-                            callback(false);
-                        }
-                        return;
-                    }
+                else {
+                    onChangeFrame(null);
+                    attach(true);
+                    resume(callback.bind(this, true));
                 }
-            }
-            
-            // Resume the process
-            if (reconnect) {
-                onChangeFrame(frame);
-                attach(true);
-                callback(false);
-            }
-            else {
-                onChangeFrame(null);
-                attach(true);
-                resume(callback.bind(this, true));
             }
         }
         
@@ -702,7 +705,10 @@ define(function(require, exports, module) {
         }
         
         function getScope(frame, scope, callback) {
-            v8dbg.scope(scope.index, frame.index, true, function(body) {
+            v8dbg.scope(scope.index, frame.index, true, function(body, refs, error) {
+                if (error)
+                    return callback(error);
+                
                 var variables = body.object.properties.map(function(prop){
                     return createVariable(prop);
                 });
