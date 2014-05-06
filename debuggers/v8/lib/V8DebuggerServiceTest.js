@@ -20,13 +20,13 @@ module.exports = {
 
     name: "V8DebuggerService",
     
-    setUp : function(next) {
+    setUp: function(next) {
         this.$msgStream = new MsgStreamMock();
         this.$service = new V8DebuggerService(this.$msgStream);
         next()
     },
 
-    sendMessage : function(destination, content) {
+    sendMessage: function(destination, content) {
         var headers = {
             Tool: "V8Debugger",
             Destination: destination

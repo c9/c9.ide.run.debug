@@ -1,4 +1,4 @@
-var net  = require("net");
+var net = require("net");
 var port = parseInt("{PORT}", 10);
 
 var buffer = [];
@@ -31,7 +31,7 @@ var server = net.createServer(function(client) {
     });
     
     if (buffer.length) {
-        buffer.forEach(function(data){
+        buffer.forEach(function(data) {
             browserClient.write(data);
         });
         buffer = [];
@@ -80,7 +80,7 @@ tryConnect(MAX_RETRIES, function(err, connection) {
     var gotData;
     debugClient = connection;
     
-    debugClient.on("data", function(data){
+    debugClient.on("data", function(data) {
         if (browserClient) {
             browserClient.write(data);
         } else {
@@ -90,14 +90,14 @@ tryConnect(MAX_RETRIES, function(err, connection) {
         gotData = true;
     });
     
-    function errHandler(e){
+    function errHandler(e) {
         console.log(e);
         process.exit(0);
     }
     
     debugClient.on("error", errHandler);
     
-    debugClient.on("end", function(data){
+    debugClient.on("end", function(data) {
         server.close();
     });
     

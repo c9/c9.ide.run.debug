@@ -7,37 +7,37 @@ define(function(require, exports, module) {
     return main;
 
     function main(options, imports, register) {
-        var Panel     = imports.Panel;
-        var Socket    = imports["debugger.socket"];
-        var settings  = imports.settings;
-        var ui        = imports.ui;
-        var tabs      = imports.tabManager;
-        var panels    = imports.panels;
-        var commands  = imports.commands;
-        var run       = imports.run;
+        var Panel = imports.Panel;
+        var Socket = imports["debugger.socket"];
+        var settings = imports.settings;
+        var ui = imports.ui;
+        var tabs = imports.tabManager;
+        var panels = imports.panels;
+        var commands = imports.commands;
+        var run = imports.run;
         var showError = imports["dialog.error"].show;
-        var confirm   = imports["dialog.confirm"].show;
+        var confirm = imports["dialog.confirm"].show;
         
         var markup = require("text!./debugger.xml");
-        var css    = require("text!./debugger.css");
+        var css = require("text!./debugger.css");
         
         /***** Initialization *****/
         
         var plugin = new Panel("Ajax.org", main.consumes, {
-            index        : options.index || 100,
-            caption      : "Debugger",
-            className    : "debugger",
-            elementName  : "winDebugger",
-            minWidth     : 165,
-            width        : 300,
-            where        : options.where || "right"
+            index: options.index || 100,
+            caption: "Debugger",
+            className: "debugger",
+            elementName: "winDebugger",
+            minWidth: 165,
+            width: 300,
+            where: options.where || "right"
         });
-        var emit   = plugin.getEmitter();
+        var emit = plugin.getEmitter();
         
-        var debuggers     = {};
+        var debuggers = {};
         var pauseOnBreaks = 0;
-        var state         = "disconnected";
-        var sources       = [];
+        var state = "disconnected";
+        var sources = [];
         var running, activeFrame, dbg, name, process, socket;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
@@ -60,55 +60,55 @@ define(function(require, exports, module) {
             
             // Register this panel on the left-side panels
             plugin.setCommand({
-                name : "toggledebugger",
-                hint : "show the debugger panel",
+                name: "toggledebugger",
+                hint: "show the debugger panel",
                 // bindKey      : { mac: "Command-U", win: "Ctrl-U" }
             });
             
             // Commands
             
             commands.addCommand({
-                name    : "resume",
-                group   : "Run & Debug",
-                hint    : "resume the current paused process",
-                bindKey : {mac: "F8", win: "F8"},
-                exec    : function(){
+                name: "resume",
+                group: "Run & Debug",
+                hint: "resume the current paused process",
+                bindKey: {mac: "F8", win: "F8"},
+                exec: function(){
                     dbg && dbg.resume();
                 }
             }, plugin);
             commands.addCommand({
-                name    : "suspend",
-                group   : "Run & Debug",
-                hint    : "suspend the current running process",
+                name: "suspend",
+                group: "Run & Debug",
+                hint: "suspend the current running process",
                 // bindKey : {mac: "F8", win: "F8"},
-                exec    : function(){
+                exec: function(){
                     dbg && dbg.suspend();
                 }
             }, plugin);
             commands.addCommand({
-                name    : "stepinto",
-                group   : "Run & Debug",
-                hint    : "step into the function that is next on the execution stack",
-                bindKey : {mac: "F11", win: "F11"},
-                exec    : function(){
+                name: "stepinto",
+                group: "Run & Debug",
+                hint: "step into the function that is next on the execution stack",
+                bindKey: {mac: "F11", win: "F11"},
+                exec: function(){
                     dbg && dbg.stepInto()
                 }
             }, plugin);
             commands.addCommand({
-                name    : "stepover",
-                group   : "Run & Debug",
-                hint    : "step over the current expression on the execution stack",
-                bindKey : {mac: "F10", win: "F10"},
-                exec    : function(){
+                name: "stepover",
+                group: "Run & Debug",
+                hint: "step over the current expression on the execution stack",
+                bindKey: {mac: "F10", win: "F10"},
+                exec: function(){
                     dbg && dbg.stepOver();
                 }
             }, plugin);
             commands.addCommand({
-                name    : "stepout",
-                group   : "Run & Debug",
-                hint    : "step out of the current function scope",
-                bindKey : {mac: "Shift-F11", win: "Shift-F11"},
-                exec    : function(){
+                name: "stepout",
+                group: "Run & Debug",
+                hint: "step out of the current function scope",
+                bindKey: {mac: "Shift-F11", win: "Shift-F11"},
+                exec: function(){
                     dbg && dbg.stepOut();
                 }
             }, plugin);
@@ -118,14 +118,14 @@ define(function(require, exports, module) {
         }
         
         var drawn;
-        function draw(opts){
+        function draw(opts) {
             if (drawn) return;
             drawn = true;
             
             // Import Skin
             ui.insertSkin({
-                name         : "debugger",
-                data         : require("text!./skin.xml"),
+                name: "debugger",
+                data: require("text!./skin.xml"),
                 "media-path" : options.staticPrefix + "/images/",
                 "icon-path"  : options.staticPrefix + "/icons/"
             }, plugin);
@@ -147,14 +147,14 @@ define(function(require, exports, module) {
             
             container = plugin.getElement("hbox");
             
-            btnResume      = plugin.getElement("btnResume");
-            btnStepOver    = plugin.getElement("btnStepOver");
-            btnStepInto    = plugin.getElement("btnStepInto");
-            btnStepOut     = plugin.getElement("btnStepOut");
-            btnSuspend     = plugin.getElement("btnSuspend");
-            btnPause       = plugin.getElement("btnPause");
-            btnOutput      = plugin.getElement("btnOutput");
-            btnImmediate   = plugin.getElement("btnImmediate");
+            btnResume = plugin.getElement("btnResume");
+            btnStepOver = plugin.getElement("btnStepOver");
+            btnStepInto = plugin.getElement("btnStepInto");
+            btnStepOut = plugin.getElement("btnStepOut");
+            btnSuspend = plugin.getElement("btnSuspend");
+            btnPause = plugin.getElement("btnPause");
+            btnOutput = plugin.getElement("btnOutput");
+            btnImmediate = plugin.getElement("btnImmediate");
             
             // @todo move this to F8 and toggle between resume
             // btnSuspend.on("click", function(){
@@ -178,7 +178,7 @@ define(function(require, exports, module) {
             });
             
             // Update button state
-            plugin.on("stateChange", function(e){
+            plugin.on("stateChange", function(e) {
                 state = e.state;
                 
                 updateButtonState(state);
@@ -191,7 +191,7 @@ define(function(require, exports, module) {
         
         /***** Methods *****/
         
-        function updateButtonState(state){
+        function updateButtonState(state) {
             if (!drawn)
                 return;
             
@@ -212,7 +212,7 @@ define(function(require, exports, module) {
         function initializeDebugger(){
             // State Change
             var stateTimer;
-            dbg.on("stateChange", function(e){
+            dbg.on("stateChange", function(e) {
                 var action = e.state == "running" ? "disable" : "enable";
                 
                 // Wait for 500ms in case we are step debugging
@@ -227,13 +227,13 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Receive the breakpoints on attach
-            dbg.on("attach", function(e){
+            dbg.on("attach", function(e) {
                 e.implementation = dbg;
                 togglePause(pauseOnBreaks);
                 emit("attach", e);
             }, plugin);
             
-            dbg.on("detach", function(e){
+            dbg.on("detach", function(e) {
                 updateButtonState("detached");
                 
                 //@todo
@@ -255,7 +255,7 @@ define(function(require, exports, module) {
             });
             
             // When hitting a breakpoint or exception or stepping
-            function startDebugging(e){
+            function startDebugging(e) {
                 if (settings.getBool("user/debug/@autoshow"))
                     panels.activate("debugger");
                 
@@ -273,45 +273,45 @@ define(function(require, exports, module) {
             dbg.on("break", startDebugging, plugin);
             dbg.on("exception", startDebugging, plugin);
             dbg.on("suspend", function(){
-                dbg.getFrames(function(err, frames){
+                dbg.getFrames(function(err, frames) {
                     if (frames.length) {
                         startDebugging({
-                            frames : frames,
-                            frame  : frames[0]
+                            frames: frames,
+                            frame: frames[0]
                         });
                     }
                 });
             }, plugin);
             
             // When a new frame becomes active
-            dbg.on("frameActivate", function(e){
+            dbg.on("frameActivate", function(e) {
                 activeFrame = e.frame;
                 emit("frameActivate", e);
             }, plugin);
             
-            dbg.on("sources", function(e){
+            dbg.on("sources", function(e) {
                 sources = e.sources.slice()
                 emit("sources", e);
             }, plugin);
             
-            dbg.on("sourcesCompile", function(e){
+            dbg.on("sourcesCompile", function(e) {
                 sources.push(e.source);
                 emit("sourcesCompile", e);
             }, plugin);
             
-            dbg.on("breakpointUpdate", function(e){
+            dbg.on("breakpointUpdate", function(e) {
                 emit("breakpointUpdate", {
-                    breakpoint : e.breakpoint
+                    breakpoint: e.breakpoint
                 });
             }, plugin);
         }
         
-        function updatePanels(action, runstate){
+        function updatePanels(action, runstate) {
             state = running != run.STOPPED && dbg.attached ? runstate : "disconnected";
             emit("stateChange", { state: state, action: action });
         }
         
-        function togglePause(force){
+        function togglePause(force) {
             pauseOnBreaks = force !== undefined
                 ? force
                 : (pauseOnBreaks > 1 ? 0 : pauseOnBreaks + 1);
@@ -338,52 +338,52 @@ define(function(require, exports, module) {
             settings.set("user/debug/@pause", pauseOnBreaks);
         }
         
-        function registerDebugger(type, debug){
+        function registerDebugger(type, debug) {
             debuggers[type] = debug;
         }
         
-        function unregisterDebugger(type, debug){
+        function unregisterDebugger(type, debug) {
             if (debuggers[type] == debug)
                 delete debuggers[type];
         }
         
         function showDebugFrame(frame, callback) {
             openFile({
-                scriptId : frame.sourceId,
-                line     : frame.line - 1,
-                column   : frame.column,
-                text     : frame.name,
-                path     : frame.path
+                scriptId: frame.sourceId,
+                line: frame.line - 1,
+                column: frame.column,
+                text: frame.name,
+                path: frame.path
             }, callback);
         }
     
         function showDebugFile(script, row, column, callback) {
             openFile({
-                scriptId : script.id,
-                line     : row, 
-                column   : column
+                scriptId: script.id,
+                line: row, 
+                column: column
             }, callback);
         }
     
         function openFile(options, callback) {
-            var row      = options.line + 1;
-            var column   = options.column;
-            var path     = options.path;
+            var row = options.line + 1;
+            var column = options.column;
+            var path = options.path;
             var scriptId = options.script ? options.script.id : options.scriptId;
             var source;
             
             if (options.source)
                 source = options.source;
             
-            sources.every(function(src){
+            sources.every(function(src) {
                 if (scriptId && src.id == scriptId) {
-                    path   = src.path;
+                    path = src.path;
                     source = src;
                     return false;
                 }
                 if (path && src.path == path) {
                     scriptId = src.scriptId;
-                    source   = src;
+                    source = src;
                     return false;
                 }
                 return true;
@@ -393,37 +393,37 @@ define(function(require, exports, module) {
                 source = { id : scriptId };
             
             var state = {
-                path       : path,
-                active     : true,
-                value      : source.debug ? -1 : undefined,
-                document   : {
-                    title  : path.substr(path.lastIndexOf("/") + 1),
-                    meta   : {
-                        ignoreState : source.debug ? 1 : 0
+                path: path,
+                active: true,
+                value: source.debug ? -1 : undefined,
+                document: {
+                    title: path.substr(path.lastIndexOf("/") + 1),
+                    meta: {
+                        ignoreState: source.debug ? 1 : 0
                     },
-                    ace    : {
-                        scriptId     : scriptId,
-                        lineoffset   : 0,
-                        customSyntax : source.customSyntax
+                    ace: {
+                        scriptId: scriptId,
+                        lineoffset: 0,
+                        customSyntax: source.customSyntax
                     }
                 }
             };
             if (row) {
                 state.document.ace.jump = {
-                    row    : row,
-                    column : column
+                    row: row,
+                    column: column
                 };
             }
             
             if (emit("beforeOpen", {
-                source    : source,
-                state     : state,
-                generated : options.generated,
-                callback  : callback || function(){}
+                source: source,
+                state: state,
+                generated: options.generated,
+                callback: callback || function(){}
             }) === false)
                 return;
 
-            tabs.open(state, function(err, tab, done){
+            tabs.open(state, function(err, tab, done) {
                 if (err)
                     return console.error(err);
                 if (!done)
@@ -431,7 +431,7 @@ define(function(require, exports, module) {
                 tabs.focusTab(tab);
                     
                 // If we need to load the contents ourselves, lets.
-                dbg.getSource(source, function(err, value){
+                dbg.getSource(source, function(err, value) {
                     if (err) return;
                     
                     tab.document.value = value;
@@ -450,7 +450,7 @@ define(function(require, exports, module) {
             });
         }
         
-        function debug(p, reconnect, callback){
+        function debug(p, reconnect, callback) {
             var err;
             
             if (reconnect && process == p && dbg.connected) {
@@ -460,7 +460,7 @@ define(function(require, exports, module) {
             process = p;
             
             if (typeof reconnect == "function") {
-                callback  = reconnect;
+                callback = reconnect;
                 reconnect = null;
             }
             
@@ -528,8 +528,8 @@ define(function(require, exports, module) {
             // Hook for plugins to delay or cancel debugger attaching
             // Whoever cancels is responible for calling the callback
             if (emit("beforeAttach", {
-                runner   : runner, 
-                callback : callback
+                runner: runner, 
+                callback: callback
             }) === false)
                 return;
             
@@ -555,7 +555,7 @@ define(function(require, exports, module) {
                 panels.deactivate("debugger");
         }
         
-        function checkAttached(callback){
+        function checkAttached(callback) {
             if (state != "disconnected") {
                 confirm("The debugger is already connected to another process.",
                     "Would you like to stop the existing process?",
@@ -581,7 +581,7 @@ define(function(require, exports, module) {
         plugin.on("load", function(){
             load();
         });
-        plugin.on("draw", function(e){
+        plugin.on("draw", function(e) {
             draw(e);
         });
         plugin.on("enable", function(){
@@ -592,7 +592,7 @@ define(function(require, exports, module) {
         });
         plugin.on("unload", function(){
             loaded = false;
-            drawn  = false;
+            drawn = false;
         });
         
         /***** Register and define API *****/
@@ -628,7 +628,7 @@ define(function(require, exports, module) {
          *     var process = run.run("auto", {
          *         path  : "/example.js",
          *         debug : true
-         *     }, function(err, pid){
+         *     }, function(err, pid) {
          *     
          *         // When a breakpoint is hit, ask if the user wants to break.
          *         debug.on("break", function(){
@@ -645,7 +645,7 @@ define(function(require, exports, module) {
          *         });
          *         
          *         // Attach a debugger to the running process
-         *         debug.debug(process.runner, function(err){
+         *         debug.debug(process.runner, function(err) {
          *             if (err) throw err.message;
          *         });
          *     });
@@ -661,7 +661,7 @@ define(function(require, exports, module) {
              * @property {debugger.Frame} activeFrame
              */
             get activeFrame(){ return activeFrame; },
-            set activeFrame(frame){ 
+            set activeFrame(frame) { 
                 activeFrame = frame; 
                 emit("frameActivate", { frame: frame });
             },
@@ -692,7 +692,7 @@ define(function(require, exports, module) {
              */
             get breakOnUncaughtExceptions(){ return dbg.breakOnUncaughtExceptions; },
             
-            _events : [
+            _events: [
                 /**
                  * Fires prior to a debugger attaching to a process.
                  * 
@@ -829,12 +829,12 @@ define(function(require, exports, module) {
              * @param {Function}    callback       Called when the debugger is attached.
              * @param {Error}       callback.err   Error object with information on an error if one occured.
              */
-            debug : debug,
+            debug: debug,
             
             /**
              * Detaches the started debugger from it's process.
              */
-            stop : stop,
+            stop: stop,
             
             /**
              * Registers a {@link debugger.implementation debugger implementation}
@@ -843,39 +843,39 @@ define(function(require, exports, module) {
              * @param {String}                  name      The unique name of this debugger implementation.
              * @param {debugger.implementation} debugger  The debugger implementation.
              */
-            registerDebugger : registerDebugger,
+            registerDebugger: registerDebugger,
             
             /**
              * Unregisters a {@link debugger.implementation debugger implementation}.
              * @param {String}                  name      The unique name of this debugger implementation.
              * @param {debugger.implementation} debugger  The debugger implementation.
              */
-            unregisterDebugger : unregisterDebugger,
+            unregisterDebugger: unregisterDebugger,
             
             /**
              * Continues execution of a process after it has hit a breakpoint.
              */
-            resume : function(){ dbg.resume() },
+            resume: function(){ dbg.resume() },
             
             /**
              * Pauses the execution of a process at the next statement.
              */
-            suspend : function(){ dbg.suspend() },
+            suspend: function(){ dbg.suspend() },
             
             /**
              * Step into the next statement.
              */
-            stepInto : function(){ dbg.stepInto() },
+            stepInto: function(){ dbg.stepInto() },
             
             /**
              * Step out of the current statement.
              */
-            stepOut : function(){ dbg.stepOut() },
+            stepOut: function(){ dbg.stepOut() },
             
             /**
              * Step over the next statement.
              */
-            stepOver : function(){ dbg.stepOver() },
+            stepOver: function(){ dbg.stepOver() },
             
             /**
              * Retrieves the contents of a source file from the debugger (not 
@@ -885,7 +885,7 @@ define(function(require, exports, module) {
              * @param {Function}        callback.err   Error object if an error occured.
              * @param {Function}        callback.data  The contents of the file.
              */
-            getSource : function(source, callback){ 
+            getSource: function(source, callback) { 
                 dbg.getSource(source, callback);
             },
             
@@ -896,7 +896,7 @@ define(function(require, exports, module) {
              * @param {Function}         callback      Called after the setting is changed.
              * @param {Error}            callback.err  The error if any error occured.
              */
-            setBreakBehavior : function(type, enabled, callback){ 
+            setBreakBehavior: function(type, enabled, callback) { 
                 // dbg.setBreakBehavior(type, enabled, callback); 
                 togglePause(enabled ? (type == "uncaught" ? 1 : 2) : 0);
             },
@@ -911,7 +911,7 @@ define(function(require, exports, module) {
              * @param {Error}             callback.err       The error if any error occured.
              * @param {debugger.Variable} callback.variable  The result of the expression.
              */
-            evaluate : function(expression, frame, global, disableBreak, callback){ 
+            evaluate: function(expression, frame, global, disableBreak, callback) { 
                 dbg.evaluate(expression, frame, global, disableBreak, callback); 
             },
             
@@ -922,13 +922,13 @@ define(function(require, exports, module) {
              * @param {Function} callback  Called when the user chooses to run
              * the new process.
              */
-            checkAttached : checkAttached,
+            checkAttached: checkAttached,
             
             /**
              * Displays a frame in the ace editor.
              * @param {debugger.Frame} frame  The frame to display
              */
-            showDebugFrame : showDebugFrame,
+            showDebugFrame: showDebugFrame,
             
             /**
              * Displays a debugger source file in the ace editor
@@ -936,7 +936,7 @@ define(function(require, exports, module) {
              * @param {Number}          row     The row (zero bound) to scroll to.
              * @param {Number}          column  The column (zero bound) to scroll to.
              */
-            showDebugFile : showDebugFile,
+            showDebugFile: showDebugFile,
             
             /**
              * Opens a file from disk or from the debugger.
@@ -947,7 +947,7 @@ define(function(require, exports, module) {
              * @param {String}          [scriptId]    The script id of the file to open
              * @param {Boolean}         [generated]   
              */
-            openFile : openFile
+            openFile: openFile
         });
         
         register(null, {

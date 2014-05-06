@@ -1,4 +1,4 @@
-/*global describe it before after  =*/
+/*global describe it before after = */
 "use client";
 
 require([
@@ -19,15 +19,15 @@ require([
     
     expect.setupArchitectTest([
         {
-            packagePath  : "plugins/c9.core/c9",
-            workspaceId  : "ubuntu/ip-10-35-77-180",
-            startdate    : new Date(),
-            debug        : true,
-            hosted       : true,
-            local        : false,
-            hostname     : "dev.javruben.c9.io",
-            workspaceDir : baseProc,
-            davPrefix    : "/"
+            packagePath: "plugins/c9.core/c9",
+            workspaceId: "ubuntu/ip-10-35-77-180",
+            startdate: new Date(),
+            debug: true,
+            hosted: true,
+            local: false,
+            hostname: "dev.javruben.c9.io",
+            workspaceDir: baseProc,
+            davPrefix: "/"
         },
         
         "plugins/c9.core/ext",
@@ -35,47 +35,47 @@ require([
         "plugins/c9.core/util",
         "plugins/c9.ide.ui/lib_apf",
         {
-            packagePath : "plugins/c9.core/settings",
-            settings : { state: { console: {
-                type  : "pane", 
-                skin  : "tab_console",
-                nodes : [
+            packagePath: "plugins/c9.core/settings",
+            settings: { state: { console: {
+                type: "pane", 
+                skin: "tab_console",
+                nodes: [
                     {
-                        type : "tab",
-                        editorType : "output",
-                        active : true
+                        type: "tab",
+                        editorType: "output",
+                        active: true
                     },
                     {
-                        type : "tab",
-                        editorType : "immediate",
-                        document : {
-                            title : "Immediate"
+                        type: "tab",
+                        editorType: "immediate",
+                        document: {
+                            title: "Immediate"
                         }
                     }
                 ]
             } } }
         },
         {
-            packagePath  : "plugins/c9.ide.ui/ui",
-            staticPrefix : "plugins/c9.ide.ui"
+            packagePath: "plugins/c9.ide.ui/ui",
+            staticPrefix: "plugins/c9.ide.ui"
         },
         "plugins/c9.ide.editors/document",
         "plugins/c9.ide.editors/undomanager",
         {
-            packagePath   : "plugins/c9.ide.editors/editors",
-            defaultEditor : "ace"
+            packagePath: "plugins/c9.ide.editors/editors",
+            defaultEditor: "ace"
         },
         "plugins/c9.ide.editors/editor",
         {
-            packagePath : "plugins/c9.ide.editors/tabmanager",
-            testing     : 2
+            packagePath: "plugins/c9.ide.editors/tabmanager",
+            testing: 2
         },
         "plugins/c9.ide.ui/focus",
         "plugins/c9.ide.editors/pane",
         "plugins/c9.ide.editors/tab",
         {
-            packagePath : "plugins/c9.ide.ace/ace",
-            staticPrefix : "plugins/c9.ide.layout.classic"
+            packagePath: "plugins/c9.ide.ace/ace",
+            staticPrefix: "plugins/c9.ide.layout.classic"
         },
         "plugins/c9.ide.terminal/terminal",
         "plugins/c9.ide.run/output",
@@ -87,10 +87,10 @@ require([
         "plugins/c9.vfs.client/endpoint",
         "plugins/c9.ide.auth/auth",
         {
-            packagePath : "plugins/c9.ide.run/run",
-            testing     : true,
-            base        : baseProc,
-            runners     : {
+            packagePath: "plugins/c9.ide.run/run",
+            testing: true,
+            base: baseProc,
+            runners: {
                 "node" : {
                     "caption" : "Node.js (current)",
                     "cmd": ["node", "${debug?--debug-brk=15454}", "$file"],
@@ -113,8 +113,8 @@ require([
         "plugins/c9.ide.ui/menus",
         "plugins/c9.ide.run.debug/debuggers/sourcemap",
         {
-            packagePath : "plugins/c9.ide.run.debug/debuggers/debugger",
-            staticPrefix : "plugins/c9.ide.layout.classic"
+            packagePath: "plugins/c9.ide.run.debug/debuggers/debugger",
+            staticPrefix: "plugins/c9.ide.layout.classic"
         },
         "plugins/c9.ide.run.debug/debuggers/v8/v8debugger",
         "plugins/c9.ide.run.debug/breakpoints",
@@ -127,33 +127,33 @@ require([
         
         // Mock plugins
         {
-            consumes : ["apf", "ui", "Plugin"],
-            provides : [
+            consumes: ["apf", "ui", "Plugin"],
+            provides: [
                 "commands", "watcher", "anims", "save", "preferences", 
                 "panels", "layout", "menus", "clipboard", "dialog.error"
             ],
-            setup    : expect.html.mocked
+            setup: expect.html.mocked
         },
         {
-            consumes : ["run", "debugger", "fs", "tabManager", "sourcemap", "v8debugger"],
-            provides : [],
-            setup    : main
+            consumes: ["run", "debugger", "fs", "tabManager", "sourcemap", "v8debugger"],
+            provides: [],
+            setup: main
         }
     ], architect);
     
     function main(options, imports, register) {
-        var run      = imports.run;
-        var fs       = imports.fs;
-        var tabs     = imports.tabManager;
-        var debug    = imports["debugger"];
-        var v8dbg    = imports["v8debugger"];
+        var run = imports.run;
+        var fs = imports.fs;
+        var tabs = imports.tabManager;
+        var debug = imports["debugger"];
+        var v8dbg = imports["v8debugger"];
         
-        expect.html.setConstructor(function(tab){
+        expect.html.setConstructor(function(tab) {
             if (typeof tab == "object")
                 return tab.pane.aml.getPage("editor::" + tab.editorType).$ext;
         });
         
-        function countEvents(count, expected, done){
+        function countEvents(count, expected, done) {
             if (count == expected) 
                 done();
             else
@@ -162,7 +162,7 @@ require([
         }
         
         describe('debug', function() {
-            before(function(done){
+            before(function(done) {
                 apf.config.setProperty("allow-select", false);
                 apf.config.setProperty("allow-blur", false);
 
@@ -181,27 +181,27 @@ require([
                     debug.on("detach", c2);
                     debug.on("break", c2);
                     
-                    run.getRunner("node", false, function(err, runner){
+                    run.getRunner("node", false, function(err, runner) {
                         if (err) throw err.message;
                         
                         expect(runner).to.ok;
                         
                         var c = "console.log('Hello World', new Date());";
                         
-                        fs.writeFile("/helloworld.js", c, "utf8", function(err){
+                        fs.writeFile("/helloworld.js", c, "utf8", function(err) {
                             if (err) throw err.message;
                             
                             run.run(runner, {
-                                path  : baseProc + "/helloworld.js",
-                                debug : true
-                            }, function(err, pid){
+                                path: baseProc + "/helloworld.js",
+                                debug: true
+                            }, function(err, pid) {
                                 if (err) throw err.message;
 
                                 expect(parseInt(pid, 10))
                                     .to.ok;
                                 expect(run.running).to.not.equal(run.STARTING);
                                 
-                                debug.debug(runner, function(err){
+                                debug.debug(runner, function(err) {
                                     if (err) throw err.message;
                                     c2();
                                 });
@@ -237,21 +237,21 @@ require([
                     debug.on("detach", c2);
                     debug.on("break", c2);
                     
-                    run.getRunner("node", false, function(err, runner){
+                    run.getRunner("node", false, function(err, runner) {
                         if (err) throw err.message;
                         
                         expect(runner).to.ok;
                         
                         var c = "var ruben = 'test';\nsetInterval(function(){\n    var env = process.env;\n    console.log('Hello World', new Date(), ruben);\n}, 500)";
-                        //var c = "var ruben = 'test';\nsetInterval(function(){\n    var env = process.env;\n    while(true){console.log('Hello World', new Date(), ruben);}\n}, 500)";
+                        //var c = "var ruben = 'test';\nsetInterval(function(){\n    var env = process.env;\n    while (true){console.log('Hello World', new Date(), ruben);}\n}, 500)";
                         
-                        fs.writeFile("/helloworld.js", c, "utf8", function(err){
+                        fs.writeFile("/helloworld.js", c, "utf8", function(err) {
                             if (err) throw err.message;
                             
                             run.run(runner, {
-                                path  : baseProc + "/helloworld.js",
-                                debug : true
-                            }, function(err, pid){
+                                path: baseProc + "/helloworld.js",
+                                debug: true
+                            }, function(err, pid) {
                                 if (err) throw err.message;
                                 
                                 expect(parseInt(pid, 10)).to.ok.to.gt(0);
@@ -262,38 +262,38 @@ require([
 //                                    debug.resume();
 //                                    
 //                                    setTimeout(function(){
-//                                        run.stop(function(err, e){
+//                                        run.stop(function(err, e) {
 //                                            if (err) throw err.message;
 //                                        });
 //                                    }, 1000);
                                 });
 
-                                debug.debug(runner, function(err){
+                                debug.debug(runner, function(err) {
                                     if (err) throw err.message;
                                     
                                     debug.setBreakpoint({
-                                        path       : "/helloworld.js",
-                                        line       : 3,
-                                        enabled    : true,
-                                        text       : "helloworld.js",
-                                        content    : "some/code().here()",
-                                        lineOffset : 0
+                                        path: "/helloworld.js",
+                                        line: 3,
+                                        enabled: true,
+                                        text: "helloworld.js",
+                                        content: "some/code().here()",
+                                        lineOffset: 0
                                     });
                                     debug.setBreakpoint({
-                                        path       : "/helloworld.js",
-                                        line       : 2,
-                                        enabled    : true,
-                                        text       : "helloworld.js",
-                                        content    : "x = 1+1",
-                                        lineOffset : 0
+                                        path: "/helloworld.js",
+                                        line: 2,
+                                        enabled: true,
+                                        text: "helloworld.js",
+                                        content: "x = 1+1",
+                                        lineOffset: 0
                                     });
                                     debug.setBreakpoint({
-                                        path       : "/helloworld.js",
-                                        line       : 4,
-                                        enabled    : false,
-                                        text       : "helloworld.js",
-                                        content    : "console.log(x)",
-                                        lineOffset : 0
+                                        path: "/helloworld.js",
+                                        line: 4,
+                                        enabled: false,
+                                        text: "helloworld.js",
+                                        content: "console.log(x)",
+                                        lineOffset: 0
                                     });
                                     
                                     c2();
@@ -324,22 +324,22 @@ require([
                     debug.on("detach", c2);
                     debug.on("break", c2);
                     
-                    run.getRunner("node", false, function(err, runner){
+                    run.getRunner("node", false, function(err, runner) {
                         if (err) throw err.message;
                         
                         expect(runner).to.ok;
                         
                         //jsFile, mapFile, tsFile
                         
-                        fs.writeFile("/test.ts", tsFile, "utf8", function(err){
-                            fs.writeFile("/test.js.map", mapFile, "utf8", function(err){
-                                fs.writeFile("/test.js", jsFile, "utf8", function(err){
+                        fs.writeFile("/test.ts", tsFile, "utf8", function(err) {
+                            fs.writeFile("/test.js.map", mapFile, "utf8", function(err) {
+                                fs.writeFile("/test.js", jsFile, "utf8", function(err) {
                                     if (err) throw err.message;
                                     
                                     run.run(runner, {
-                                        path  : baseProc + "/test.js",
-                                        debug : true
-                                    }, function(err, pid){
+                                        path: baseProc + "/test.js",
+                                        debug: true
+                                    }, function(err, pid) {
                                         if (err) throw err.message;
                                         
                                         expect(parseInt(pid, 10)).to.ok.to.gt(0);
@@ -350,7 +350,7 @@ require([
         //                                    debug.resume();
         //                                    
         //                                    setTimeout(function(){
-        //                                        run.stop(function(err, e){
+        //                                        run.stop(function(err, e) {
         //                                            if (err) throw err.message;
         //                                        });
         //                                    }, 1000);
@@ -373,22 +373,22 @@ require([
 //                                            content    : "x = 1+1"
 //                                        });
                                         debug.setBreakpoint({
-                                            path       : "/test.ts",
-                                            line       : 0,
-                                            column     : 0,
-                                            enabled    : true,
-                                            text       : "test.ts",
-                                            content    : "console.log(x)"
+                                            path: "/test.ts",
+                                            line: 0,
+                                            column: 0,
+                                            enabled: true,
+                                            text: "test.ts",
+                                            content: "console.log(x)"
                                         });
                                         
-                                        debug.debug(runner, function(err){
+                                        debug.debug(runner, function(err) {
                                             if (err) throw err.message;
                                             
                                             // v8dbg.setBreakpoint({
                                             //     line   : 6,
                                             //     column : 12,
                                             //     path   : "/test.js"
-                                            // }, function(bp, info){
+                                            // }, function(bp, info) {
                                             //     expect(bp.actual.line).equals(6);
                                             //     expect(bp.actual.column).equals(12);
                                             // })
@@ -424,7 +424,7 @@ require([
             });
             
             
-//            after(function(done){
+//            after(function(done) {
 //                tabs.unload();
 //                bar.parentNode.removeChild(bar);
 //                

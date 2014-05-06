@@ -4,18 +4,18 @@ define(function(require, module, exports) {
     return main;
 
     function main(options, imports, register) {
-        var Plugin    = imports.Plugin;
-        var ui        = imports.ui;
-        var debug     = imports.debugger;
+        var Plugin = imports.Plugin;
+        var ui = imports.ui;
+        var debug = imports.debugger;
         
-        function DebugPanel(developer, deps, options){
+        function DebugPanel(developer, deps, options) {
             // Editor extends ext.Plugin
             var plugin = new Plugin(developer, deps);
-            var emit   = plugin.getEmitter();
+            var emit = plugin.getEmitter();
             emit.setMaxListeners(1000);
             
             var caption = options.caption;
-            var index   = options.index || 100;
+            var index = options.index || 100;
             var amlFrame;
             
             plugin.on("load", function(){
@@ -23,12 +23,12 @@ define(function(require, module, exports) {
                 debug.on("drawPanels", draw, plugin);
             });
             
-            function draw(e){
+            function draw(e) {
                 amlFrame = ui.frame({ 
-                    htmlNode    : e.html,
-                    buttons     : "min",
-                    activetitle : "min",
-                    caption     : caption
+                    htmlNode: e.html,
+                    buttons: "min",
+                    activetitle: "min",
+                    caption: caption
                 });
                 ui.insertByIndex(e.html, amlFrame.$ext, index, false);
                 plugin.addElement(amlFrame);
@@ -65,7 +65,7 @@ define(function(require, module, exports) {
              * 
              *     var debug = imports.debugger;
              *     
-             *     debug.on("attach", function(e){
+             *     debug.on("attach", function(e) {
              *         if (e.implementation.type == "html5")
              *             plugin.show();
              *         else
@@ -80,7 +80,7 @@ define(function(require, module, exports) {
              *     });
              *     var emit = plugin.getEmitter();
              * 
-             *     plugin.on("draw", function(e){
+             *     plugin.on("draw", function(e) {
              *         e.html.innerHTML = "Hello World!";
              *     });
              *     
@@ -110,7 +110,7 @@ define(function(require, module, exports) {
                  */
                 get aml(){ return amlFrame; },
                 
-                _events : [
+                _events: [
                     /**
                      * Fired when the panel container is drawn.
                      * @event draw
@@ -124,12 +124,12 @@ define(function(require, module, exports) {
                 /**
                  * Shows the panel.
                  */
-                show : show,
+                show: show,
                 
                 /**
                  * Hides the panel.
                  */
-                hide : hide
+                hide: hide
             });
             
             return plugin;

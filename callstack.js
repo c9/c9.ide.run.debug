@@ -7,34 +7,34 @@ define(function(require, exports, module) {
     return main;
 
     function main(options, imports, register) {
-        var util       = imports.util;
+        var util = imports.util;
         var DebugPanel = imports.DebugPanel;
-        var ui         = imports.ui;
-        var save       = imports.save;
-        var debug      = imports.debugger;
-        var tabs       = imports.tabManager;
-        var panels     = imports.panels;
-        var Menu       = imports.Menu;
-        var MenuItem   = imports.MenuItem;
+        var ui = imports.ui;
+        var save = imports.save;
+        var debug = imports.debugger;
+        var tabs = imports.tabManager;
+        var panels = imports.panels;
+        var Menu = imports.Menu;
+        var MenuItem = imports.MenuItem;
         
-        var Range    = require("ace/range").Range;
-        var markup   = require("text!./callstack.xml");
+        var Range = require("ace/range").Range;
+        var markup = require("text!./callstack.xml");
         
-        var Tree     = require("ace_tree/tree");
+        var Tree = require("ace_tree/tree");
         var TreeData = require("ace_tree/data_provider");
         
         /***** Initialization *****/
         
-        var deps   = main.consumes.splice(0, main.consumes.length - 1);
+        var deps = main.consumes.splice(0, main.consumes.length - 1);
         var plugin = new DebugPanel("Ajax.org", deps, {
-            caption : "Call Stack",
-            index   : 200
+            caption: "Call Stack",
+            index: 200
         });
-        var emit   = plugin.getEmitter();
+        var emit = plugin.getEmitter();
         
         var datagrid, modelSources, modelFrames; // UI Elements
         var sources = [];
-        var frames  = [];
+        var frames = [];
         
         var activeFrame, dbg, menu, button;
         
@@ -46,38 +46,38 @@ define(function(require, exports, module) {
             modelSources = new ui.model();
             plugin.addElement(modelSources);
             
-            modelFrames  = new TreeData();
+            modelFrames = new TreeData();
             modelFrames.emptyMessage = "No callstack to display";
-            modelFrames.$sortNodes   = false;
+            modelFrames.$sortNodes = false;
             
             modelFrames.$sorted = false;
             modelFrames.columns = [{
-                caption : "Function",
-                value   : "name",
-                width   : "60%",
-                icon    : "debugger/stckframe_obj.gif"
+                caption: "Function",
+                value: "name",
+                width: "60%",
+                icon: "debugger/stckframe_obj.gif"
             }, {
-                caption : "Script",
-                value   : "path",
-                width   : "40%"
+                caption: "Script",
+                value: "path",
+                width: "40%"
             }, {
-                caption : "Ln",
-                getText : function(node) { return node.line + 1; },
-                width   : "30",
+                caption: "Ln",
+                getText: function(node) { return node.line + 1; },
+                width: "30",
             }, {
-                caption : "Col",
-                getText : function(node) { return node.column + 1; },
-                width   : "30"
+                caption: "Col",
+                getText: function(node) { return node.column + 1; },
+                width: "30"
             }];
             
             // Set and clear the dbg variable
-            debug.on("attach", function(e){
+            debug.on("attach", function(e) {
                 dbg = e.implementation;
             });
-            debug.on("detach", function(e){
+            debug.on("detach", function(e) {
                 dbg = null;
             });
-            debug.on("stateChange", function(e){
+            debug.on("stateChange", function(e) {
                 if (!plugin.enabled && e.action == "enable" && activeFrame)
                     debug.activeFrame = activeFrame;
                     
@@ -87,7 +87,7 @@ define(function(require, exports, module) {
                     clearFrames();
             });
             
-            debug.on("framesLoad", function(e){
+            debug.on("framesLoad", function(e) {
                 function setFrames(frames, frame, force) {
                     // Load frames into the callstack and if the frames 
                     // are completely reloaded, set active frame
@@ -110,7 +110,7 @@ define(function(require, exports, module) {
                     return setFrames(e.frames, e.frame, true);
                 
                 // If we don't have the frames yet, lets fetch them
-                dbg.getFrames(function(err, frames){
+                dbg.getFrames(function(err, frames) {
                     setFrames(frames, e.frame);
                 });
                 
@@ -119,7 +119,7 @@ define(function(require, exports, module) {
                 var frame = frames[0];
                 if (frame && e.frame.path == frame.path 
                   && e.frame.sourceId == frame.sourceId) {
-                    frame.line   = e.frame.line;
+                    frame.line = e.frame.line;
                     frame.column = e.frame.column;
                     
                     setFrames(frames, frame, true);
@@ -131,12 +131,12 @@ define(function(require, exports, module) {
                 }
             });
             
-            debug.on("break", function(e){
+            debug.on("break", function(e) {
                 // Show the frame in the editor
                 debug.showDebugFrame(activeFrame);
             });
             
-            debug.on("frameActivate", function(e){
+            debug.on("frameActivate", function(e) {
                 // This is disabled, because frames should be kept around a bit
                 // in order to update them, for a better UX experience
                 //callstack.activeFrame = e.frame;
@@ -144,12 +144,12 @@ define(function(require, exports, module) {
             });
             
             // Loading new sources
-            debug.on("sources", function(e){
+            debug.on("sources", function(e) {
                 loadSources(e.sources);
             }, plugin);
             
             // Adding single new sources when they are compiles
-            debug.on("sourcesCompile", function(e){
+            debug.on("sourcesCompile", function(e) {
                 addSource(e.source);
             }, plugin);
             
@@ -170,7 +170,7 @@ define(function(require, exports, module) {
         }
 
         var drawn = false;
-        function draw(options){
+        function draw(options) {
             if (drawn) return;
             drawn = true;
             
@@ -183,7 +183,7 @@ define(function(require, exports, module) {
             datagrid.setOption("maxLines", 200);
             modelFrames.rowHeight = 18;
             datagrid.setDataProvider(modelFrames);
-            panels.on("afterAnimate", function(e){
+            panels.on("afterAnimate", function(e) {
                 if (panels.isActive("debugger"))
                     datagrid && datagrid.resize();
             });
@@ -192,7 +192,7 @@ define(function(require, exports, module) {
             tabs.on("tabAfterActivateSync", function(e) {
                 updateMarker(activeFrame);
             }, plugin);
-            tabs.on("open", function wait(e){
+            tabs.on("open", function wait(e) {
                 if (activeFrame)
                     updateMarker(activeFrame);
             }, plugin);
@@ -208,12 +208,12 @@ define(function(require, exports, module) {
             });
             
             var contextMenu = new Menu({
-                items : [
+                items: [
                     new MenuItem({ value: "restart", caption: "Restart Frame" }),
                     // new MenuItem({ value: "edit2", caption: "Edit Watch Value" })
                 ]
             }, plugin);
-            contextMenu.on("itemclick", function(e){
+            contextMenu.on("itemclick", function(e) {
                 if (e.value == "restart")
                     dbg.restartFrame(activeFrame, function(){});
             });
@@ -226,7 +226,7 @@ define(function(require, exports, module) {
             
             var hbox = debug.getElement("hbox");
             menu = hbox.ownerDocument.documentElement.appendChild(new ui.menu({
-                style : "top: 56px;"
+                style: "top: 56px;"
                     + "left: 803px;"
                     + "opacity: 1;"
                     + "border: 0px;"
@@ -234,40 +234,40 @@ define(function(require, exports, module) {
                     + "background-color: transparent;"
                     + "margin: -3px 0px 0px;"
                     + "box-shadow: none;",
-                childNodes : [
+                childNodes: [
                     new ui.list({
-                      id            : "lstScripts",
-                      margin        : "3 -2 0 0",
-                      style         : "position:relative",
-                      skin          : "list_dark",
-                      maxitems      : "10",
-                      each          : "[source]",
-                      caption       : "[@name]",
-                      autoselect    : "false",
-                      icon          : "scripts.png" ,
-                      onafterselect : "this.parentNode.hide()",
+                      id: "lstScripts",
+                      margin: "3 -2 0 0",
+                      style: "position:relative",
+                      skin: "list_dark",
+                      maxitems: "10",
+                      each: "[source]",
+                      caption: "[@name]",
+                      autoselect: "false",
+                      icon: "scripts.png" ,
+                      onafterselect: "this.parentNode.hide()",
                     })
                 ]
             }));
             button = hbox.appendChild(new ui.button({
-                id       : "btnScripts",
-                tooltip  : "Available internal and external scripts",
-                icon     : "scripts.png",
-                right    : "0",
-                top      : "0",
-                skin     : "c9-menu-btn",
-                disabled : "true"
+                id: "btnScripts",
+                tooltip: "Available internal and external scripts",
+                icon: "scripts.png",
+                right: "0",
+                top: "0",
+                skin: "c9-menu-btn",
+                disabled: "true"
             }));
             plugin.addElement(menu, button);
             
             // Load the scripts in the sources dropdown
             var list = menu.firstChild;
             list.setModel(modelSources);
-            list.on("afterselect", function(e){
+            list.on("afterselect", function(e) {
                 debug.openFile({
-                    scriptId  : e.selected.getAttribute("id"),
-                    path      : e.selected.getAttribute("path"),
-                    generated : true
+                    scriptId: e.selected.getAttribute("id"),
+                    path: e.selected.getAttribute("path"),
+                    generated: true
                 });
             }, plugin);
             
@@ -316,7 +316,7 @@ define(function(require, exports, module) {
             session[markerName] = null;
         }
         
-        function removeMarkerFromSession(session){
+        function removeMarkerFromSession(session) {
             session.$stackMarker && removeMarker(session, "stack");
             session.$stepMarker && removeMarker(session, "step");
         }
@@ -324,7 +324,7 @@ define(function(require, exports, module) {
         function updateMarker(frame, scrollToLine) {
             // Remove from all active sessions, when there is no active frame.
             if (!frame) {
-                tabs.getPanes().forEach(function(pane){
+                tabs.getPanes().forEach(function(pane) {
                     var tab = pane.getTab();
                     if (tab && tab.editor && tab.editor.type == "ace") {
                         var session = tab.document.getSession().session;
@@ -335,7 +335,7 @@ define(function(require, exports, module) {
             }
             
             // Otherwise find the active session and set the marker
-            var tab    = frame && tabs.findTab(frame.path);
+            var tab = frame && tabs.findTab(frame.path);
             var editor = tab && tab.isActive() && tab.editor;
             if (!editor || editor.type != "ace")
                 return;
@@ -346,9 +346,9 @@ define(function(require, exports, module) {
             if (!frame)
                 return;
                 
-            var path      = tab.path;
+            var path = tab.path;
             var framePath = frame.path;
-            var row       = frame.line;
+            var row = frame.line;
             
             if (frame.istop) {
                 if (path == framePath) {
@@ -379,14 +379,14 @@ define(function(require, exports, module) {
         
         /***** Methods *****/
         
-        function findSourceByPath(path){
+        function findSourceByPath(path) {
             for (var i = 0, l = sources.length, source; i < l; i++) {
                 if ((source = sources[i]).path == path)
                     return source;
             }
         }
         
-        function findSource(id){
+        function findSource(id) {
             if (typeof id == "object") {
                 id = parseInt(id.getAttribute("id"), 10);
             }
@@ -397,12 +397,12 @@ define(function(require, exports, module) {
             }
         }
         
-        function findSourceXml(source){
+        function findSourceXml(source) {
             return modelSources.queryNode("//file[@path=" 
                 + util.escapeXpathString(String(source.path)) + "]");
         }
         
-        function findFrame(index){
+        function findFrame(index) {
             if (typeof index == "object") {
                 index = parseInt(index.getAttribute("index"), 10);
             }
@@ -420,7 +420,7 @@ define(function(require, exports, module) {
          *  - ref stays the same when stepping in the same context
          */
         
-        function updateFrame(frame, noRecur){
+        function updateFrame(frame, noRecur) {
             modelFrames._signal("change", frame);
             if (noRecur)
                 return;
@@ -428,29 +428,29 @@ define(function(require, exports, module) {
             // Updating the scopes of a frame
             if (frame.variables) {
                 emit("scopeUpdate", {
-                    scope     : frame,
-                    variables : frame.variables
+                    scope: frame,
+                    variables: frame.variables
                 });
             }
             else {
-                dbg.getScope(activeFrame, frame, function(err, vars){
+                dbg.getScope(activeFrame, frame, function(err, vars) {
                     if (err) return console.error(err);
                     
                     emit("scopeUpdate", {
-                        scope     : frame,
-                        variables : vars
+                        scope: frame,
+                        variables: vars
                     });
                 });
             }
         
             // Update scopes if already loaded
-            frame.scopes && frame.scopes.forEach(function(scope){
+            frame.scopes && frame.scopes.forEach(function(scope) {
                 if (scope.variables)
                     emit("scopeUpdate", { scope: scope });
             });
         };
         
-        function loadFrames(input, noRecur, force){
+        function loadFrames(input, noRecur, force) {
             frames = input;
             modelFrames.setRoot(frames);
             
@@ -465,7 +465,7 @@ define(function(require, exports, module) {
             return true;
         }
         
-        function loadSources(input){
+        function loadSources(input) {
             // @todo consider only calling xmlupdate once
             // @todo there used to be an optimization here that checked 
             // whether the current frameset is the same as the one being loaded
@@ -478,7 +478,7 @@ define(function(require, exports, module) {
             setActiveFrame(null);
         }
         
-        function addSource(source){
+        function addSource(source) {
             sources.push(source);
             modelSources.appendXml(source.xml);
         }
@@ -509,7 +509,7 @@ define(function(require, exports, module) {
         });
         plugin.on("unload", function(){
             loaded = false;
-            drawn  = false;
+            drawn = false;
         });
         
         /***** Register and define API *****/
@@ -552,13 +552,13 @@ define(function(require, exports, module) {
             /**
              * Updates all frames in the call stack UI.
              */
-            updateAll : updateAll,
+            updateAll: updateAll,
             
             /**
              * Updates a specific frame in the call stack UI
              * @param {debugger.Frame} frame  The frame to update.
              */
-            updateFrame : updateFrame
+            updateFrame: updateFrame
         });
         
         register(null, {

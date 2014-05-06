@@ -7,36 +7,36 @@ define(function(require, exports, module) {
     return main;
 
     function main(options, imports, register) {
-        var save       = imports.save;
+        var save = imports.save;
         var DebugPanel = imports.DebugPanel;
-        var settings   = imports.settings;
-        var ui         = imports.ui;
-        var aceHandle  = imports.ace;
-        var tabs       = imports.tabManager;
-        var debug      = imports.debugger;
-        var MenuItem   = imports.MenuItem;
-        var Divider    = imports.Divider;
+        var settings = imports.settings;
+        var ui = imports.ui;
+        var aceHandle = imports.ace;
+        var tabs = imports.tabManager;
+        var debug = imports.debugger;
+        var MenuItem = imports.MenuItem;
+        var Divider = imports.Divider;
         
         var Breakpoint = require("./data/breakpoint");
         
-        var basename   = require("path").basename;
+        var basename = require("path").basename;
         
         
-        var Tree       = require("ace_tree/tree");
-        var TreeData   = require("ace_tree/data_provider");
+        var Tree = require("ace_tree/tree");
+        var TreeData = require("ace_tree/data_provider");
         var escapeHTML = require("ace/lib/lang").escapeHTML;
         
         /***** Initialization *****/
         
-        var deps   = main.consumes.slice(0, main.consumes.length - 1);
+        var deps = main.consumes.slice(0, main.consumes.length - 1);
         var plugin = new DebugPanel("Ajax.org", deps, {
-            caption : "Breakpoints",
-            index   : 400
+            caption: "Breakpoints",
+            index: 400
         });
-        // var emit   = plugin.getEmitter();
+        // var emit = plugin.getEmitter();
         
-        var changed           = false;
-        var breakpoints       = [];
+        var changed = false;
+        var breakpoints = [];
         var enableBreakpoints = true;
         
         var dbg;
@@ -81,7 +81,7 @@ define(function(require, exports, module) {
             //         _self.updateBreakpointModel(doc.acesession);
             // });
     
-            tabs.on("tabAfterActivate", function(e){
+            tabs.on("tabAfterActivate", function(e) {
                 var tab = e.tab;
                 if (!tab || !tab.editor || tab.editor.type != "ace")
                     return;
@@ -97,7 +97,7 @@ define(function(require, exports, module) {
                 e.editor.on("createAce", decorateAce, plugin);
             }, plugin);
             
-            save.on("afterSave", function(e){
+            save.on("afterSave", function(e) {
                 var doc = e.document;
                 if (dbg) {
                     dbg.on("setScriptSource", function(){
@@ -109,11 +109,11 @@ define(function(require, exports, module) {
                 }
             });
             
-            debug.on("attach", function(e){
+            debug.on("attach", function(e) {
                 dbg = e.implementation;
                 
                 // Add breakpoints that we potentially got from the server
-                e.breakpoints.forEach(function(bp){
+                e.breakpoints.forEach(function(bp) {
                     if (bp.serverOnly)
                         setBreakpoint(bp, true);
                 });
@@ -122,10 +122,10 @@ define(function(require, exports, module) {
                 if (!enableBreakpoints)
                     deactivateAll(true);
             });
-            debug.on("detach", function(e){
+            debug.on("detach", function(e) {
                 dbg = null;
             });
-            debug.on("stateChange", function(e){
+            debug.on("stateChange", function(e) {
                 plugin[e.action]();
             });
             
@@ -133,7 +133,7 @@ define(function(require, exports, module) {
                 return breakpoints;
             });
             
-            debug.on("breakpointUpdate", function(e){
+            debug.on("breakpointUpdate", function(e) {
                 var bp = e.breakpoint;
                 
                 if (bp.hidden)
@@ -182,7 +182,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Breakpoints may have already been set
-            breakpoints.forEach(function(bp){
+            breakpoints.forEach(function(bp) {
                 updateBreakpointAtDebugger(bp, "add");
             });
             
@@ -195,7 +195,7 @@ define(function(require, exports, module) {
                 var bps = settings.getJson("state/breakpoints");
                 
                 // bind it to the Breakpoint model
-                breakpoints = (bps || []).map(function(bp){
+                breakpoints = (bps || []).map(function(bp) {
                     return new Breakpoint(bp);
                 });
                 model.setRoot(breakpoints);
@@ -215,7 +215,7 @@ define(function(require, exports, module) {
             
             settings.on("write", function (e) {
                 if (changed) {
-                    var list = breakpoints.map(function(bp){
+                    var list = breakpoints.map(function(bp) {
                         return bp.json;
                     });
                     settings.setJson("state/breakpoints", list);
@@ -232,27 +232,27 @@ define(function(require, exports, module) {
                 var meta = menu.meta;
                 
                 menu.append(new MenuItem({
-                    caption     : "Continue to Here",
-                    position    : 100,
-                    isAvailable : function(){ 
+                    caption: "Continue to Here",
+                    position: 100,
+                    isAvailable: function(){ 
                         return dbg && dbg.state == "stopped" 
                           && meta.className.indexOf("breakpoint") === -1; 
                     },
-                    onclick     : function(){
+                    onclick: function(){
                         var path = meta.ace.session.c9doc.tab.path;
                         if (!path)
                             return;
                         // Add hidden breakpoint
                         var breakpoint = new Breakpoint({
-                           path    : path,
-                           line    : meta.line,
-                           column  : 0,
-                           hidden  : true,
-                           enabled : true
+                           path: path,
+                           line: meta.line,
+                           column: 0,
+                           hidden: true,
+                           enabled: true
                         });
                         
                         // Set breakpoint
-                        dbg.setBreakpoint(breakpoint, function(err, bp){
+                        dbg.setBreakpoint(breakpoint, function(err, bp) {
                             if (err || bp.actual && bp.actual.line != bp.line) {
                                 updateBreakpointAtDebugger(breakpoint, "remove");
                                 return; // Won't do this if bp can't be set
@@ -285,22 +285,22 @@ define(function(require, exports, module) {
                 menu.append(new Divider({ position: 150 }, plugin));
                 
                 var itemAdd = menu.append(new MenuItem({
-                    position : 200,
-                    isAvailable : function(){
+                    position: 200,
+                    isAvailable: function(){
                         itemAdd.caption = meta.className.indexOf("breakpoint") > -1
                             ? "Remove Breakpoint"
                             : "Add Breakpoint";
                         return true; 
                     },
-                    onclick  : function(){
+                    onclick: function(){
                         editBreakpoint(meta.className.indexOf("breakpoint") > -1
                             ? "remove" : "add", meta.ace, meta.line);
                     }
                 }, plugin));
                 
                 var itemCondition = menu.append(new MenuItem({
-                    position : 300,
-                    isAvailable : function(){
+                    position: 300,
+                    isAvailable: function(){
                         var name = meta.className;
                         itemCondition.caption = name.indexOf("condition") > -1
                             ? "Edit Condition"
@@ -309,7 +309,7 @@ define(function(require, exports, module) {
                                 : "Add Conditional Breakpoint");
                         return true;
                     },
-                    onclick : function(){
+                    onclick: function(){
                         editBreakpoint("edit", meta.ace, meta.line);
                     }
                 }, plugin));
@@ -317,7 +317,7 @@ define(function(require, exports, module) {
         }
 
         var drawn;
-        function draw(options){
+        function draw(options) {
             if (drawn) return false;
             drawn = true;
             
@@ -331,7 +331,7 @@ define(function(require, exports, module) {
             list.setOption("maxLines", 200);
             list.setDataProvider(model);
 
-            list.on("click", function(e){
+            list.on("click", function(e) {
                 var bp = e.getNode();
                 if (!bp || e.getButton())
                     return;
@@ -346,13 +346,13 @@ define(function(require, exports, module) {
             });
 
             // Breakpoint is removed
-            list.on("delete", function(e){
+            list.on("delete", function(e) {
                 var bp = findBreakpoint(e.node);
                 clearBreakpoint(bp);
             });
             
             // Breakpoint is enabled / disabled
-            list.on("afterCheck", function(e){
+            list.on("afterCheck", function(e) {
                 var bp = findBreakpoint(e.node);
                 
                 if (!bp.enabled)
@@ -371,7 +371,7 @@ define(function(require, exports, module) {
             menu.on("prop.visible", function(){
                 var length = model.visibleItems.length;
                 
-                menu.childNodes.forEach(function(item){
+                menu.childNodes.forEach(function(item) {
                     if (item.localName == "divider") return;
                     if (item.value == "deactivate") {
                         item.setAttribute("caption", enableBreakpoints 
@@ -384,7 +384,7 @@ define(function(require, exports, module) {
                 });
             });
             
-            menu.on("itemclick", function(e){
+            menu.on("itemclick", function(e) {
                 var bp = list.selection.getCursor();
                 if (!bp)
                     return;
@@ -404,12 +404,12 @@ define(function(require, exports, module) {
                         activateAll();
                 }
                 else if (e.value == "enable-all") {
-                    breakpoints.forEach(function(bp){
+                    breakpoints.forEach(function(bp) {
                         enableBreakpoint(bp);
                     });
                 }
                 else if (e.value == "disable-all") {
-                    breakpoints.forEach(function(bp){
+                    breakpoints.forEach(function(bp) {
                         disableBreakpoint(bp);
                     });
                 }
@@ -418,18 +418,18 @@ define(function(require, exports, module) {
             var hbox1 = debug.getElement("hbox");
             var hbox2 = debug.getElement("hbox2");
             btnBreakpoints = hbox1.insertBefore(new ui.button({
-                id       : "btnBreakpoints",
-                tooltip  : "Deactivate All Breakpoints",
-                icon     : "toggle_breakpoints2.png",
-                skinset  : "default",
-                skin     : "c9-menu-btn"
+                id: "btnBreakpoints",
+                tooltip: "Deactivate All Breakpoints",
+                icon: "toggle_breakpoints2.png",
+                skinset: "default",
+                skin: "c9-menu-btn"
             }), hbox1.selectSingleNode("a:divider").nextSibling);
             btnBpRemove = hbox2.insertBefore(new ui.button({
-                id       : "btnBpRemove",
-                tooltip  : "Clear All Breakpoints",
-                icon     : "remove_breakpoints.png",
-                skinset  : "default",
-                skin     : "c9-menu-btn"
+                id: "btnBpRemove",
+                tooltip: "Clear All Breakpoints",
+                icon: "remove_breakpoints.png",
+                skinset: "default",
+                skin: "c9-menu-btn"
             }), hbox2.selectSingleNode("a:divider"));
             plugin.addElement(btnBreakpoints, btnBpRemove);
             
@@ -453,32 +453,32 @@ define(function(require, exports, module) {
             drawnCondition = true;
             
             // Create HTML elements
-            var html   = require("text!./breakpoints.html");
+            var html = require("text!./breakpoints.html");
             hCondition = ui.insertHtml(null, html, plugin)[0];
             
             hInput = hCondition.querySelector(".input");
             codebox = new apf.codebox({
-                skin        : "simplebox",
+                skin: "simplebox",
                 "class"     : "dark",
-                focusselect : "true",
-                htmlNode    : hInput,
+                focusselect: "true",
+                htmlNode: hInput,
                 "initial-message": "Your Expression"
             });
             
             codebox.ace.commands.addCommands([
                 {
-                    bindKey : "ESC",
-                    exec    : function(){ hCondition.style.display = "none"; }
+                    bindKey: "ESC",
+                    exec: function(){ hCondition.style.display = "none"; }
                 }, {
-                    bindKey : "Enter",
-                    exec    : function(){ 
+                    bindKey: "Enter",
+                    exec: function(){ 
                         setCondition(conditionBreakpoint, codebox.getValue());
                         hCondition.style.display = "none";
                     }
                 },
             ]);
             
-            apf.addEventListener("movefocus", function(e){
+            apf.addEventListener("movefocus", function(e) {
                 if (e.toElement != codebox)
                     hCondition.style.display = "none";
             });
@@ -486,7 +486,7 @@ define(function(require, exports, module) {
         
         /***** Helper Functions *****/
         
-        function toggleBreakpoints(force){
+        function toggleBreakpoints(force) {
             var enable = force !== undefined
                 ? force
                 : !enableBreakpoints;
@@ -507,7 +507,7 @@ define(function(require, exports, module) {
             else
                 deactivateAll();
             
-            tabs.getPanes().forEach(function(pane){
+            tabs.getPanes().forEach(function(pane) {
                 var tab = pane.getTab();
                 if (tab && tab.editorType == "ace")
                     updateDocument(tab.document);
@@ -515,7 +515,7 @@ define(function(require, exports, module) {
         }
         
         // Breakpoints
-        function updateBreakpointAtDebugger(bp, action){
+        function updateBreakpointAtDebugger(bp, action) {
             // Give plugins the ability to update a breakpoint before
             // setting it in the debugger
             // emit("breakpointsUpdate", e);
@@ -565,7 +565,7 @@ define(function(require, exports, module) {
                     
                 e.stop();
                 
-                var line      = e.getDocumentPosition().row;
+                var line = e.getDocumentPosition().row;
                 // var className = editor.session.getBreakpoints()[line];
                 var action;
                 
@@ -590,28 +590,28 @@ define(function(require, exports, module) {
             });
         }
         
-        function editBreakpoint(action, editor, line){
-            var session   = editor.session;
-            var path      = session.c9doc.tab.path;
-            var removed   = false;
-            var enabled   = true;
+        function editBreakpoint(action, editor, line) {
+            var session = editor.session;
+            var path = session.c9doc.tab.path;
+            var removed = false;
+            var enabled = true;
             
-            var obp = findBreakpoint(path, line, true).filter(function(b){
+            var obp = findBreakpoint(path, line, true).filter(function(b) {
                 return b.invalid && b.line != line ? false : true;
             })[0];
             
-            function createBreakpoint(condition){
+            function createBreakpoint(condition) {
                 var caption = basename(path);
                 var lineContents = session.getLine(line);
                 
                 return setBreakpoint({
-                    path       : path,
-                    line       : line,
-                    column     : (lineContents.match(/^(\s+)/) ||[0,""])[1].length,
-                    text       : caption,
-                    content    : lineContents,
-                    enabled    : enabled,
-                    condition  : condition
+                    path: path,
+                    line: line,
+                    column: (lineContents.match(/^(\s+)/) ||[0,""])[1].length,
+                    text: caption,
+                    content: lineContents,
+                    enabled: enabled,
+                    condition: condition
                 });
             }
             
@@ -652,7 +652,7 @@ define(function(require, exports, module) {
             createBreakpoint();
         }
         
-        function showConditionDialog(ace, createBreakpoint, path, line, breakpoint){
+        function showConditionDialog(ace, createBreakpoint, path, line, breakpoint) {
             if (!breakpoint)
                 breakpoint = createBreakpoint();
             
@@ -668,8 +668,8 @@ define(function(require, exports, module) {
             
             // Set top
             var pos = ace.renderer.$cursorLayer.getPixelPosition({
-                row    : line+1,
-                column : 0
+                row: line+1,
+                column: 0
             }, true);
             hCondition.style.top = (pos.top + 3) + "px"; // line position
             
@@ -699,7 +699,7 @@ define(function(require, exports, module) {
             
             aceSession.on("change", function(e) {
                 var breakpoints = aceSession.$breakpoints;
-                var doc         = aceSession.c9doc;
+                var doc = aceSession.c9doc;
                 
                 if (!breakpoints.length || !doc.tab.loaded || !doc.hasValue())
                     return;
@@ -727,7 +727,7 @@ define(function(require, exports, module) {
                 var i;
                 var lines = [];
                 
-                bpsInDoc.forEach(function(bp){ 
+                bpsInDoc.forEach(function(bp) { 
                     if (bp.moved == -1)
                         return clearBreakpoint(bp);
                     
@@ -803,13 +803,13 @@ define(function(require, exports, module) {
                 return;
                 
             var session = doc.getSession();
-            var rows    = [];
-            var path    = doc.tab.path;
+            var rows = [];
+            var path = doc.tab.path;
             
             if (!session.session)
                 return;
     
-            breakpoints.forEach(function(bp){
+            breakpoints.forEach(function(bp) {
                 if (bp.path != path || bp.sourcemap && bp.sourcemap.path != path || bp.moved == -1)
                     return;
 
@@ -826,15 +826,15 @@ define(function(require, exports, module) {
             session.session._emit("changeBreakpoint", {});
         }
         
-        function updateMovedBreakpoints(doc){
+        function updateMovedBreakpoints(doc) {
             var bpsInDoc = findBreakpoints(doc.tab.path);
-            bpsInDoc.forEach(function(bp){ 
+            bpsInDoc.forEach(function(bp) { 
                 if (!isNaN(bp.moved)) {
                     if (bp.moved == -1)
                         clearBreakpoint(bp);
                     else if (bp.moved != bp.line) {
                         clearBreakpoint(bp);
-                        bp.line   = bp.moved;
+                        bp.line = bp.moved;
                         bp.actual = null;
                         setBreakpoint(bp);
                     }
@@ -843,7 +843,7 @@ define(function(require, exports, module) {
             });
         }
         
-        function updateBreakpoint(breakpoint, action, force){
+        function updateBreakpoint(breakpoint, action, force) {
             //This can be optimized, currently rereading everything
             var tab = tabs.findTab(breakpoint.path);
             if (tab) {
@@ -880,7 +880,7 @@ define(function(require, exports, module) {
             return true;
         }
         
-        function disableBreakpoint(breakpoint, ignoreXml){
+        function disableBreakpoint(breakpoint, ignoreXml) {
             breakpoint.data.enabled = false;
             updateBreakpoint(breakpoint, "disable");
             
@@ -889,7 +889,7 @@ define(function(require, exports, module) {
             return true;
         }
         
-        function setBreakpoint(breakpoint, noEvent){
+        function setBreakpoint(breakpoint, noEvent) {
             // Ignore if the breakpoint already exists
             for (var i = 0, l = breakpoints.length, bp; i < l; i++) {
                 if ((bp = breakpoints[i]).equals(breakpoint, true)) {
@@ -913,7 +913,7 @@ define(function(require, exports, module) {
             return breakpoint;
         }
         
-        function clearBreakpoint(breakpoint, ignoreXml, silent){
+        function clearBreakpoint(breakpoint, ignoreXml, silent) {
             breakpoints.remove(breakpoint);
             if (!silent)
                 updateBreakpoint(breakpoint, "remove");
@@ -921,7 +921,7 @@ define(function(require, exports, module) {
             ignoreXml || model._signal("change");
         }
         
-        function redrawBreakpoint(bp){
+        function redrawBreakpoint(bp) {
             var tab = tabs.findTab(bp.path);
             if (!tab) return;
             
@@ -930,7 +930,7 @@ define(function(require, exports, module) {
             model._signal("change", bp);
         }
         
-        function findBreakpoint(path, line, multi){
+        function findBreakpoint(path, line, multi) {
             if (typeof path == "object") {
                 line = path.line;
                 path = path.path;
@@ -941,7 +941,7 @@ define(function(require, exports, module) {
             
             var bp, list = [];
             for (var i = 0, l = breakpoints.length; i < l; i++) {
-                bp  = breakpoints[i];
+                bp = breakpoints[i];
                 // loc = bp.actual || bp;
                 
                 // if (bp.path == path && (!line || loc.line == line)) {
@@ -954,7 +954,7 @@ define(function(require, exports, module) {
             return multi ? list : false;
         }
         
-        function findBreakpoints(path, line){
+        function findBreakpoints(path, line) {
             return findBreakpoint(path, line, true);
         }
         
@@ -963,8 +963,8 @@ define(function(require, exports, module) {
             
             if (bp instanceof Breakpoint) {
                 var loc = bp.actual || bp;
-                path   = bp.path;
-                line   = loc.line - 1;
+                path = bp.path;
+                line = loc.line - 1;
                 column = loc.column;
             }
             else if (typeof bp == "object") {
@@ -974,23 +974,23 @@ define(function(require, exports, module) {
                 path = bp;
             }
             
-            if (isNaN(line))   line   = null;
+            if (isNaN(line))   line = null;
             if (isNaN(column)) column = null;
             
             debug.openFile({
-                path   : path,
-                line   : line,
-                column : column
+                path: path,
+                line: line,
+                column: column
             });
         }
         
-        function activateAll(force){
+        function activateAll(force) {
             if (enableBreakpoints && !force) return;
             
             enableBreakpoints = true;
             settings.set("user/breakpoints/@active", true);
             
-            breakpoints.forEach(function(bp){
+            breakpoints.forEach(function(bp) {
                 if (bp.enabled)
                     updateBreakpoint({id: bp.id, enabled: true}, "enable", force);
             });
@@ -1001,12 +1001,12 @@ define(function(require, exports, module) {
             toggleBreakpoints(true);
         }
         
-        function deactivateAll(force){
+        function deactivateAll(force) {
             if (!enableBreakpoints && !force) return;
             
             settings.set("user/breakpoints/@active", false);
             
-            breakpoints.forEach(function(bp){
+            breakpoints.forEach(function(bp) {
                 updateBreakpoint({id: bp.id, enabled: false}, "disable", force);
             });
             
@@ -1032,7 +1032,7 @@ define(function(require, exports, module) {
         });
         plugin.on("unload", function(){
             loaded = false;
-            drawn  = false;
+            drawn = false;
             drawnCondition = false;
         });
         
@@ -1062,7 +1062,7 @@ define(function(require, exports, module) {
              * @readonly
              */
             get enableBreakpoints(){ return enableBreakpoints; },
-            set enableBreakpoints(v){ 
+            set enableBreakpoints(v) { 
                 enableBreakpoints = v;
                 toggleBreakpoints(v);
             },
@@ -1072,37 +1072,37 @@ define(function(require, exports, module) {
              * @param {debugger.Breakpoint} breakpoint The breakpoint to set the condition on.
              * @param {String}              condition  An expression that needs to be true for the debugger to break on the breakpoint.
              */
-            setCondition : setCondition,
+            setCondition: setCondition,
             
             /**
              * Flags a breakpoint to not be ignored when the debugger hits it.
              * @param {debugger.Breakpoint} breakpoint The breakpoint to enable.
              */
-            enableBreakpoint : enableBreakpoint,
+            enableBreakpoint: enableBreakpoint,
             
             /**
              * Flags a breakpoint to be ignored when the debugger hits it.
              * @param {debugger.Breakpoint} breakpoint The breakpoint to disable.
              */
-            disableBreakpoint : disableBreakpoint,
+            disableBreakpoint: disableBreakpoint,
             
             /**
              * Displays a breakpoint in the ace editor.
              * @param {debugger.Breakpoint} breakpoint The breakpoint to display.
              */
-            gotoBreakpoint : gotoBreakpoint,
+            gotoBreakpoint: gotoBreakpoint,
             
             /**
              * Adds a breakpoint to the list of breakpoints.
              * @param {debugger.Breakpoint} breakpoint The breakpoint to add.
              */
-            setBreakpoint : setBreakpoint,
+            setBreakpoint: setBreakpoint,
             
             /**
              * Removes a breakpoint from the list of breakpoints.
              * @param {debugger.Breakpoint} breakpoint The breakpoint to remove.
              */
-            clearBreakpoint : clearBreakpoint,
+            clearBreakpoint: clearBreakpoint,
         });
         
         register(null, {

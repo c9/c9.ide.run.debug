@@ -20,12 +20,12 @@ module.exports = {
 
     name: "DevToolsService",
     
-    setUp : function() {
+    setUp: function() {
         this.$msgStream = new MsgStreamMock();
         this.$service = new DevToolsService(this.$msgStream);
     },
 
-    sendMessage : function(content) {
+    sendMessage: function(content) {
         this.$msgStream.$send(null, content);
     },
 

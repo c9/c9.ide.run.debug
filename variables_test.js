@@ -8,21 +8,21 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
     
     expect.setupArchitectTest([
         {
-            packagePath : "plugins/c9.core/c9",
-            startdate   : new Date(),
-            debug       : true,
-            hosted      : true,
-            davPrefix   : "/",
-            local       : false,
-            projectName : "Test Project"
+            packagePath: "plugins/c9.core/c9",
+            startdate: new Date(),
+            debug: true,
+            hosted: true,
+            davPrefix: "/",
+            local: false,
+            projectName: "Test Project"
         },
         "plugins/c9.core/ext",
         "plugins/c9.core/http",
         "plugins/c9.core/util",
         "plugins/c9.core/settings",
         {
-            packagePath : "plugins/c9.ide.ui/ui",
-            staticPrefix : "plugins/c9.ide.ui"
+            packagePath: "plugins/c9.ide.ui/ui",
+            staticPrefix: "plugins/c9.ide.ui"
         },
         "plugins/c9.ide.ui/lib_apf",
         {
@@ -36,17 +36,17 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         
         //Mock Plugins
         {
-            consumes : ["apf", "ui", "Plugin"],
-            provides : [
+            consumes: ["apf", "ui", "Plugin"],
+            provides: [
                 "commands", "panels", "tabManager", "layout", "watcher", 
                 "dialog.error"
             ],
-            setup    : expect.html.mocked
+            setup: expect.html.mocked
         },
         {
-            consumes : ["variables"],
-            provides : [],
-            setup    : main
+            consumes: ["variables"],
+            provides: [],
+            setup: main
         }
     ], architect);
     
@@ -55,7 +55,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         variables.show();
         var datagrid = variables.getElement("datagrid");
         
-        function countEvents(count, expected, done){
+        function countEvents(count, expected, done) {
             if (count == expected) 
                 done();
             else
@@ -63,14 +63,14 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
                     + count + " of " + expected);
         }
         
-        expect.html.setConstructor(function(node){
+        expect.html.setConstructor(function(node) {
             if (node.$ext) return node.$ext;
 
             return apf.xmldb.getHtmlNode(node, datagrid);
         })
         
         describe('breakpoints', function() {
-            before(function(done){
+            before(function(done) {
                 apf.config.setProperty("allow-select", false);
                 apf.config.setProperty("allow-blur", false);
                 

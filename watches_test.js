@@ -10,21 +10,21 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
     
     expect.setupArchitectTest([
         {
-            packagePath : "plugins/c9.core/c9",
-            startdate   : new Date(),
-            debug       : true,
-            hosted      : true,
-            davPrefix   : "/",
-            local       : false,
-            projectName : "Test Project"
+            packagePath: "plugins/c9.core/c9",
+            startdate: new Date(),
+            debug: true,
+            hosted: true,
+            davPrefix: "/",
+            local: false,
+            projectName: "Test Project"
         },
         "plugins/c9.core/ext",
         "plugins/c9.core/http",
         "plugins/c9.core/util",
         "plugins/c9.core/settings",
         {
-            packagePath : "plugins/c9.ide.ui/ui",
-            staticPrefix : "plugins/c9.ide.ui"
+            packagePath: "plugins/c9.ide.ui/ui",
+            staticPrefix: "plugins/c9.ide.ui"
         },
         "plugins/c9.ide.editors/document",
         "plugins/c9.ide.editors/undomanager",
@@ -35,8 +35,8 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
         },
         "plugins/c9.ide.editors/editor",
         {
-            packagePath : "plugins/c9.ide.ace/ace",
-            staticPrefix : "plugins/c9.ide.layout.classic"
+            packagePath: "plugins/c9.ide.ace/ace",
+            staticPrefix: "plugins/c9.ide.layout.classic"
         },
         {
             packagePath: "plugins/c9.fs/fs",
@@ -57,38 +57,38 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
         "plugins/c9.ide.run.debug/debugpanel",
         {
             packagePath: "plugins/c9.ide.run.debug/debuggers/debugger",
-            staticPrefix : "plugins/c9.ide.layout.classic"
+            staticPrefix: "plugins/c9.ide.layout.classic"
         },
         "plugins/c9.ide.run.debug/breakpoints",
         "plugins/c9.ide.run.debug/watches",
         //Mock Plugins
         {
-            consumes : ["apf", "ui", "Plugin"],
-            provides : [
+            consumes: ["apf", "ui", "Plugin"],
+            provides: [
                 "commands", "layout", "watcher", "auth.bootstrap", "info",
                 "preferences", "anims", "clipboard", "immediate", "run", 
                 "dialog.alert", "dialog.error"
             ],
-            setup    : expect.html.mocked
+            setup: expect.html.mocked
         },
         {
-            consumes : ["panels", "debugger", "watches", "breakpoints"],
-            provides : [],
-            setup    : main
+            consumes: ["panels", "debugger", "watches", "breakpoints"],
+            provides: [],
+            setup: main
         }
     ], architect);
     
     function main(options, imports, register) {
-        var watches     = imports.watches;
-        var panels      = imports.panels;
+        var watches = imports.watches;
+        var panels = imports.panels;
         var breakpoints = imports.breakpoints;
-        var debug       = imports.debugger;
+        var debug = imports.debugger;
 
         panels.activate("debugger");
         // watches.show();
         var datagrid = watches.getElement("datagrid");
         
-        function countEvents(count, expected, done){
+        function countEvents(count, expected, done) {
             if (count == expected) 
                 done();
             else
@@ -96,7 +96,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
                     + count + " of " + expected);
         }
         
-        expect.html.setConstructor(function(node){
+        expect.html.setConstructor(function(node) {
             if (node.$ext) return node.$ext;
 
             return apf.xmldb.getHtmlNode(node, datagrid);
@@ -108,7 +108,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
         };
         
         describe('breakpoints', function() {
-            before(function(done){
+            before(function(done) {
                 apf.config.setProperty("allow-select", false);
                 apf.config.setProperty("allow-blur", false);
                 

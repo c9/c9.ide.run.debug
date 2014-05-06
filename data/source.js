@@ -29,8 +29,8 @@ define(function(require, exports, module) {
     
     var Data = require("./data");
     
-    function Source(options){
-        this.data    = options || {};
+    function Source(options) {
+        this.data = options || {};
         this.tagName = "source";
     }
     
@@ -38,7 +38,7 @@ define(function(require, exports, module) {
         "id", "name", "path", "text", "lineOffset", "debug", "customSyntax"
     ]);
         
-    Source.prototype.equals = function(source){
+    Source.prototype.equals = function(source) {
         if (!source) return false;
         return this.data.ref == source.ref;
     };

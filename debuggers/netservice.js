@@ -1,5 +1,5 @@
 module.exports = function (vfs, options, register) { 
-    var net    = require("net");
+    var net = require("net");
     var Stream = require("stream")
     var client, stream;
     
@@ -16,17 +16,17 @@ module.exports = function (vfs, options, register) {
             client = net.connect({ port: port });
             client.setEncoding("utf8")
             
-            client.on("data", function(data){
+            client.on("data", function(data) {
                 stream.emit("data", data);
             });
             
-            client.on("error", function(err){
+            client.on("error", function(err) {
                 client.end();
                 stream.emit("end");
                 stream = null;
             });
             
-            client.on("end", function(data){
+            client.on("end", function(data) {
                 stream.emit("end");
                 stream = null;
             });
@@ -34,11 +34,11 @@ module.exports = function (vfs, options, register) {
             callback(null, { stream: stream });
         },
         
-        write : function(data){
+        write: function(data) {
             client.write(data, "utf8");
         },
         
-        close : function(){
+        close: function(){
             client.end();
             stream.emit("end");
             stream = null;

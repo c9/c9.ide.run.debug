@@ -7,31 +7,31 @@ define(function(require, exports, module) {
     return main;
 
     function main(options, imports, register) {
-        var Plugin     = imports.Plugin;
-        var ui         = imports.ui;
-        var ace        = imports.ace;
-        var language   = imports.language;
-        var debug      = imports.debugger;
+        var Plugin = imports.Plugin;
+        var ui = imports.ui;
+        var ace = imports.ace;
+        var language = imports.language;
+        var debug = imports.debugger;
         var tabManager = imports.tabManager;
-        var callstack  = imports.callstack;
-        var evaluator  = imports["immediate.debugnode"];
+        var callstack = imports.callstack;
+        var evaluator = imports["immediate.debugnode"];
         
         // postfix plugin because debugger is restricted keyword
-        var Range  = require("ace/range").Range;
+        var Range = require("ace/range").Range;
         
         /***** Initialization *****/
         
         var plugin = new Plugin("Ajax.org", main.consumes);
-        var emit   = plugin.getEmitter();
+        var emit = plugin.getEmitter();
         
-        var activeTimeout     = null;
-        var windowHtml        = null;
+        var activeTimeout = null;
+        var windowHtml = null;
         var currentExpression = null;
-        var currentTab        = null;
-        var marker            = null;
-        var evalCounter       = 0;
+        var currentTab = null;
+        var marker = null;
+        var evalCounter = 0;
         
-        var SHOW_TIMEOUT      = 350;
+        var SHOW_TIMEOUT = 350;
         
         var isContextMenuVisible = false;
         var dbg, worker, theme;
@@ -42,13 +42,13 @@ define(function(require, exports, module) {
             loaded = true;
             
             // Set and clear the dbg variable
-            debug.on("attach", function(e){
+            debug.on("attach", function(e) {
                 dbg = e.implementation;
             });
-            debug.on("detach", function(e){
+            debug.on("detach", function(e) {
                 dbg = null;
             });
-            debug.on("stateChange", function(e){
+            debug.on("stateChange", function(e) {
                 plugin[e.action]();
             });
             
@@ -70,11 +70,11 @@ define(function(require, exports, module) {
             }, plugin);
     
             // bind mouse events to all open editors
-            ace.on("create", function(e){
+            ace.on("create", function(e) {
                 var editor = e.editor;
-                var ace    = editor.ace;
+                var ace = editor.ace;
 
-                ace.on("mousemove", function(e){
+                ace.on("mousemove", function(e) {
                     onEditorMouseMove(e, editor.pane);
                 });
                 ace.on("mousedown", onEditorClick);
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
                 ace.on("mousewheel", onEditorClick);
             }, plugin);
             
-            ace.on("themeChange", function(e){
+            ace.on("themeChange", function(e) {
                 theme = e.theme;
                 if (!theme || !drawn) return;
                 
@@ -109,7 +109,7 @@ define(function(require, exports, module) {
                 + "'></div>";
             
             ace.getElement("menu", function(menu) {
-                menu.on("prop.visible", function(e){
+                menu.on("prop.visible", function(e) {
                     isContextMenuVisible = e.value;
                 });
             });
@@ -134,9 +134,9 @@ define(function(require, exports, module) {
          * Determine whether the current file is the current frame where the
          * debugger is in.
          */
-        function isCurrentFrame(pane){
+        function isCurrentFrame(pane) {
             var frame = callstack.activeFrame;
-            var tab   = frame && (tab = tabManager.findTab(frame.path)) 
+            var tab = frame && (tab = tabManager.findTab(frame.path)) 
                 && pane.activeTab == tab;
             if (!tab)
                 return false;
@@ -204,9 +204,9 @@ define(function(require, exports, module) {
             eles.filter(function (ele) { return ele.offsetWidth || ele.offsetHeight; })
                 .forEach(function (ele) {
                     // then detect real position
-                    var pos  = ele.getBoundingClientRect();
+                    var pos = ele.getBoundingClientRect();
                     var left = pos.left;
-                    var top  = pos.top;
+                    var top = pos.top;
     
                     // x boundaries
                     if (ev.pageX >= left && ev.pageX <= (left + ele.offsetWidth)) {
@@ -274,19 +274,19 @@ define(function(require, exports, module) {
     
             // evaluate the expression in the debugger, and receive model as callback
             evaluator.evaluate(expr, {
-                addWidget : function(state){
+                addWidget: function(state) {
                     windowHtml.firstChild.innerHTML = "";
                     windowHtml.firstChild.appendChild(state.el);
                 },
-                session : { repl: { onWidgetChanged : function(){
+                session: { repl: { onWidgetChanged : function(){
                     
                 }}},
-                setError : function(err){
+                setError: function(err) {
                     windowHtml.firstChild.innerHTML = '<span class="error"><span>';
                     windowHtml.querySelector(".error").textContent =
                         err && err.message || "error";
                 },
-                setWaiting : function(show){
+                setWaiting: function(show) {
                     if (!show)
                         done();
                 }
@@ -299,7 +299,7 @@ define(function(require, exports, module) {
                 // store it
                 currentExpression = expr;
     
-                var tab    = tabManager.findTab(data.path);
+                var tab = tabManager.findTab(data.path);
                 if (!tab || !tab.isActive()) 
                     return hide();
                 
@@ -307,16 +307,16 @@ define(function(require, exports, module) {
                     
                 addMarker(data);
                 
-                var pos    = data.pos;
-                var ace    = tab.document.editor.ace;
+                var pos = data.pos;
+                var ace = tab.document.editor.ace;
                 var coords = ace.renderer.textToScreenCoordinates(pos.sl, pos.sc);
                 
-                windowHtml.style.maxWidth  = Math.min(800, window.innerWidth 
+                windowHtml.style.maxWidth = Math.min(800, window.innerWidth 
                     - coords.pageX - 30) + "px";
                 windowHtml.style.maxHeight = Math.min(250, window.innerHeight 
                     - coords.pageY - ace.renderer.lineHeight - 10) + "px";
-                windowHtml.style.left      = coords.pageX + "px";
-                windowHtml.style.top       = (coords.pageY + ace.renderer.lineHeight) + "px";
+                windowHtml.style.left = coords.pageX + "px";
+                windowHtml.style.top = (coords.pageY + ace.renderer.lineHeight) + "px";
     
                 // show window
                 windowHtml.style.display = "block";
@@ -345,7 +345,7 @@ define(function(require, exports, module) {
             if (!doc)
                 return;
             
-            var pos     = data.pos;
+            var pos = data.pos;
             var session = doc.getSession().session;
             
             if (pos.el != pos.sl && data.value.indexOf("\n") == -1) {
@@ -355,9 +355,9 @@ define(function(require, exports, module) {
             
             var range = new Range(pos.sl, pos.sc, pos.el, pos.ec);
             marker = {
-                id      : session.addMarker(range, "ace_bracket ace_highlight", "text", true),
-                session : session,
-                range   : range
+                id: session.addMarker(range, "ace_bracket ace_highlight", "text", true),
+                session: session,
+                range: range
             };
         }
     
@@ -380,7 +380,7 @@ define(function(require, exports, module) {
         });
         plugin.on("unload", function() {
             loaded = false;
-            drawn  = false;
+            drawn = false;
         });
         
         /***** Register and define API *****/

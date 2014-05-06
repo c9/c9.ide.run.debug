@@ -4,23 +4,23 @@ define(function(require, exports, module) {
     return main;
     
     function main(options, imports, register) {
-        var Plugin   = imports.Plugin;
-        var net      = imports.net;
-        var c9       = imports.c9;
-        var proc     = imports.proc;
-        var nodeBin  = Array.isArray(options.nodeBin)
+        var Plugin = imports.Plugin;
+        var net = imports.net;
+        var c9 = imports.c9;
+        var proc = imports.proc;
+        var nodeBin = Array.isArray(options.nodeBin)
             ? options.nodeBin[0]
             : options.nodeBin || "node";
 
         var DISCONNECTED = 0;
-        var CONNECTED    = 1;
-        var CONNECTING   = 2;
+        var CONNECTED = 1;
+        var CONNECTING = 2;
         
         var counter = 0;
         
         function Socket(port, reconnect) {
-            var socket  = new Plugin();
-            var emit    = socket.getEmitter();
+            var socket = new Plugin();
+            var emit = socket.getEmitter();
             var state, stream, connected, away;
             
             var PROXY = require("text!./netproxy.js")
@@ -45,7 +45,7 @@ define(function(require, exports, module) {
             }, socket);
             c9.on("back", function(){
                 if (away) {
-                    connectToPort(function(err){
+                    connectToPort(function(err) {
                         if (err) {
                             if (err.code == "ECONNREFUSED") {
                                 state = null;
@@ -75,7 +75,7 @@ define(function(require, exports, module) {
                 state = "connecting";
                 
                 if (reconnect && !force) {
-                    connectToPort(function(err){
+                    connectToPort(function(err) {
                         if (!err) return;
                         
                         state = null;
@@ -91,7 +91,7 @@ define(function(require, exports, module) {
                 else {
                     proc.spawn(nodeBin, {
                         args: ["-e", PROXY]
-                    }, function(err, process){
+                    }, function(err, process) {
                         if (err)
                             return emit("error", err);
                         
@@ -108,7 +108,7 @@ define(function(require, exports, module) {
 
                         process.on("exit", function(){
                             connected = DISCONNECTED;
-                            state     = "disconnected";
+                            state = "disconnected";
                         });
                         
                         // Make sure the process keeps running
@@ -117,8 +117,8 @@ define(function(require, exports, module) {
                 }
             }
             
-            function connectToPort(callback){
-                net.connect(port + 1, {}, function(err, s){
+            function connectToPort(callback) {
+                net.connect(port + 1, {}, function(err, s) {
                     if (err)
                         return callback ? callback(err) : emit("error", err);
                     
@@ -127,10 +127,10 @@ define(function(require, exports, module) {
                         emit("data", data);
                     });
                     // Don't call end because session will remain in between disconnects
-                    // stream.on("end", function(err){
+                    // stream.on("end", function(err) {
                     //     emit("end", err);
                     // });
-                    stream.on("error", function(err){
+                    stream.on("error", function(err) {
                         emit("error", err);
                     });
                     
@@ -185,29 +185,29 @@ define(function(require, exports, module) {
                 CONNECTING: CONNECTING,
                 
                 // Backward compatibility
-                addEventListener  : socket.on,
-                removeListener    : socket.off,
-                setMinReceiveSize : function(){},
+                addEventListener: socket.on,
+                removeListener: socket.off,
+                setMinReceiveSize: function(){},
                 
                 /**
                  * 
                  */
-                connect : connect,
+                connect: connect,
                 
                 /**
                  * 
                  */
-                enable : enable,
+                enable: enable,
                 
                 /**
                  * 
                  */
-                close : close,
+                close: close,
                 
                 /**
                  * 
                  */
-                send : send
+                send: send
             });
             
             socket.load("socket" + counter++);

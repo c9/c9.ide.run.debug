@@ -21,10 +21,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 define(function(require, exports, module) {
-    var protocol  = require('./protocol.js');
-    var util      = require("ace/lib/oop");
-    var events    = require('events');
-    var http      = require('http');
+    var protocol = require('./protocol.js');
+    var util = require("ace/lib/oop");
+    var events = require('events');
+    var http = require('http');
     var WebSocket = require('ws');
     
     var Chrome = function (options, callback) {

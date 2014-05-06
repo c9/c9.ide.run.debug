@@ -39,7 +39,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         this.$socket.connect();
         
         this.$socket.on("end", function(){
-            self.$pending.forEach(function(item){
+            self.$pending.forEach(function(item) {
                 self.emit("debugger_command_0", { data: {
                     request_seq: item[1].seq,
                     success: false,
@@ -50,7 +50,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
             
         this.$socket.on("beforeBack", function(){
             if (self.$pending.length) {
-                self.$pending.forEach(function(item){
+                self.$pending.forEach(function(item) {
                     self.debuggerCommand(item[0], item[1], true);
                 });
             }
@@ -76,7 +76,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         try {
             content = JSON.parse(contentText);
         }
-        catch(ex) {
+        catch (ex) {
             return;
         }
         

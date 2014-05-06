@@ -7,24 +7,24 @@ define(function(require, exports, module) {
 
     function main(options, imports, register) {
         var DebugPanel = imports.DebugPanel;
-        var ui         = imports.ui;
-        var callstack  = imports.callstack;
-        var debug      = imports.debugger;
-        var util       = imports.util;
-        var panels     = imports.panels;
+        var ui = imports.ui;
+        var callstack = imports.callstack;
+        var debug = imports.debugger;
+        var util = imports.util;
+        var panels = imports.panels;
         
-        var markup     = require("text!./variables.xml");
-        var Tree       = require("ace_tree/tree");
-        var TreeData   = require("./variablesdp");
+        var markup = require("text!./variables.xml");
+        var Tree = require("ace_tree/tree");
+        var TreeData = require("./variablesdp");
         var TreeEditor = require("ace_tree/edit");
         
         /***** Initialization *****/
         
         var plugin = new DebugPanel("Ajax.org", main.consumes, {
-            caption : "Scope Variables",
-            index   : 300
+            caption: "Scope Variables",
+            index: 300
         });
-        var emit   = plugin.getEmitter();
+        var emit = plugin.getEmitter();
         
         var activeFrame, dbg, cached = {};
         var model, datagrid; // UI Elements
@@ -38,21 +38,21 @@ define(function(require, exports, module) {
             model.emptyMessage = "No variables to display";
             
             model.columns = [{
-                caption : "Property",
-                value   : "name",
-                defaultValue : "Scope",
-                width   : "40%",
-                icon    : "debugger/genericvariable_obj.gif",
-                type    : "tree"
+                caption: "Property",
+                value: "name",
+                defaultValue: "Scope",
+                width: "40%",
+                icon: "debugger/genericvariable_obj.gif",
+                type: "tree"
             }, {
-                caption : "Value",
-                value   : "value",
-                width   : "60%",
-                editor  : "textbox" 
+                caption: "Value",
+                value: "value",
+                width: "60%",
+                editor: "textbox" 
             }, {
-                caption : "Type",
-                value   : "type",
-                width   : "50"
+                caption: "Type",
+                value: "type",
+                width: "50"
             }];
             
             model.loadChildren = function(node, callback) {
@@ -63,38 +63,38 @@ define(function(require, exports, module) {
             };
 
             // Set and clear the dbg variable
-            debug.on("attach", function(e){
+            debug.on("attach", function(e) {
                 dbg = e.implementation;
             });
-            debug.on("detach", function(e){
+            debug.on("detach", function(e) {
                 dbg = null;
             });
-            debug.on("stateChange", function(e){
+            debug.on("stateChange", function(e) {
                 plugin[e.action]();
             });
             
-            callstack.on("scopeUpdate", function(e){
+            callstack.on("scopeUpdate", function(e) {
                 updateScope(e.scope, e.variables);
             });
-            callstack.on("framesLoad", function(e){
+            callstack.on("framesLoad", function(e) {
                 // Clear the cached states of the variable datagrid
                 clearCache();
             });
             
             // When clicking on a frame in the call stack show it 
             // in the variables datagrid
-            callstack.on("frameActivate", function(e){
+            callstack.on("frameActivate", function(e) {
                 // @todo reload the clicked frame recursively + keep state
                 loadFrame(e.frame);
             }, plugin);
             
             // Variables
-            plugin.on("expand", function(e){
+            plugin.on("expand", function(e) {
                 if (e.node.tagName == "variable") {
                     if (!e.node.children) return e.expand();
                     
                     //<a:insert match="[item[@children='true']]" get="{adbg.loadObject(dbg, %[.])}" />
-                    dbg.getProperties(e.node, function(err, properties){
+                    dbg.getProperties(e.node, function(err, properties) {
                         if (err) return console.error(err);
                         
                         //updateVariable(e.node, properties);
@@ -108,7 +108,7 @@ define(function(require, exports, module) {
                 // }
                 // Other scopes
                 else if (e.node.tagName == "scope") {
-                    dbg.getScope(model.frame/*debug.activeFrame*/, e.node, function(err, vars){
+                    dbg.getScope(model.frame/*debug.activeFrame*/, e.node, function(err, vars) {
                         if (err) return console.error(err);
                         
                         //updateScope(e.node, vars);
@@ -119,7 +119,7 @@ define(function(require, exports, module) {
         }
 
         var drawn;
-        function draw(options){
+        function draw(options) {
             if (drawn) return;
             drawn = true;
             
@@ -132,7 +132,7 @@ define(function(require, exports, module) {
             datagrid.setOption("maxLines", 200);
             datagrid.setDataProvider(model);
             datagrid.edit = new TreeEditor(datagrid);
-            panels.on("afterAnimate", function(e){
+            panels.on("afterAnimate", function(e) {
                 if (panels.isActive("debugger"))
                     datagrid && datagrid.resize();
             });
@@ -141,11 +141,11 @@ define(function(require, exports, module) {
                 return false;
             });
             
-            datagrid.on("rename", function(e){
-                var node  = e.node;
+            datagrid.on("rename", function(e) {
+                var node = e.node;
                 var value = e.value;
                 
-                var parents  = [];
+                var parents = [];
                 var variable = activeFrame.findVariable(node, null, parents);
                 var oldValue = variable.value;
                 
@@ -157,27 +157,27 @@ define(function(require, exports, module) {
                 
                 // Set new value
                 dbg.setVariable(variable, parents, 
-                  value, debug.activeFrame, function(err){
+                  value, debug.activeFrame, function(err) {
                     if (err) 
                         return undo();
                         
                     // Reload properties of the variable
-                    // dbg.getProperties(variable, function(err, properties){
+                    // dbg.getProperties(variable, function(err, properties) {
                         updateVariable(variable, variable.properties, node);
                         
                         emit("variableEdit", {
-                            value    : value,
-                            oldValue : oldValue,
-                            node     : node,
-                            variable : variable,
-                            frame    : activeFrame,
-                            parents  : parents
+                            value: value,
+                            oldValue: oldValue,
+                            node: node,
+                            variable: variable,
+                            frame: activeFrame,
+                            parents: parents
                         });
                     // });
                 });
             });
             
-            datagrid.on("beforeRename", function(e){
+            datagrid.on("beforeRename", function(e) {
                 if (!plugin.enabled)
                     return e.allowRename = false;
                 
@@ -193,7 +193,7 @@ define(function(require, exports, module) {
         
         /***** Methods *****/
         
-        function loadFrame(frame){
+        function loadFrame(frame) {
             if (frame == activeFrame)
                 return;
             
@@ -214,7 +214,7 @@ define(function(require, exports, module) {
             activeFrame = frame;
         }
         
-        function updateNode(node, variable, oldVar){
+        function updateNode(node, variable, oldVar) {
             var isOpen = node.isOpen;
             model.close(node, null, false);
             if (isOpen)
@@ -223,11 +223,11 @@ define(function(require, exports, module) {
                 model._signal("change", node);
         }
         
-        function updateScope(scope, variables){
+        function updateScope(scope, variables) {
             updateNode(scope);
         }
         
-        function updateVariable(variable, properties, node){
+        function updateVariable(variable, properties, node) {
             updateNode(variable);
         }
         
@@ -249,7 +249,7 @@ define(function(require, exports, module) {
         });
         plugin.on("unload", function(){
             loaded = false;
-            drawn  = false;
+            drawn = false;
         });
         
         /***** Register and define API *****/
@@ -274,12 +274,12 @@ define(function(require, exports, module) {
              * Sets the frame that the variables and scopes are displayed for.
              * @param {debugger.Frame} frame  The frame to display the variables and scopes from.
              */
-            loadFrame : loadFrame,
+            loadFrame: loadFrame,
             
             /**
              * Clears the variable/scope cache
              */
-            clearCache : clearCache
+            clearCache: clearCache
         });
         
         register(null, {

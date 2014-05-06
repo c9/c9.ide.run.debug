@@ -47,8 +47,8 @@ define(function(require, exports, module) {
     var Data = require("./data");
     
     //var location = bp.script_name + "|" + bp.line + ":" + (bp.column || 0);
-    function Breakpoint(options){
-        this.data    = options || {};
+    function Breakpoint(options) {
+        this.data = options || {};
         this.tagName = "breakpoint";
     }
     
@@ -58,7 +58,7 @@ define(function(require, exports, module) {
         "moved"
     ]);
         
-    Breakpoint.prototype.equals = function(breakpoint, ignoreInvalid){
+    Breakpoint.prototype.equals = function(breakpoint, ignoreInvalid) {
         if (!breakpoint) return false;
         
         if (this.data.id && this.data.id === breakpoint.id) 

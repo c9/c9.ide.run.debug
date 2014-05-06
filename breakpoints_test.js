@@ -8,21 +8,21 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
     
     expect.setupArchitectTest([
         {
-            packagePath : "plugins/c9.core/c9",
-            startdate   : new Date(),
-            debug       : true,
-            hosted      : true,
-            davPrefix   : "/",
-            local       : false,
-            projectName : "Test Project"
+            packagePath: "plugins/c9.core/c9",
+            startdate: new Date(),
+            debug: true,
+            hosted: true,
+            davPrefix: "/",
+            local: false,
+            projectName: "Test Project"
         },
         "plugins/c9.core/ext",
         "plugins/c9.core/http",
         "plugins/c9.core/util",
         "plugins/c9.core/settings",
         {
-            packagePath  : "plugins/c9.ide.ui/ui",
-            staticPrefix : "plugins/c9.ide.ui"
+            packagePath: "plugins/c9.ide.ui/ui",
+            staticPrefix: "plugins/c9.ide.ui"
         },
         "plugins/c9.ide.editors/document",
         "plugins/c9.ide.editors/undomanager",
@@ -37,17 +37,17 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             baseProc: baseProc
         },
         {
-            packagePath : "plugins/c9.ide.ace/ace",
-            staticPrefix : "plugins/c9.ide.layout.classic"
+            packagePath: "plugins/c9.ide.ace/ace",
+            staticPrefix: "plugins/c9.ide.layout.classic"
         },
         "plugins/c9.vfs.client/vfs_client",
         "plugins/c9.vfs.client/endpoint",
         "plugins/c9.ide.auth/auth",
         "plugins/c9.ide.run.debug/breakpoints",
         {
-            packagePath : "plugins/c9.ide.panels/panels",
-            staticPrefix : "plugins/c9.ide.layout.classic",
-            defaultActiveLeft : "tree"
+            packagePath: "plugins/c9.ide.panels/panels",
+            staticPrefix: "plugins/c9.ide.layout.classic",
+            defaultActiveLeft: "tree"
         },
         "plugins/c9.ide.panels/panel",
         "plugins/c9.ide.panels/area",
@@ -55,8 +55,8 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         "plugins/c9.ide.browsersupport/browsersupport",
         "plugins/c9.ide.ui/menus",
         {
-            packagePath : "plugins/c9.ide.run.debug/debuggers/debugger",
-            staticPrefix : "plugins/c9.ide.layout.classic"
+            packagePath: "plugins/c9.ide.run.debug/debuggers/debugger",
+            staticPrefix: "plugins/c9.ide.layout.classic"
         },
         "plugins/c9.ide.editors/tabmanager",
         "plugins/c9.ide.ui/focus",
@@ -64,26 +64,26 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         "plugins/c9.ide.editors/tab",
         //Mock Plugins
         {
-            consumes : ["apf", "ui", "Plugin"],
-            provides : ["commands", "layout", "watcher", "auth.bootstrap", "info",
+            consumes: ["apf", "ui", "Plugin"],
+            provides: ["commands", "layout", "watcher", "auth.bootstrap", "info",
                 "preferences", "anims", "menus", "clipboard", "immediate", "run",
                 "dialog.alert", "dialog.error"],
-            setup    : expect.html.mocked
+            setup: expect.html.mocked
         },
         {
-            consumes : ["breakpoints", "ui"],
-            provides : [],
-            setup    : main
+            consumes: ["breakpoints", "ui"],
+            provides: [],
+            setup: main
         }
     ], architect);
     
     function main(options, imports, register) {
         var breakpoints = imports.breakpoints;
-        var ui          = imports.ui;
+        var ui = imports.ui;
         
         var list;
         
-        function countEvents(count, expected, done){
+        function countEvents(count, expected, done) {
             if (count == expected)
                 done();
             else
@@ -91,14 +91,14 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
                     + count + " of " + expected);
         }
         
-        expect.html.setConstructor(function(node){
+        expect.html.setConstructor(function(node) {
             if (node.$ext) return node.$ext;
 
             return apf.xmldb.getHtmlNode(node, list);
         });
         
         describe('breakpoints', function() {
-            before(function(done){
+            before(function(done) {
                 apf.config.setProperty("allow-select", false);
                 apf.config.setProperty("allow-blur", false);
                 
@@ -123,31 +123,31 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
 
             it('should add a breakpoint', function(done) {
                 breakpoints.setBreakpoint({
-                    path : "/file.txt",
-                    text : "/file.txt",
-                    line : 1,
-                    column : 1,
-                    lineOffset : 1,
-                    content : "This is the content",
-                    enabled : true
+                    path: "/file.txt",
+                    text: "/file.txt",
+                    line: 1,
+                    column: 1,
+                    lineOffset: 1,
+                    content: "This is the content",
+                    enabled: true
                 });
                 breakpoints.setBreakpoint({
-                    path : "/file.txt",
-                    text : "/file.txt",
-                    line : 10,
-                    column : 10,
-                    lineOffset : 10,
-                    content : "This is other content",
-                    enabled : false
+                    path: "/file.txt",
+                    text: "/file.txt",
+                    line: 10,
+                    column: 10,
+                    lineOffset: 10,
+                    content: "This is other content",
+                    enabled: false
                 });
                 breakpoints.setBreakpoint({
-                    path : "/file2.txt",
-                    text : "/file2.txt",
-                    line : 10,
-                    column : 10,
-                    lineOffset : 10,
-                    content : "This is even other content",
-                    enabled : false
+                    path: "/file2.txt",
+                    text: "/file2.txt",
+                    line: 10,
+                    column: 10,
+                    lineOffset: 10,
+                    content: "This is even other content",
+                    enabled: false
                 });
                 
                 expect.html(list, "Missing caption").text("/file.txt");
@@ -182,7 +182,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             it('should goto a breakpoint', function(done) {
                 var bp = list.getFirstTraverseNode();
                 
-                breakpoints.on("breakpointShow", function(e){
+                breakpoints.on("breakpointShow", function(e) {
                     expect(e.path).to.equal("/file.txt");
                     expect(e.row).to.equal(1);
                     expect(e.column).to.equal(1);

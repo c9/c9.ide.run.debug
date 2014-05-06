@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-    var oop         = require("ace/lib/oop");
-    var TreeData    = require("ace_tree/data_provider");
+    var oop = require("ace/lib/oop");
+    var TreeData = require("ace_tree/data_provider");
     
     var DataProvider = function(root) {
         TreeData.call(this, root);

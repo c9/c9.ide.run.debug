@@ -34,7 +34,7 @@ var WSChromeDebugMessageStream = module.exports = function(socket) {
             try {
                 message = JSON.parse(data);
             }
-            catch(e) {
+            catch (e) {
                 return _self.$onerror();
             }
 

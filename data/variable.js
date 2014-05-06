@@ -46,8 +46,8 @@ define(function(require, exports, module) {
     
     var Data = require("./data");
     
-    function Variable(options){
-        this.data    = options || {};
+    function Variable(options) {
+        this.data = options || {};
         this.tagName = options.tagName || "variable";
     }
     
@@ -57,7 +57,7 @@ define(function(require, exports, module) {
         ["prototype", "proto", "constructorFunction"]
     );
     
-    Variable.prototype.findVariable = function(ref, name, parents){
+    Variable.prototype.findVariable = function(ref, name, parents) {
         if (ref && typeof ref == "object")
             ref = ref.getAttribute("ref");
         
@@ -79,7 +79,7 @@ define(function(require, exports, module) {
         return false;
     }
         
-    Variable.prototype.equals = function(variable){
+    Variable.prototype.equals = function(variable) {
         if (!variable) return false;
         return this.data.id == variable.id;
     };

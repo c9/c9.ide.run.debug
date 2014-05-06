@@ -36,29 +36,29 @@ define(function(require, exports, module) {
     */
     
     function main(options, imports, register) {
-        var Plugin   = imports.Plugin;
+        var Plugin = imports.Plugin;
         var settings = imports.settings;
-        var debug    = imports.debugger;
-        var prefs    = imports.preferences;
-        var fs       = imports.fs;
-        var tabs     = imports.tabManager;
+        var debug = imports.debugger;
+        var prefs = imports.preferences;
+        var fs = imports.fs;
+        var tabs = imports.tabManager;
         
         // Source Map Parser
         var SourceMapConsumer = require('lib/source-map/lib/source-map/source-map-consumer').SourceMapConsumer;
-        var basename          = require("path").basename;
-        var dirname           = require("path").dirname;
+        var basename = require("path").basename;
+        var dirname = require("path").dirname;
         
         /***** Initialization *****/
         
         var plugin = new Plugin("Ajax.org", main.consumes);
-        var emit   = plugin.getEmitter();
+        var emit = plugin.getEmitter();
         
         var KNOWN_MAP_TYPES = ["ts", "coffee"];
         
         var generated = {};
         var originals = {};
-        var maps      = {};
-        var fetching  = 0;
+        var maps = {};
+        var fetching = 0;
         
         var loaded = false;
         function load(){
@@ -71,15 +71,15 @@ define(function(require, exports, module) {
                "Project" : {
                    "Run & Debug" : {
                        "Source Maps" : {
-                           type     : "dropdown",
-                           path     : "project/debug/@sourcemaps",
-                           width    : 300,
-                           items    : [
+                           type: "dropdown",
+                           path: "project/debug/@sourcemaps",
+                           width: 300,
+                           items: [
                                { caption : "Auto (check based on extension - .ts and .coffee)", value : "auto" },
                                { caption : "Enabled (always check)", value : "true" },
                                { caption : "Disabled (never check)", value : "false" }
                            ],
-                           position : 50
+                           position: 50
                         }
                    }
                }
@@ -97,7 +97,7 @@ define(function(require, exports, module) {
             // - [Hook debugger plugin] Getting a breakpoint from the server (or using the api) - also fires breakpoint.update
             //     - Fetch source in background
             //         - If sourcemap is detected update breakpoints
-            debug.on("breakpointsUpdate", function(e){
+            debug.on("breakpointsUpdate", function(e) {
                 if (e.action == "add") {
                     var bp = e.breakpoint;
                     
@@ -112,7 +112,7 @@ define(function(require, exports, module) {
                             ? getSourcemapFromGenerated
                             : getSourcemapFromOriginal;
 
-                        getSourcemap(bp.path, function(err, map){
+                        getSourcemap(bp.path, function(err, map) {
                             if (!err) {
                                 if (!map) {
                                     bp.sourcemap = -1;
@@ -121,16 +121,16 @@ define(function(require, exports, module) {
                                 
                                 if (bp.actual) {
                                     bp.actual = map.originalPositionFor({
-                                        line   : bp.actual.line + 1,
-                                        column : bp.actual.column + 1
+                                        line: bp.actual.line + 1,
+                                        column: bp.actual.column + 1
                                     });
                                     makeZeroBased(bp.actual);
                                 }
                                 else {
                                     bp.sourcemap = map.generatedPositionFor({
-                                        line   : bp.line + 1,
-                                        column : bp.column + 1,
-                                        source : basename(bp.path)
+                                        line: bp.line + 1,
+                                        column: bp.column + 1,
+                                        source: basename(bp.path)
                                     });
                                     makeZeroBased(bp.sourcemap);
                                     bp.sourcemap.source = 
@@ -147,7 +147,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             //     - [Hook debugger plugin] Make sure init waits until done
-            debug.on("beforeAttach", function(e){
+            debug.on("beforeAttach", function(e) {
                 // Wait until all breakpoints have been checked
                 if (fetching) {
                     plugin.once("fetchingDone", function(){
@@ -168,12 +168,12 @@ define(function(require, exports, module) {
             //                     - load original file
             //                 - update all breakpoints set on this file
             //                 - update all frames in this file
-            debug.on("beforeOpen", function(e){
+            debug.on("beforeOpen", function(e) {
                 if (e.generated)
                     return;
                 
                 // Fetch the map, based on the generated file
-                getSourcemapFromGenerated(e.state.path, function(err, map, source){
+                getSourcemapFromGenerated(e.state.path, function(err, map, source) {
                     var jump = e.state.document.ace.jump;
                     
                     if (map) {
@@ -181,17 +181,17 @@ define(function(require, exports, module) {
                             jump = {row: 0, column: 0};
                         
                         var mapping = map.originalPositionFor({
-                            line   : jump.row + 1,
-                            column : jump.column + 1
+                            line: jump.row + 1,
+                            column: jump.column + 1
                         });
                         
                         // Set path, line, column
                         var path = dirname(e.state.path) + mapping.source; //@todo is this the correct path
                         
-                        e.state.path            = path; 
-                        e.state.document.title  = mapping.source;
+                        e.state.path = path; 
+                        e.state.document.title = mapping.source;
                         
-                        jump.row    = mapping.line - 1;
+                        jump.row = mapping.line - 1;
                         jump.column = mapping.column - 1;
                         
                         delete e.state.value;
@@ -202,12 +202,12 @@ define(function(require, exports, module) {
                         e.state.value = source;
                     }
                     
-                    tabs.open(e.state, function(err, tab, done){
+                    tabs.open(e.state, function(err, tab, done) {
                         if (err || !done) 
                             return e.callback(err, tab);
                         tabs.focusTab(tab);
                         
-                        fetchSource(e.state.path, function(err, value){
+                        fetchSource(e.state.path, function(err, value) {
                             if (err) return;
                             
                             tab.document.value = value;
@@ -227,25 +227,25 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Update new frames with cached data
-            debug.on("framesLoad", function(e){
+            debug.on("framesLoad", function(e) {
                 var frames = e.frames;
                 if (!frames) return;
                 
-                frames.forEach(function(frame){
+                frames.forEach(function(frame) {
                     if (!frame.sourcemap && typeof generated[frame.path] == "string") {
                         var map = maps[generated[frame.path]];
                         
                         var mapping = map.originalPositionFor({
-                            line   : frame.line + 1,
-                            column : frame.column + 1
+                            line: frame.line + 1,
+                            column: frame.column + 1
                         });
                         
-                        frame.line   = mapping.line - 1;
+                        frame.line = mapping.line - 1;
                         frame.column = mapping.column - 1;
-                        frame.path   = dirname(frame.path) + mapping.source;
+                        frame.path = dirname(frame.path) + mapping.source;
                         
                         if (mapping.name) 
-                            frame.name   = mapping.name;
+                            frame.name = mapping.name;
                         
                         frame.sourcemap = true;
                     }
@@ -254,11 +254,11 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Premature optimization
-            debug.on("attach", function(e){
+            debug.on("attach", function(e) {
                 // Store cache in settings for accidental refreshes
                 settings.setJson("user/debug/sourcemaps", [generated, originals]);
             }, plugin);
-            debug.on("detach", function(e){
+            debug.on("detach", function(e) {
                 // Stop keeping cache in settings
                 settings.setJson("user/debug/sourcemaps", []);
             }, plugin);
@@ -270,21 +270,21 @@ define(function(require, exports, module) {
             // @todo frames, variables, scopes
         }
         
-        function makeZeroBased(obj){
+        function makeZeroBased(obj) {
             if (obj.line) obj.line--;
             if (obj.column) obj.column--;
         }
         
         /***** Methods *****/
         
-        function isEnabled(path){
+        function isEnabled(path) {
             var enabled = settings.get("project/debug/@sourcemaps");
             return enabled == "auto" 
               && KNOWN_MAP_TYPES.indexOf(fs.getExtension(path)) > -1
               || enabled == "true";
         }
         
-        function fetchSource(path, callback){
+        function fetchSource(path, callback) {
             if (debug.state !== "disconnected") {
                 var sources = debug.sources || [];
                 for (var i = 0, l = sources.length; i < l; i++) {
@@ -298,18 +298,18 @@ define(function(require, exports, module) {
             fs.readFile(path, "utf8", callback);
         }
         
-        function fetchMap(path, callback){
+        function fetchMap(path, callback) {
             if (maps[path])
                 return callback(null, maps[path]);
             
-            fetchSource(path, function(err, source){
+            fetchSource(path, function(err, source) {
                 if (err) return callback(err);
                 
                 // Create Map
                 var map = new SourceMapConsumer(source);
                 
                 // Store paths in cache
-                map._sources._array.forEach(function(p){
+                map._sources._array.forEach(function(p) {
                     originals[dirname(path) + p] = path;
                 });
                 generated[dirname(path) + map.file] = path;
@@ -321,12 +321,12 @@ define(function(require, exports, module) {
             });
         }
         
-        function getMapPath(source){
+        function getMapPath(source) {
             var match = source.match(/\/\/\@ sourceMappingURL\=(.*)/);
             return match ? match[1].trim() : false;
         }
         
-        function detectMap(path, source, callback){
+        function detectMap(path, source, callback) {
             // Find the path of the map file if any
             var mapPath = getMapPath(source);
             if (!mapPath) {
@@ -349,14 +349,14 @@ define(function(require, exports, module) {
         // @todo there's probably lots of room for improvement. Think about
         //    hooking into runner information, or having a settings file, or
         //    even doing a source in all files.
-        function getSourcemapFromOriginal(path, callback){
+        function getSourcemapFromOriginal(path, callback) {
             var mapPath = originals[path]
                 || path.substr(0, path.lastIndexOf(".")) + ".js.map";
             
             return fetchMap(mapPath, callback);
         }
         
-        function getSourcemapFromGenerated(path, callback){
+        function getSourcemapFromGenerated(path, callback) {
             // We know there is no source map
             if (generated[path] == -1)
                 return callback(null, false);
@@ -366,7 +366,7 @@ define(function(require, exports, module) {
                 return fetchMap(generated[path], callback);
             
             // Fetch the source of the generated file
-            fetchSource(path, function(err, source){
+            fetchSource(path, function(err, source) {
                 if (err) return callback(err);
                 
                 detectMap(path, source, callback);

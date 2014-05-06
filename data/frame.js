@@ -64,11 +64,11 @@
  */
 define(function(require, exports, module) {
     
-    var Data  = require("./data");
+    var Data = require("./data");
     var Scope = require("./scope");
     
-    function Frame(options){
-        this.data    = options || {};
+    function Frame(options) {
+        this.data = options || {};
         this.tagName = "frame";
     }
     
@@ -80,7 +80,7 @@ define(function(require, exports, module) {
         ["variables", "scopes"]
     );
     
-    Frame.prototype.findScope = function(index){
+    Frame.prototype.findScope = function(index) {
         if (typeof index == "object")
             index = index.getAttribute("index");
         
@@ -93,7 +93,7 @@ define(function(require, exports, module) {
         return false;
     }
         
-    Frame.prototype.findVariable = function(ref, name, parents){
+    Frame.prototype.findVariable = function(ref, name, parents) {
         var result = Scope.prototype.findVariable.apply(this, arguments);
         if (result)
             return result;
@@ -112,7 +112,7 @@ define(function(require, exports, module) {
     }
     
     // @todo maybe check ref?
-    Frame.prototype.equals = function(frame){
+    Frame.prototype.equals = function(frame) {
         if (!frame) return false;
         return this.data.id == frame.id;// && this.data.path && frame.path;
     };

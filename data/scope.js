@@ -33,8 +33,8 @@ define(function(require, exports, module) {
     
     var Data = require("./data");
     
-    function Scope(options){
-        this.data    = options || {};
+    function Scope(options) {
+        this.data = options || {};
         this.tagName = "scope";
     }
 
@@ -43,7 +43,7 @@ define(function(require, exports, module) {
         ["variables"]
     );
     
-    Scope.prototype.findVariable = function(ref, name, parents){
+    Scope.prototype.findVariable = function(ref, name, parents) {
         if (ref && typeof ref == "object")
             ref = ref.ref;
         
@@ -66,7 +66,7 @@ define(function(require, exports, module) {
         return false;
     }
         
-    Scope.prototype.equals = function(scope){
+    Scope.prototype.equals = function(scope) {
         if (!scope) return false;
         return this.data.index == scope.index 
           && this.data.frameIndex == scope.frameIndex;
