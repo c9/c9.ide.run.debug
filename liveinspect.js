@@ -53,7 +53,7 @@ define(function(require, exports, module) {
             });
             
             // Hook into the language worker
-            language.on("initWorker", function(e) {
+            language.once("initWorker", function(e) {
                 worker = e.worker;
                 
                 // listen to the worker's response
