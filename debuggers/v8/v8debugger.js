@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "debugger", "net", "proc", "util", "c9"];
+    main.consumes = ["Plugin", "debugger", "util", "c9"];
     main.provides = ["v8debugger"];
     return main;
     
