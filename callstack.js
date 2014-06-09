@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "util", "ui", "tabManager", "debugger", "save", "panels",
-        "Menu", "MenuItem"
+        "Menu", "MenuItem", "dialog.error"
     ];
     main.provides = ["callstack"];
     return main;
@@ -16,6 +16,7 @@ define(function(require, exports, module) {
         var panels = imports.panels;
         var Menu = imports.Menu;
         var MenuItem = imports.MenuItem;
+        var showError = imports["dialog.error"].show;
         
         var Range = require("ace/range").Range;
         var markup = require("text!./callstack.xml");
@@ -163,7 +164,10 @@ define(function(require, exports, module) {
                     return;
     
                 var value = e.document.value;
-                dbg.setScriptSource(script, value, false, function(e) {
+                dbg.setScriptSource(script, value, false, function(err) {
+                    if (err)
+                        return showError(err.message);
+                    
                     // @todo update the UI
                 });
             }, plugin);

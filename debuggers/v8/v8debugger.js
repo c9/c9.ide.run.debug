@@ -794,7 +794,9 @@ define(function(require, exports, module) {
                     callback(null, data);
                 }
                 
-                if (e.stepin_recommended)
+                if (!e)
+                    cb(new Error("Could not update source"));
+                else if (e.stepin_recommended)
                     stepInto(cb);
                 else if (e.result.stack_modified === false) {
                     getFrames(function(err, frames) {
