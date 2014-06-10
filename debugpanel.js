@@ -20,11 +20,11 @@ define(function(require, module, exports) {
             
             plugin.on("load", function(){
                 // Draw panel when debugger is drawn
-                debug.on("drawPanels", draw, plugin);
+                debug.once("drawPanels", draw, plugin);
             });
             
             function draw(e) {
-                amlFrame = ui.frame({ 
+                amlFrame = ui.frame({
                     htmlNode: e.html,
                     buttons: "min",
                     activetitle: "min",
