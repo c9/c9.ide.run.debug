@@ -720,7 +720,9 @@ define(function(require, exports, module) {
         }
         
         function getProperties(variable, callback) {
-            v8dbg.lookup([variable.ref], false, function(body) {
+            v8dbg.lookup([variable.ref], false, function(body, refs, err) {
+                if (err) return callback(err);
+                
                 var data = body[variable.ref];
                 data && updateVariable(variable, data);
                 
