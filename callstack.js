@@ -44,8 +44,8 @@ define(function(require, exports, module) {
             if (loaded) return false;
             loaded = true;
             
-            modelSources = new ui.model();
-            plugin.addElement(modelSources);
+            modelSources = new TreeData();
+            modelSources.$sortNodes = false;
             
             modelFrames = new TreeData();
             modelFrames.emptyMessage = "No callstack to display";
@@ -216,11 +216,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // stack view
-            datagrid.on("changeSelection", function(e) {
-                // afterselect can be called after setting value, without user interaction
-                // TODO add userSelect event to aceTree ?
-                if (!datagrid.isFocused())
-                    return;
+            datagrid.on("userSelect", function(e) {
                 var frame = datagrid.selection.getCursor();
                 setActiveFrame(frame, true);
             });
@@ -246,6 +242,7 @@ define(function(require, exports, module) {
             menu = hbox.ownerDocument.documentElement.appendChild(new ui.menu({
                 style: "top: 56px;"
                     + "left: 803px;"
+                    + "width: 350px;"
                     + "opacity: 1;"
                     + "border: 0px;"
                     + "padding: 0px;"
@@ -253,18 +250,6 @@ define(function(require, exports, module) {
                     + "margin: -3px 0px 0px;"
                     + "box-shadow: none;",
                 childNodes: [
-                    new ui.list({
-                      id: "lstScripts",
-                      margin: "3 -2 0 0",
-                      style: "position:relative",
-                      skin: "list_dark",
-                      maxitems: "10",
-                      each: "[source]",
-                      caption: "[@name]",
-                      autoselect: "false",
-                      icon: "scripts.png" ,
-                      onafterselect: "this.parentNode.hide()",
-                    })
                 ]
             }));
             button = hbox.appendChild(new ui.button({
@@ -279,17 +264,47 @@ define(function(require, exports, module) {
             }));
             plugin.addElement(menu, button);
             
+            menu.on("prop.visible", function(e) {
+                if (!e.value || menu.reopen)
+                    return;
+                
+                list.resize();
+                menu.resize();
+            });
+            
+            menu.resize = function() {
+                if (!menu.visible) return;
+                
+                setTimeout(function() {
+                    if (menu.opener) {
+                        menu.reopen = true;
+                        menu.$ext.style.overflowY = "";
+                        menu.display(null, null, true, menu.opener);
+                        menu.$ext.style.overflowY = "";
+                        menu.reopen = false;
+                    }
+                }, 10);
+            };
+            
             // Load the scripts in the sources dropdown
-            var list = menu.firstChild;
-            list.setModel(modelSources);
-            list.on("afterselect", function(e) {
+            var list = new Tree();
+            menu.$ext.appendChild(list.container);
+            list.setDataProvider(modelSources);
+            list.renderer.setTheme({cssClass: "blackdg"});
+            list.setOption("maxLines", 30);
+            modelSources.rowHeight = 18;
+            list.on("userSelect", function(e, list){
+                var selected = list.selection.getCursor();
                 debug.openFile({
-                    scriptId: e.selected.getAttribute("id"),
-                    path: e.selected.getAttribute("path"),
+                    scriptId: selected.id,
+                    path: selected.path,
                     generated: true
                 });
             }, plugin);
-            
+            list.renderer.setOption("maxLines", 10);
+            list.renderer.setScrollMargin(10, 10);
+            list.container.className = "ace_tree c9menu list_dark";
+            list.container.style.width = "inherit";
             // Set context menu to the button
             button.setAttribute("submenu", menu);
         }
@@ -416,11 +431,6 @@ define(function(require, exports, module) {
             }
         }
         
-        function findSourceXml(source) {
-            return modelSources.queryNode("//file[@path=" 
-                + util.escapeXpathString(String(source.path)) + "]");
-        }
-        
         function findFrame(index) {
             if (typeof index == "object") {
                 index = parseInt(index.getAttribute("index"), 10);
@@ -467,7 +477,7 @@ define(function(require, exports, module) {
                 if (scope.variables)
                     emit("scopeUpdate", { scope: scope });
             });
-        };
+        }
         
         function loadFrames(input, noRecur, force) {
             frames = input;
@@ -485,12 +495,8 @@ define(function(require, exports, module) {
         }
         
         function loadSources(input) {
-            // @todo consider only calling xmlupdate once
-            // @todo there used to be an optimization here that checked 
-            // whether the current frameset is the same as the one being loaded
-            
             sources = input;
-            modelSources.load("<sources>" + sources.join("") + "</sources>");
+            modelSources.setRoot(sources);
         }
         
         function clearFrames(){
@@ -499,7 +505,7 @@ define(function(require, exports, module) {
         
         function addSource(source) {
             sources.push(source);
-            modelSources.appendXml(source.xml);
+            modelSources.setRoot(sources);
         }
         
         function updateAll(){
