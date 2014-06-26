@@ -76,9 +76,16 @@ define(function(require, exports, module) {
         function sync(breakpoints, reconnect, callback) {
             if (!v8dbg)
                 return console.error("Sync called without v8dbg");
+                
             getSources(function(err, sources) {
+                if (err) return callback(err);
+                
                 getFrames(function(err, frames) {
+                    if (err) return callback(err);
+                    
                     updateBreakpoints(breakpoints, reconnect, function(err, breakpoints) {
+                        if (err) return callback(err);
+                        
                         handleDebugBreak(breakpoints, reconnect, frames[0], function(canAttach) {
                             attached = canAttach;
                             emit("attach", { breakpoints: breakpoints });
