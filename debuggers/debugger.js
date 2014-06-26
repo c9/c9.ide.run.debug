@@ -327,7 +327,7 @@ define(function(require, exports, module) {
                 );
             }
             
-            if (state !== "disconnected") {
+            if (state !== "disconnected" || force && dbg) {
                 dbg.setBreakBehavior(
                     pauseOnBreaks === 1 ? "all" : "uncaught",
                     pauseOnBreaks === 0 ? false : true
