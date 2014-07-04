@@ -173,7 +173,7 @@ var V8Debugger = module.exports = function(tabId, v8service) {
             var addContext = { };
             
             // run over all frames
-            if (resp.totalFrames > 0) {
+            if (resp && resp.totalFrames > 0) {
                 for (var ix = 0, frames = resp.frames, frame = frames[ix]; ix < frames.length; frame = frames[++ix]) {
                     // then over all the locals
                     for (var lix = 0, local = frame.locals[lix]; lix < frame.locals.length; local = frame.locals[++lix]) {
