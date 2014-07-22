@@ -126,7 +126,7 @@ define(function(require, exports, module) {
                 // We should always have at least 1 breakpoint
                 if (!reconnect && !remoteBreakpoints.length && ++retries < 10) {
                     setTimeout(function(){
-                        listBreakpoints(handleBps);
+                        if (v8dbg) listBreakpoints(handleBps);
                     }, 100);
                     return;
                 }
