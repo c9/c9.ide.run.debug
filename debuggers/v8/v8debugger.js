@@ -882,6 +882,9 @@ define(function(require, exports, module) {
 
             v8dbg.setbreakpoint("scriptId", scriptId, line, column, bp.enabled, 
                 bp.condition, bp.ignoreCount, function(info) {
+                    if (!info)
+                        return callback && callback(new Error());
+                    
                     bp.id = info.breakpoint;
                     if (info.actual_locations) {
                         bp.actual = info.actual_locations[0];
