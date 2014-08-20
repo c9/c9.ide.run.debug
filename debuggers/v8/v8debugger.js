@@ -267,9 +267,9 @@ define(function(require, exports, module) {
          * Removes the path prefix from a string
          */
         function strip(str) {
-            return str.lastIndexOf(stripPrefix, 0) === 0
+            return str && str.lastIndexOf(stripPrefix, 0) === 0
                 ? str.slice(stripPrefix.length)
-                : str;
+                : str || "";
         }
     
         /**
@@ -697,7 +697,7 @@ define(function(require, exports, module) {
                 if (body && body.totalFrames > 0) {
                     body && body.frames.map(function(frame) {
                         var script = ref(frame.script.ref);
-                        if (!script.name.match(/^native /))
+                        if (script.name && !/^native /.test(script.name))
                             frames.push(createFrame(frame, script));
                     });
         
