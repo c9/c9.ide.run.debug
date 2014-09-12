@@ -28,8 +28,7 @@ define(function(require, exports, module) {
 
         /***** Initialization *****/
 
-        var deps = main.consumes.slice(0, main.consumes.length - 1);
-        var plugin = new DebugPanel("Ajax.org", deps, {
+        var plugin = new DebugPanel("Ajax.org", main.consumes, {
             caption: "Breakpoints",
             index: 400
         });

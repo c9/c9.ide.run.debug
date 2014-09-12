@@ -26,8 +26,7 @@ define(function(require, exports, module) {
         
         /***** Initialization *****/
         
-        var deps = main.consumes.splice(0, main.consumes.length - 1);
-        var plugin = new DebugPanel("Ajax.org", deps, {
+        var plugin = new DebugPanel("Ajax.org", main.consumes, {
             caption: "Call Stack",
             index: 200
         });
