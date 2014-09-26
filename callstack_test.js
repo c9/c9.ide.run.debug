@@ -17,7 +17,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             projectName: "Test Project"
         },
         "plugins/c9.core/ext",
-        "plugins/c9.core/http",
+        "plugins/c9.core/http-xhr",
         "plugins/c9.core/util",
         "plugins/c9.core/settings",
         {
