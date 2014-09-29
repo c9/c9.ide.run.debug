@@ -778,6 +778,9 @@ define(function(require, exports, module) {
         }
     
         function lookup(props, includeSource, callback) {
+            // can happen for numbers. E.g when debugger stops on throw 1
+            if (!props || !props.length)
+                return callback(null, []);
             v8dbg.lookup(props.map(function(p){ return p.ref }), 
               includeSource, function(body) {
                 if (!body)
