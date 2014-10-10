@@ -408,7 +408,7 @@ define(function(require, exports, module) {
                     }
                 }
             };
-            if (row) {
+            if (typeof row == "number" && !isNaN(row)) {
                 state.document.ace.jump = {
                     row: row,
                     column: column

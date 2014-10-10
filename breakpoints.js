@@ -738,7 +738,7 @@ define(function(require, exports, module) {
                         || !isNaN(line = (bp.sourcemap || 0).line)
                         || (line = bp.line);
 
-                    if (line === null)
+                    if (typeof line == "number" || isNaN(line))
                         return console.warn("Could not find breakpoint, file likely has unsaved changes");
 
                     lines[line] = bp;
@@ -830,16 +830,16 @@ define(function(require, exports, module) {
         function updateMovedBreakpoints(doc) {
             var bpsInDoc = findBreakpoints(doc.tab.path);
             bpsInDoc.forEach(function(bp) {
-                if (!isNaN(bp.moved)) {
+                if (typeof bp.moved == "number" && !isNaN(bp.moved)) {
                     if (bp.moved == -1)
                         clearBreakpoint(bp);
                     else if (bp.moved != bp.line) {
                         clearBreakpoint(bp);
                         bp.line = bp.moved;
-                        bp.actual = null;
+                        bp.actual = undefined;
                         setBreakpoint(bp);
                     }
-                    bp.moved = null;
+                    bp.moved = undefined;
                 }
             });
         }
@@ -975,8 +975,8 @@ define(function(require, exports, module) {
                 path = bp;
             }
 
-            if (isNaN(line))   line = null;
-            if (isNaN(column)) column = null;
+            if (isNaN(line))   line = undefined;
+            if (isNaN(column)) column = undefined;
 
             debug.openFile({
                 path: path,
