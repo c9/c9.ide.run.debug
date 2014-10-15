@@ -4,7 +4,7 @@ var port = parseInt("{PORT}", 10);
 var buffer = [];
 var browserClient, debugClient;
 
-var MAX_RETRIES = 18;
+var MAX_RETRIES = 100;
 var RETRY_INTERVAL = 300;
 
 var log = console.log;
