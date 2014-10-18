@@ -698,7 +698,7 @@ define(function(require, exports, module) {
             if (!aceSession)
                 return;
 
-            aceSession.on("change", function(e) {
+            aceSession.on("change", function(delta) {
                 var breakpoints = aceSession.$breakpoints;
                 var doc = aceSession.c9doc;
 
@@ -708,21 +708,19 @@ define(function(require, exports, module) {
                 var bpsInDoc = findBreakpoints(doc.tab.path);
                 if (!bpsInDoc.length)
                     return;
-
-                var delta = e.data;
-                var range = delta.range;
-                if (range.end.row == range.start.row)
+                
+                if (delta.end.row == delta.start.row)
                     return;
 
                 var len, firstRow;
-                len = range.end.row - range.start.row;
+                len = delta.end.row - delta.start.row;
                 if (delta.action == "insertText") {
-                    firstRow = range.start.column
-                        ? range.start.row + 1
-                        : range.start.row;
+                    firstRow = delta.start.column
+                        ? delta.start.row + 1
+                        : delta.start.row;
                 }
                 else {
-                    firstRow = range.start.row;
+                    firstRow = delta.start.row;
                 }
 
                 var i;
