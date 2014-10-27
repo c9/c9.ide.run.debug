@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
     var oop = require("ace/lib/oop");
     var TreeData = require("ace_tree/data_provider");
+    var escapeHTML = require("ace/lib/lang").escapeHTML;
     
     var DataProvider = function(root) {
         TreeData.call(this, root);
@@ -37,8 +38,8 @@ define(function(require, exports, module) {
         
         this.getCaptionHTML = function(node) {
             if (node.tagName == "scope")
-                return node.name || "Scope";
-            return node.name + "";
+                return escapeHTML((node.name || "Scope") + "");
+            return escapeHTML(node.name + "");
         };
         
         this.sort = function(children) {
