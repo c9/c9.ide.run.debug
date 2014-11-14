@@ -175,6 +175,11 @@ define(function(require, exports, module) {
             datagrid = new Tree(datagridEl.$ext);
             datagrid.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
+            
+            var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
+            model.rowHeightInner = height - 1;
+            model.rowHeight = height;
+            
             datagrid.setDataProvider(model);
             datagrid.edit = new TreeEditor(datagrid);
             panels.on("afterAnimate", function(e) {

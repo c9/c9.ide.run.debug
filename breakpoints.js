@@ -70,8 +70,6 @@ define(function(require, exports, module) {
                 return "bpItem " + (node.enabled ? "checked " : " ") + node.className;
             };
 
-            model.rowHeight = 39;
-
             // ide.on("afterfilesave", function(e) {
             //     var doc = e.doc;
             //     if (!doc || !doc.acesession)
@@ -328,6 +326,11 @@ define(function(require, exports, module) {
             list = new Tree(listEl.$ext);
             list.setTheme({cssClass: "blackdg"});
             list.setOption("maxLines", 200);
+            
+            var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 52;
+            model.rowHeightInner = height - 1;
+            model.rowHeight = height;
+            
             list.setDataProvider(model);
 
             list.on("click", function(e) {

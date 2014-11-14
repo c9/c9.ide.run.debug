@@ -57,10 +57,14 @@
                 position: relative;
                 cursor: default;
                 color: @breakpoint-list-color;
+                height: @breakpoint-list-item-height
+            }
+            .listBP .tree-headings{
+                display: none;
             }
     
             .listBP .bpItem{
-                padding    : 2px 2px 2px 22px;
+                padding    : @breakpoint-list-padding;
                 position : relative;
                 border-bottom: 1px solid @breakpoint-list-item-border-bottom;
                 border-top: 1px solid @breakpoint-list-item-border-top;
@@ -80,9 +84,9 @@
     
             .listBP .content{
                 cursor : pointer;
-                font-family : Arial, Tahoma;
-                font-size : 12px;
-                padding : 3px 0 0 2px;
+                font-family : @breakpoint-list-font-family;
+                font-size : @breakpoint-list-font-size;
+                padding : @breakpoint-list-item-padding;
             }
     
             .listBP .content div{
@@ -101,13 +105,14 @@
             }
     
             .listBP .checkbox {
-                width      : 21px;
-                height     : 17px;
-                background : url("images/checkbox_black.png") no-repeat 3px 0;
+                width      : @breakpoint-list-checkbox-width;
+                height     : @breakpoint-list-checkbox-height;
+                .image-2x("images/@{breakpoint-list-checkbox-image}", @breakpoint-list-checkbox-image-width, @breakpoint-list-checkbox-image-height);
+                background-position: 0 0;
                 display : block;
                 position : absolute;
-                left : 1px;
-                top : 4px;
+                left : @breakpoint-list-checkbox-left;
+                top : @breakpoint-list-checkbox-top;
             }
     
             .listBP .bpItem .checkbox:hover{
@@ -120,7 +125,7 @@
             }
     
             .listBP .checked .checkbox {
-                background-position: 3px -51px;
+                background-position: 0 (-3 * @breakpoint-list-checkbox-height);
             }
     
             .listBP .checked .checkbox:hover{
