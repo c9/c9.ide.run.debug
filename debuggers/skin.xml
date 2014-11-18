@@ -144,7 +144,7 @@
                 position            : absolute;
                 right               : 2px;
                 top                 : 3px;
-                background-image    : url(icons/remove_breakpoints.png);
+                .image-2x(@debugger-icon-remove_breakpoints, @debugger-icon-remove_breakpoints-width, @debugger-icon-remove_breakpoints-height, no-repeat, true);
                 background-repeat   : no-repeat;
                 background-position : 0 0;
                 display             : none;

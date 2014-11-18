@@ -425,7 +425,7 @@ define(function(require, exports, module) {
                 icon: "toggle_breakpoints2.png",
                 skinset: "default",
                 skin: "c9-menu-btn",
-                class: "nosize"
+                class: "nosize toggle_breakpoints2"
             }), hbox1.selectSingleNode("a:divider").nextSibling);
             btnBpRemove = hbox2.insertBefore(new ui.button({
                 id: "btnBpRemove",
@@ -433,7 +433,7 @@ define(function(require, exports, module) {
                 icon: "remove_breakpoints.png",
                 skinset: "default",
                 skin: "c9-menu-btn",
-                class: "nosize"
+                class: "nosize remove_breakpoints"
             }), hbox2.selectSingleNode("a:divider"));
             plugin.addElement(btnBreakpoints, btnBpRemove);
 
@@ -496,9 +496,9 @@ define(function(require, exports, module) {
                 : !enableBreakpoints;
 
             if (btnBreakpoints) {
-                btnBreakpoints.setAttribute("icon", enableBreakpoints
-                    ? "toggle_breakpoints2.png"
-                    : "toggle_breakpoints1.png");
+                btnBreakpoints.setAttribute("class", "nosize " + (enableBreakpoints
+                    ? "toggle_breakpoints2"
+                    : "toggle_breakpoints1"));
                 btnBreakpoints.setAttribute("tooltip",
                     enableBreakpoints
                         ? "Deactivate All Breakpoints"

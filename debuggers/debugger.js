@@ -317,7 +317,7 @@ define(function(require, exports, module) {
                 : (pauseOnBreaks > 1 ? 0 : pauseOnBreaks + 1);
 
             if (btnPause) {
-                btnPause.setAttribute("class", "pause" + pauseOnBreaks);
+                btnPause.setAttribute("class", "pause" + pauseOnBreaks + " nosize exception_break");
                 btnPause.setAttribute("tooltip", 
                     pauseOnBreaks === 0
                         ? "Don't pause on exceptions"
