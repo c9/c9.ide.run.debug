@@ -262,6 +262,7 @@ define(function(require, exports, module) {
                 icon: "scripts.png",
                 right: "0",
                 top: "0",
+                class: "scripts",
                 skin: "c9-menu-btn",
                 disabled: "true"
             }));
