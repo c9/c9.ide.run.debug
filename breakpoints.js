@@ -738,7 +738,7 @@ define(function(require, exports, module) {
                         || !isNaN(line = (bp.sourcemap || 0).line)
                         || (line = bp.line);
 
-                    if (typeof line == "number" || isNaN(line))
+                    if (typeof line !== "number" && isNaN(line))
                         return console.warn("Could not find breakpoint, file likely has unsaved changes");
 
                     lines[line] = bp;
@@ -773,13 +773,17 @@ define(function(require, exports, module) {
                         for (i = rem.length; i--; ) {
                             if (rem[i]) {
                                 changed = true;
+                                if (!lines[firstRow + i + 1]) {
+                                    console.warn("Could not find the breakpoint");
+                                    continue;
+                                }
                                 breakpoints[firstRow] = rem[i];
                                 lines[firstRow + i + 1].moved = firstRow;
                                 break;
                             }
                         }
                     }
-                    else {
+                    else if (lines[firstRow]) {
                         lines[firstRow].moved = firstRow;
                     }
 
