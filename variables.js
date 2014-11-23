@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "DebugPanel", "ui", "util", "debugger", "callstack", "panels"
+        "DebugPanel", "ui", "util", "debugger", "callstack", "panels", "layout"
     ];
     main.provides = ["variables"];
     return main;
@@ -11,6 +11,7 @@ define(function(require, exports, module) {
         var callstack = imports.callstack;
         var debug = imports.debugger;
         var util = imports.util;
+        var layout = imports.layout;
         var panels = imports.panels;
         
         var markup = require("text!./variables.xml");
@@ -131,9 +132,13 @@ define(function(require, exports, module) {
             datagrid.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
             
-            var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
-            model.rowHeightInner = height - 1;
-            model.rowHeight = height;
+            layout.on("eachTheme", function(e){
+                var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
+                model.rowHeightInner = height - 1;
+                model.rowHeight = height;
+                
+                if (e.changed) datagrid.resize();
+            });
             
             datagrid.setDataProvider(model);
             datagrid.edit = new TreeEditor(datagrid);

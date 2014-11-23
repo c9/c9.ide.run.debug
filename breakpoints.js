@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "tabManager", "debugger", "ace",
-        "MenuItem", "Divider", "save"
+        "MenuItem", "Divider", "save", "layout"
     ];
     main.provides = ["breakpoints"];
     return main;
@@ -11,6 +11,7 @@ define(function(require, exports, module) {
         var DebugPanel = imports.DebugPanel;
         var settings = imports.settings;
         var ui = imports.ui;
+        var layout = imports.layout;
         var aceHandle = imports.ace;
         var tabs = imports.tabManager;
         var debug = imports.debugger;
@@ -327,9 +328,13 @@ define(function(require, exports, module) {
             list.setTheme({cssClass: "blackdg"});
             list.setOption("maxLines", 200);
             
-            var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 52;
-            model.rowHeightInner = height - 1;
-            model.rowHeight = height;
+            layout.on("eachTheme", function(e){
+                var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 52;
+                model.rowHeightInner = height - 1;
+                model.rowHeight = height;
+                
+                if (e.changed) list.resize();
+            });
             
             list.setDataProvider(model);
 

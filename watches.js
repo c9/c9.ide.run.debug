@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "util", "debugger", "ace", "commands",
-        "menus", "Menu", "MenuItem", "Divider", "panels"
+        "menus", "Menu", "MenuItem", "Divider", "panels", "layout"
     ];
     main.provides = ["watches"];
     return main;
@@ -12,6 +12,7 @@ define(function(require, exports, module) {
         var ui = imports.ui;
         var debug = imports.debugger;
         var util = imports.util;
+        var layout = imports.layout;
         var menus = imports.menus;
         var commands = imports.commands;
         var ace = imports.ace;
@@ -176,9 +177,13 @@ define(function(require, exports, module) {
             datagrid.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
             
-            var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
-            model.rowHeightInner = height - 1;
-            model.rowHeight = height;
+            layout.on("eachTheme", function(e){
+                var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
+                model.rowHeightInner = height - 1;
+                model.rowHeight = height;
+                
+                if (e.changed) datagrid.resize();
+            });
             
             datagrid.setDataProvider(model);
             datagrid.edit = new TreeEditor(datagrid);
