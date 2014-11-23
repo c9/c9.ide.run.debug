@@ -333,7 +333,7 @@ define(function(require, exports, module) {
                 model.rowHeightInner = height - 1;
                 model.rowHeight = height;
                 
-                if (e.changed) list.resize();
+                if (e.changed) (list).resize(true);
             });
             
             list.setDataProvider(model);

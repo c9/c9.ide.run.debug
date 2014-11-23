@@ -191,7 +191,7 @@ define(function(require, exports, module) {
                 modelFrames.rowHeightInner = height - 1;
                 modelFrames.rowHeight = height;
                 
-                if (e.changed) datagrid.resize();
+                if (e.changed) (datagrid).resize(true);
             });
             
             datagrid.setDataProvider(modelFrames);
