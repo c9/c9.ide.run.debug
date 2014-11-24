@@ -706,7 +706,7 @@ define(function(require, exports, module) {
             if (!aceSession)
                 return;
 
-            aceSession.on("change", function(e) {
+            aceSession.on("change", function(delta) {
                 var breakpoints = aceSession.$breakpoints;
                 var doc = aceSession.c9doc;
 
@@ -716,21 +716,19 @@ define(function(require, exports, module) {
                 var bpsInDoc = findBreakpoints(doc.tab.path);
                 if (!bpsInDoc.length)
                     return;
-
-                var delta = e.data;
-                var range = delta.range;
-                if (range.end.row == range.start.row)
+                
+                if (delta.end.row == delta.start.row)
                     return;
 
                 var len, firstRow;
-                len = range.end.row - range.start.row;
+                len = delta.end.row - delta.start.row;
                 if (delta.action == "insertText") {
-                    firstRow = range.start.column
-                        ? range.start.row + 1
-                        : range.start.row;
+                    firstRow = delta.start.column
+                        ? delta.start.row + 1
+                        : delta.start.row;
                 }
                 else {
-                    firstRow = range.start.row;
+                    firstRow = delta.start.row;
                 }
 
                 var i;
@@ -746,7 +744,7 @@ define(function(require, exports, module) {
                         || !isNaN(line = (bp.sourcemap || 0).line)
                         || (line = bp.line);
 
-                    if (typeof line == "number" || isNaN(line))
+                    if (typeof line !== "number" && isNaN(line))
                         return console.warn("Could not find breakpoint, file likely has unsaved changes");
 
                     lines[line] = bp;
@@ -781,13 +779,17 @@ define(function(require, exports, module) {
                         for (i = rem.length; i--; ) {
                             if (rem[i]) {
                                 changed = true;
+                                if (!lines[firstRow + i + 1]) {
+                                    console.warn("Could not find the breakpoint");
+                                    continue;
+                                }
                                 breakpoints[firstRow] = rem[i];
                                 lines[firstRow + i + 1].moved = firstRow;
                                 break;
                             }
                         }
                     }
-                    else {
+                    else if (lines[firstRow]) {
                         lines[firstRow].moved = firstRow;
                     }
 
