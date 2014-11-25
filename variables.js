@@ -53,7 +53,7 @@ define(function(require, exports, module) {
             }, {
                 caption: "Type",
                 value: "type",
-                width: "50"
+                width: "55"
             }];
             
             model.loadChildren = function(node, callback) {
