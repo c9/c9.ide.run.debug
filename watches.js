@@ -76,7 +76,7 @@ define(function(require, exports, module) {
             }, { 
                 caption: "Type",
                 value: "type",
-                width: "50"
+                width: "55"
             }];
             
             // Set and clear the dbg variable
