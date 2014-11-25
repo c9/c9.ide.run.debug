@@ -381,7 +381,7 @@ define(function(require, exports, module) {
                 }
             }
             else {
-                if (path == framePath)
+                if (path == framePath || path == "/" + framePath)
                     addMarker(session, "stack", row);
 
                 var topFrame = frames[0];
