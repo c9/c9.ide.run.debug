@@ -188,10 +188,10 @@ define(function(require, exports, module) {
             
             layout.on("eachTheme", function(e){
                 var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
-                modelFrames.rowHeightInner = height - 1;
+                // modelFrames.rowHeightInner = height - 1;
                 modelFrames.rowHeight = height;
                 
-                if (e.changed) (datagrid).resize(true);
+                if (e.changed) datagrid.resize(true);
             });
             
             datagrid.setDataProvider(modelFrames);

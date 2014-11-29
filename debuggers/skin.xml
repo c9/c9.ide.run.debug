@@ -64,10 +64,12 @@
             }
     
             .listBP .bpItem{
-                padding    : @breakpoint-list-padding;
-                position : relative;
+                padding: @breakpoint-list-padding;
+                position: relative;
                 border-bottom: 1px solid @breakpoint-list-item-border-bottom;
                 border-top: 1px solid @breakpoint-list-item-border-top;
+                box-sizing: border-box;
+                height: @breakpoint-list-item-height;
             }
             .listBP .bpItem:first-child{
                 border-top-color : transparent;

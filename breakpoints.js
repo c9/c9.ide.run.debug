@@ -329,8 +329,8 @@ define(function(require, exports, module) {
             list.setOption("maxLines", 200);
             
             layout.on("eachTheme", function(e){
-                var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 52;
-                model.rowHeightInner = height - 1;
+                var height = parseInt(ui.getStyleRule(".listBP .bpItem", "height"), 10) || 52;
+                // model.rowHeightInner = height - 1;
                 model.rowHeight = height;
                 
                 if (e.changed) (list).resize(true);
