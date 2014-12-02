@@ -364,7 +364,7 @@ define(function(require, exports, module) {
             var row = frame.line;
             
             if (frame.istop) {
-                if (path == framePath) {
+                if (path == framePath || path == "/" + framePath) {
                     if (row >= session.getLength())
                         row = session.getLength() - 1;
                         
