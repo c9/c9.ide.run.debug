@@ -74,6 +74,8 @@ define(function(require, exports, module) {
             // Set and clear the dbg variable
             debug.on("attach", function(e) {
                 dbg = e.implementation;
+                
+                plugin.getElement("btnScripts").setAttribute("disabled", !dbg.features.scripts);
             });
             debug.on("detach", function(e) {
                 dbg = null;
@@ -161,6 +163,9 @@ define(function(require, exports, module) {
 
                 var script = findSourceByPath(e.path);
                 if (!script)
+                    return;
+                    
+                if (!dbg.features.liveUpdate)
                     return;
     
                 var value = e.document.value;

@@ -230,6 +230,9 @@ define(function(require, exports, module) {
             dbg.on("attach", function(e) {
                 e.implementation = dbg;
                 togglePause(pauseOnBreaks);
+                
+                btnPause.setAttribute("disabled", !dbg.features.setBreakBehavior);
+                
                 emit("attach", e);
             }, plugin);
             
