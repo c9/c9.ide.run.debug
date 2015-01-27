@@ -75,7 +75,8 @@ define(function(require, exports, module) {
             debug.on("attach", function(e) {
                 dbg = e.implementation;
                 
-                plugin.getElement("btnScripts").setAttribute("disabled", !dbg.features.scripts);
+                if (button)
+                    button.setAttribute("disabled", !dbg.features.scripts);
             });
             debug.on("detach", function(e) {
                 dbg = null;
@@ -274,7 +275,7 @@ define(function(require, exports, module) {
                 top: "0",
                 class: "scripts",
                 skin: "c9-menu-btn",
-                disabled: "true"
+                disabled: !dbg || !dbg.features.scripts
             }));
             plugin.addElement(menu, button);
             
@@ -514,7 +515,7 @@ define(function(require, exports, module) {
         plugin.on("enable", function(){
             if (drawn) {
                 menu.enable();
-                button.enable();
+                button.setAttribute("disabled", dbg && !dbg.features.scripts);
                 datagrid.enable();
             }
         });

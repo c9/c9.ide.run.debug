@@ -189,18 +189,18 @@ define(function(require, exports, module) {
             
             datagrid.on("beforeRename", function(e) {
                 if (!plugin.enabled)
-                    return e.allowRename = false;
+                    return e.preventDefault();
                 
                 if (!dbg.features.updateScopeVariables)
-                    return false;
+                    return e.preventDefault();
                 
                 // Don't allow setting the value of scopes
                 if (e.node.tagName == "scope")
-                    return e.allowRename = false;
+                    return e.preventDefault();
                 
                 // Don't allow setting "this"
                 if (e.node.name == "this")
-                    return e.allowRename = false;
+                    return e.preventDefault();
             });
         }
         

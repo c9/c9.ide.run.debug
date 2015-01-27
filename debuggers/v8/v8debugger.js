@@ -41,13 +41,13 @@ define(function(require, exports, module) {
         var v8dbg, v8ds, state, activeFrame, sources, socket;
         
         var features = {
-            scripts: true, // Able to download code (disable the scripts button)
-            conditionalBreakpoints: true, // Able to have conditional breakpoints (disable menu item)
-            liveUpdate: true, // Able to update code live (don't do anything when saving)
-            updateWatchedVariables: true, // Able to edit variables in watches (don't show editor)
-            updateScopeVariables: true, // Able to edit variables in variables panel (don't show editor)
-            setBreakBehavior: true, // Able to configure break behavior (disable break behavior button)
-            executeCode: true // Able to execute code (disable REPL)
+            scripts: false, // Able to download code (disable the scripts button)
+            conditionalBreakpoints: false, // Able to have conditional breakpoints (disable menu item)
+            liveUpdate: false, // Able to update code live (don't do anything when saving)
+            updateWatchedVariables: false, // Able to edit variables in watches (don't show editor)
+            updateScopeVariables: false, // Able to edit variables in variables panel (don't show editor)
+            setBreakBehavior: false, // Able to configure break behavior (disable break behavior button)
+            executeCode: false // Able to execute code (disable REPL)
         };
         
         var scopeTypes = {
