@@ -161,6 +161,9 @@ define(function(require, exports, module) {
             //     suspend();
             // });
             
+            if (dbg)
+                btnPause.setAttribute("disabled", !dbg.features.setBreakBehavior);
+            
             btnPause.on("click", function(){
                 togglePause();
             });
@@ -231,7 +234,8 @@ define(function(require, exports, module) {
                 e.implementation = dbg;
                 togglePause(pauseOnBreaks);
                 
-                btnPause.setAttribute("disabled", !dbg.features.setBreakBehavior);
+                if (btnPause)
+                    btnPause.setAttribute("disabled", !dbg.features.setBreakBehavior);
                 
                 emit("attach", e);
             }, plugin);

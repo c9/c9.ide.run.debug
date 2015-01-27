@@ -289,24 +289,25 @@ define(function(require, exports, module) {
             
             datagrid.on("beforeRename", function(e) {
                 if (!plugin.enabled)
-                    return e.allowRename = false;
+                    return e.preventDefault();
                     
-                if (!dbg.features.updateWatchedVariables)
-                    return false;
-                
                 // Don't allow setting the value of new variables
                 if (e.column.caption == "Value" 
                   && (e.node.ref + "").substr(0,3) == "new") {
                     datagrid.edit.startRename(null, 0);
-                    return e.allowRename = false;
+                    return e.preventDefault();
                 }
                 
                 // When editing a property name, always force editing the value
                 if (e.column.caption == "Expression"
                   && e.node.parent != model.root) {
                     datagrid.edit.startRename(null, 1);
-                    return e.allowRename = false;
+                    return e.preventDefault();
                 }
+                
+                if (e.column.caption != "Expression"
+                  && dbg && !dbg.features.updateWatchedVariables)
+                    return e.preventDefault();
             });
             
             datagrid.on("rename", function(e) {
