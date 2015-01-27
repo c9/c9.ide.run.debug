@@ -290,6 +290,9 @@ define(function(require, exports, module) {
             datagrid.on("beforeRename", function(e) {
                 if (!plugin.enabled)
                     return e.allowRename = false;
+                    
+                if (!dbg.features.updateWatchedVariables)
+                    return false;
                 
                 // Don't allow setting the value of new variables
                 if (e.column.caption == "Value" 

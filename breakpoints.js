@@ -19,10 +19,7 @@ define(function(require, exports, module) {
         var Divider = imports.Divider;
 
         var Breakpoint = require("./data/breakpoint");
-
         var basename = require("path").basename;
-
-
         var Tree = require("ace_tree/tree");
         var TreeData = require("ace_tree/data_provider");
         var escapeHTML = require("ace/lib/lang").escapeHTML;
@@ -97,7 +94,7 @@ define(function(require, exports, module) {
 
             save.on("afterSave", function(e) {
                 var doc = e.document;
-                if (dbg) {
+                if (dbg && dbg.features.liveUpdate) {
                     dbg.on("setScriptSource", function(){
                         updateMovedBreakpoints(doc);
                     });
@@ -305,7 +302,7 @@ define(function(require, exports, module) {
                             : (name.indexOf("breakpoint") > -1
                                 ? "Set Condition"
                                 : "Add Conditional Breakpoint");
-                        return true;
+                        return !dbg || dbg.features.conditionalBreakpoints;
                     },
                     onclick: function(){
                         editBreakpoint("edit", meta.ace, meta.line);

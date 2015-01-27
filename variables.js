@@ -191,6 +191,9 @@ define(function(require, exports, module) {
                 if (!plugin.enabled)
                     return e.allowRename = false;
                 
+                if (!dbg.features.updateScopeVariables)
+                    return false;
+                
                 // Don't allow setting the value of scopes
                 if (e.node.tagName == "scope")
                     return e.allowRename = false;

@@ -40,6 +40,16 @@ define(function(require, exports, module) {
         var attached = false;
         var v8dbg, v8ds, state, activeFrame, sources, socket;
         
+        var features = {
+            scripts: true, // Able to download code (disable the scripts button)
+            conditionalBreakpoints: true, // Able to have conditional breakpoints (disable menu item)
+            liveUpdate: true, // Able to update code live (don't do anything when saving)
+            updateWatchedVariables: true, // Able to edit variables in watches (don't show editor)
+            updateScopeVariables: true, // Able to edit variables in variables panel (don't show editor)
+            setBreakBehavior: true, // Able to configure break behavior (disable break behavior button)
+            executeCode: true // Able to execute code (disable REPL)
+        };
+        
         var scopeTypes = {
             "0" : "global",
             "1" : "local",
@@ -1079,6 +1089,18 @@ define(function(require, exports, module) {
          * @class debugger.implementation
          */
         plugin.freezePublicAPI({
+            /**
+             * Specifies the features that this debugger implementation supports
+             * @property {Object} features
+             * @property {Boolean} features.scripts                 Able to download code (disable the scripts button)
+             * @property {Boolean} features.conditionalBreakpoints  Able to have conditional breakpoints (disable menu item)
+             * @property {Boolean} features.liveUpdate              Able to update code live (don't do anything when saving)
+             * @property {Boolean} features.updateWatchedVariables  Able to edit variables in watches (don't show editor)
+             * @property {Boolean} features.updateScopeVariables    Able to edit variables in variables panel (don't show editor)
+             * @property {Boolean} features.setBreakBehavior        Able to configure break behavior (disable break behavior button)
+             * @property {Boolean} features.executeCode             Able to execute code (disable REPL)
+             */
+            features: features,
             /**
              * The type of the debugger implementation. This is the identifier 
              * with which the runner selects the debugger implementation.
