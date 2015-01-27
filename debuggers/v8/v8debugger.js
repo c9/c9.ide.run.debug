@@ -40,30 +40,20 @@ define(function(require, exports, module) {
         var attached = false;
         var v8dbg, v8ds, state, activeFrame, sources, socket;
         
-        var features = {
-            scripts: false, // Able to download code (disable the scripts button)
-            conditionalBreakpoints: false, // Able to have conditional breakpoints (disable menu item)
-            liveUpdate: false, // Able to update code live (don't do anything when saving)
-            updateWatchedVariables: false, // Able to edit variables in watches (don't show editor)
-            updateScopeVariables: false, // Able to edit variables in variables panel (don't show editor)
-            setBreakBehavior: false, // Able to configure break behavior (disable break behavior button)
-            executeCode: false // Able to execute code (disable REPL)
-        };
-        
         var scopeTypes = {
             "0" : "global",
             "1" : "local",
             "2" : "with",
             "3" : "function",
             "4" : "catch"
-        }
+        };
         
         var hasChildren = {
             "regexp"   : 32,
             "error"    : 16,
             "object"   : 8,
             "function" : 4
-        }
+        };
         
         var loaded = false;
         function load(){
@@ -1100,7 +1090,19 @@ define(function(require, exports, module) {
              * @property {Boolean} features.setBreakBehavior        Able to configure break behavior (disable break behavior button)
              * @property {Boolean} features.executeCode             Able to execute code (disable REPL)
              */
-            features: features,
+            features: {
+                scripts: true,
+                conditionalBreakpoints: true,
+                liveUpdate: true,
+                updateWatchedVariables: true,
+                updateScopeVariables: true,
+                setBreakBehavior: true,
+                executeCode: true
+            },
+            /**
+             * Contains the source code of the proxy to run
+             */
+            proxySource: require("text!../netproxy.js"),
             /**
              * The type of the debugger implementation. This is the identifier 
              * with which the runner selects the debugger implementation.

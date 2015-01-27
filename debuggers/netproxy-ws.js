@@ -1,4 +1,5 @@
 var net = require("net");
+var WebSocketServer = require('ws').Server
 var port = parseInt("{PORT}", 10);
 
 var buffer = [];
@@ -27,7 +28,7 @@ var server = net.createServer(function(client) {
     });
     
     browserClient.on("data", function(data) {
-        debugClient.write(data);
+        debugClient.send(data);
     });
     
     if (buffer.length) {
@@ -53,52 +54,55 @@ server.on("error", function(){ process.exit(0); });
 function tryConnect(retries, callback) {
     if (!retries)
         return callback(new Error("Cannot connect to port " + port));
-        
-    var connection = net.connect(port, host);
     
-    connection.on("connect", function() {
-        // console.log("netproxy connected to debugger");
-        connection.removeListener("error", onError);
-        callback(null, connection);
+    var wss = new WebSocketServer({ port: process.env.PORT || 8080 });
+    
+    wss.on('connection', function(ws) {
+        wss.removeListener("error", onError);
+        
+        // We only allow a single connection
+        if (debugClient)
+            return ws.terminate();
+        
+        debugClient = ws;
+    
+        debugClient.on('message', function(data) {
+            if (browserClient) {
+                browserClient.write(data);
+            } else {
+                buffer.push(data);
+            }
+        });
+        
+        debugClient.on("error", function(e) {
+            console.error(e);
+            debugClient = null;
+        });
+        
+        debugClient.on("end", function(data) {
+            debugClient = null;
+        });
+        
+        callback(null, ws);
     });
     
-    connection.addListener("error", onError);
+    wss.addListener("error", onError); // @TODO test error state (port in use)
     function onError(e) {
         if (e.code !== "ECONNREFUSED")
             return callback(e);
         
+        debugClient = null;
         setTimeout(function() {
             tryConnect(retries - 1, callback);
         }, RETRY_INTERVAL);
     }
 }
 
-tryConnect(MAX_RETRIES, function(err, connection) {
+tryConnect(MAX_RETRIES, function(err, ws) {
     if (err)
-        return errHandler(err);
+        return console.error(err);
         
-    debugClient = connection;
-    
-    debugClient.on("data", function(data) {
-        if (browserClient) {
-            browserClient.write(data);
-        } else {
-            buffer.push(data);
-        }
-    });
-    
-    function errHandler(e) {
-        console.log(e);
-        process.exit(0);
-    }
-    
-    debugClient.on("error", errHandler);
-    
-    debugClient.on("end", function(data) {
-        server.close();
-    });
-    
-    start();
+    start(); // @TODO if this is too early, move this to for instance when a first message is received from the device
 });
 
 

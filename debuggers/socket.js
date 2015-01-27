@@ -18,12 +18,12 @@ define(function(require, exports, module) {
         
         var counter = 0;
         
-        function Socket(port, reconnect) {
+        function Socket(port, proxySource, reconnect) {
             var socket = new Plugin();
             var emit = socket.getEmitter();
             var state, stream, connected, away;
             
-            var PROXY = require("text!./netproxy.js")
+            var PROXY = proxySource
                 .replace(/\/\/.*/g, "")
                 .replace(/[\n\r]/g, "")
                 .replace(/\{PORT\}/, port);
