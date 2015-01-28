@@ -23,11 +23,6 @@ define(function(require, exports, module) {
             var emit = socket.getEmitter();
             var state, stream, connected, away;
             
-            var PROXY = proxySource
-                .replace(/\/\/.*/g, "")
-                .replace(/[\n\r]/g, "")
-                .replace(/\{PORT\}/, port);
-            
             socket.__defineGetter__("state", function(){ return state; });
             
             c9.on("connect", function(){
@@ -40,7 +35,7 @@ define(function(require, exports, module) {
                 if (!away) {
                     away = true;
                     state = "away";
-                    emit("away")
+                    emit("away");
                 }
             }, socket);
             c9.on("back", function(){
@@ -90,7 +85,7 @@ define(function(require, exports, module) {
                 }
                 else {
                     proc.spawn(nodeBin, {
-                        args: ["-e", PROXY]
+                        args: ["-e", proxySource]
                     }, function(err, process) {
                         if (err)
                             return emit("error", err);
