@@ -37,6 +37,8 @@ define(function(require, exports, module) {
         
         var TYPE = "v8";
         
+        var PROXY = require("text!../netproxy.js");
+        
         var attached = false;
         var v8dbg, v8ds, state, activeFrame, sources, socket;
         
@@ -591,6 +593,13 @@ define(function(require, exports, module) {
     
         /***** Methods *****/
         
+        function getProxySource(process){
+            return PROXY
+                .replace(/\/\/.*/g, "")
+                .replace(/[\n\r]/g, "")
+                .replace(/\{PORT\}/, process.runner[0].debugport);
+        }
+        
         function attach(s, reconnect, callback) {
             if (v8ds)
                 v8ds.detach();
@@ -1061,6 +1070,17 @@ define(function(require, exports, module) {
         });
         plugin.on("unload", function(){
             unload();
+            
+            breakOnExceptions = null;
+            breakOnUncaughtExceptions = null;
+            breakpointQueue = null;
+            attached = false;
+            v8dbg = null;
+            v8ds = null;
+            state = null;
+            activeFrame = null;
+            sources = null;
+            socket = null;
         });
         
         /***** Register and define API *****/
@@ -1079,6 +1099,10 @@ define(function(require, exports, module) {
          * @class debugger.implementation
          */
         plugin.freezePublicAPI({
+            /**
+             * Contains the source code of the proxy to run
+             */
+            proxySource: require("text!../netproxy.js"),
             /**
              * Specifies the features that this debugger implementation supports
              * @property {Object} features
@@ -1099,10 +1123,6 @@ define(function(require, exports, module) {
                 setBreakBehavior: true,
                 executeCode: true
             },
-            /**
-             * Contains the source code of the proxy to run
-             */
-            proxySource: require("text!../netproxy.js"),
             /**
              * The type of the debugger implementation. This is the identifier 
              * with which the runner selects the debugger implementation.
@@ -1374,7 +1394,12 @@ define(function(require, exports, module) {
              * @param {Function}         callback      Called after the setting is changed.
              * @param {Error}            callback.err  The error if any error occured.
              */
-            setBreakBehavior: setBreakBehavior
+            setBreakBehavior: setBreakBehavior,
+            
+            /**
+             * Returns the source of the proxy
+             */
+            getProxySource: getProxySource
         });
         
         register(null, {

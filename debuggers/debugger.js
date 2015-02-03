@@ -541,7 +541,7 @@ define(function(require, exports, module) {
                 return;
             
             // Create the socket
-            socket = new Socket(runner.debugport, dbg.proxySource, reconnect);
+            socket = new Socket(runner.debugport, dbg.getProxySource(process), reconnect);
             
             // Attach the debugger to the running process
             dbg.attach(socket, reconnect, callback);
