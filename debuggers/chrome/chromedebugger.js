@@ -2,7 +2,6 @@
  * node debugger Module for the Cloud9
  *
  * @copyright 2010, Ajax.org B.V.
- * @license GPLv3 <http://www.gnu.org/licenses/gpl.txt>
  */
 
 //https://coderwall.com/p/hkmedw?utm_campaign=weekly_digest&utm_content=2013-04-02+00%3A00%3A00+UTC&utm_medium=email
