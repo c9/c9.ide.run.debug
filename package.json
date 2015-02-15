@@ -20,6 +20,7 @@
         "core"
     ],
     "licenses": [
-        "MIT"
+        "AGPL",
+        "C9SDK"
     ]
 }
