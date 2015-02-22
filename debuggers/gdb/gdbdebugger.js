@@ -5,8 +5,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "debugger", "c9", "panels", "settings", "dialog.alert",
-        "debug.Frame", "debug.Source", "debug.Variable", "debug.Scope"
+        "Plugin", "debugger", "c9", "panels", "settings", "dialog.alert"
     ];
     main.provides = ["gdbdebugger"];
     return main;
@@ -18,10 +17,10 @@ define(function(require, exports, module) {
         var panels = imports.panels;
         var settings = imports.settings;
         
-        var Frame = imports["debug.Frame"];
-        var Source = imports["debug.Source"];
-        var Variable = imports["debug.Variable"];
-        var Scope = imports["debug.Scope"];
+        var Frame = debug.Frame;
+        var Source = debug.Source;
+        var Variable = debug.Variable;
+        var Scope = debug.Scope;
 
         var MessageReader = require("./lib/MessageReader");
 

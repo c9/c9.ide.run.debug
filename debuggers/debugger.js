@@ -3,10 +3,7 @@ define(function(require, exports, module) {
         "Panel", "settings", "ui", "immediate", "run", "panels", "tabManager", 
         "commands", "dialog.confirm", "dialog.error", "debugger.socket"
     ];
-    main.provides = [
-        "debugger", "debug.Frame", "debug.Source", "debug.Breakpoint", 
-        "debug.Variable", "debug.Scope"
-    ];
+    main.provides = ["debugger"];
     return main;
 
     function main(options, imports, register) {
@@ -670,6 +667,12 @@ define(function(require, exports, module) {
          * @extends Panel
          */
         plugin.freezePublicAPI({
+            Frame: Frame,
+            Source: Source,
+            Breakpoint: Breakpoint,
+            Variable: Variable,
+            Scope: Scope,
+            
             /**
              * When the debugger has hit a breakpoint or an exception, it breaks
              * and shows the active frame in the callstack panel. The active
@@ -967,12 +970,7 @@ define(function(require, exports, module) {
         });
         
         register(null, {
-            "debugger": plugin,
-            "debug.Frame": Frame,
-            "debug.Source": Source,
-            "debug.Breakpoint": Breakpoint,
-            "debug.Variable": Variable,
-            "debug.Scope": Scope
+            "debugger": plugin
         });
     }
 });
