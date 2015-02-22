@@ -4,7 +4,8 @@ define(function(require, exports, module) {
         "commands", "dialog.confirm", "dialog.error", "debugger.socket"
     ];
     main.provides = [
-        "debugger", "Frame", "Source", "Breakpoint", "Variable", "Scope"
+        "debugger", "debug.Frame", "debug.Source", "debug.Breakpoint", 
+        "debug.Variable", "debug.Scope"
     ];
     return main;
 
@@ -967,11 +968,11 @@ define(function(require, exports, module) {
         
         register(null, {
             "debugger": plugin,
-            "Frame": Frame,
-            "Source": Source,
-            "Breakpoint": Breakpoint,
-            "Variable": Variable,
-            "Scope": Scope
+            "debug.Frame": Frame,
+            "debug.Source": Source,
+            "debug.Breakpoint": Breakpoint,
+            "debug.Variable": Variable,
+            "debug.Scope": Scope
         });
     }
 });
