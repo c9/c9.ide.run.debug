@@ -1,5 +1,8 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "debugger", "util", "c9"];
+    main.consumes = [
+        "Plugin", "debugger", "util", "c9", "Frame", "Source", "Breakpoint", 
+        "Variable", "Scope"
+    ];
     main.provides = ["v8debugger"];
     return main;
     
@@ -9,11 +12,11 @@ define(function(require, exports, module) {
         var debug = imports["debugger"];
         var c9 = imports.c9;
         
-        var Frame = require("../../data/frame");
-        var Source = require("../../data/source");
-        var Breakpoint = require("../../data/breakpoint");
-        var Variable = require("../../data/variable");
-        var Scope = require("../../data/scope");
+        var Frame = imports.Frame;
+        var Source = imports.Source;
+        var Breakpoint = imports.Breakpoint;
+        var Variable = imports.Variable;
+        var Scope = imports.Scope;
         
         var V8Debugger = require("./lib/V8Debugger");
         var V8DebuggerService = require("./lib/StandaloneV8DebuggerService");

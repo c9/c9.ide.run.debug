@@ -3,7 +3,9 @@ define(function(require, exports, module) {
         "Panel", "settings", "ui", "immediate", "run", "panels", "tabManager", 
         "commands", "dialog.confirm", "dialog.error", "debugger.socket"
     ];
-    main.provides = ["debugger"];
+    main.provides = [
+        "debugger", "Frame", "Source", "Breakpoint", "Variable", "Scope"
+    ];
     return main;
 
     function main(options, imports, register) {
@@ -17,6 +19,12 @@ define(function(require, exports, module) {
         var run = imports.run;
         var showError = imports["dialog.error"].show;
         var confirm = imports["dialog.confirm"].show;
+        
+        var Frame = require("../../data/frame");
+        var Source = require("../../data/source");
+        var Breakpoint = require("../../data/breakpoint");
+        var Variable = require("../../data/variable");
+        var Scope = require("../../data/scope");
         
         var markup = require("text!./debugger.xml");
         var css = require("text!./debugger.css");
@@ -958,7 +966,12 @@ define(function(require, exports, module) {
         });
         
         register(null, {
-            "debugger": plugin
+            "debugger": plugin,
+            "Frame": Frame,
+            "Source": Source,
+            "Breakpoint": Breakpoint,
+            "Variable": Variable,
+            "Scope": Scope
         });
     }
 });

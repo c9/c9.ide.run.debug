@@ -4,8 +4,10 @@
  * @author Dan Armendariz <danallan AT cs DOT harvard DOT edu>
  */
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "debugger", "c9", "panels", "settings",
-                     "dialog.alert"];
+    main.consumes = [
+        "Plugin", "debugger", "c9", "panels", "settings", "dialog.alert",
+        "Frame", "Source", "Variable", "Scope"
+    ];
     main.provides = ["gdbdebugger"];
     return main;
 
@@ -15,11 +17,11 @@ define(function(require, exports, module) {
         var c9 = imports.c9;
         var panels = imports.panels;
         var settings = imports.settings;
-
-        var Frame = require("../../data/frame");
-        var Source = require("../../data/source");
-        var Variable = require("../../data/variable");
-        var Scope = require("../../data/scope");
+        
+        var Frame = imports.Frame;
+        var Source = imports.Source;
+        var Variable = imports.Variable;
+        var Scope = imports.Scope;
 
         var MessageReader = require("./lib/MessageReader");
 
