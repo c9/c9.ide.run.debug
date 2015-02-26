@@ -59,19 +59,6 @@ define(function(require, exports, module) {
             "function" : 4
         };
         
-        var loaded = false;
-        function load(){
-            if (loaded) return false;
-            loaded = true;
-            
-            debug.registerDebugger(TYPE, plugin);
-        }
-        
-        function unload(){
-            debug.unregisterDebugger(TYPE, plugin);
-            loaded = false;
-        }
-        
         /***** Helper Functions *****/
         
         /**
@@ -1062,16 +1049,10 @@ define(function(require, exports, module) {
         /***** Lifecycle *****/
         
         plugin.on("load", function(){
-            load();
-        });
-        plugin.on("enable", function(){
-            
-        });
-        plugin.on("disable", function(){
-            
+            debug.registerDebugger(TYPE, plugin);
         });
         plugin.on("unload", function(){
-            unload();
+            debug.unregisterDebugger(TYPE, plugin);
             
             breakOnExceptions = null;
             breakOnUncaughtExceptions = null;
@@ -1101,10 +1082,6 @@ define(function(require, exports, module) {
          * @class debugger.implementation
          */
         plugin.freezePublicAPI({
-            /**
-             * Contains the source code of the proxy to run
-             */
-            proxySource: require("text!../netproxy.js"),
             /**
              * Specifies the features that this debugger implementation supports
              * @property {Object} features

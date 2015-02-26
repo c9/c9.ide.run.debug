@@ -541,6 +541,8 @@ define(function(require, exports, module) {
             // Hook for plugins to delay or cancel debugger attaching
             // Whoever cancels is responible for calling the callback
             if (emit("beforeAttach", {
+                process: process,
+                reconnect: reconnect,
                 runner: runner, 
                 callback: callback
             }) === false)
