@@ -26,7 +26,7 @@ define(function(require, exports, module) {
         var emit = plugin.getEmitter();
         emit.setMaxListeners(1000);
 
-        var stripPrefix = options.basePath || "";
+        var stripPrefix = (options.basePath || "").replace(/[\/\\]$/, "");
         var breakOnExceptions = false;
         var breakOnUncaughtExceptions = false;
         var breakpointQueue = [];
