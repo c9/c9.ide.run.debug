@@ -39,8 +39,6 @@ define(function(require, exports, module) {
         
         var TYPE = "v8";
         
-        var PROXY = require("text!../netproxy.js");
-        
         var attached = false;
         var v8dbg, v8ds, state, activeFrame, sources, socket;
         
@@ -583,7 +581,7 @@ define(function(require, exports, module) {
         /***** Methods *****/
         
         function getProxySource(process){
-            return PROXY
+            return debug.proxySource
                 .replace(/\/\/.*/g, "")
                 .replace(/[\n\r]/g, "")
                 .replace(/\{PORT\}/, process.runner[0].debugport);
@@ -1140,6 +1138,49 @@ define(function(require, exports, module) {
             get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
             
             _events: [
+                /**
+                 * Fires when the debugger is attached.
+                 * @event attach
+                 * @param {Object}  e
+                 * @param {debugger.Breakpoint[]}   e.breakpoints        A list of breakpoints that is set in the running process
+                 */
+                "attach",
+                /**
+                 * Fires when the debugger is detached.
+                 * @event detach
+                 */
+                "detach",
+                /**
+                 * Fires when execution is suspended (paused)
+                 * @event suspend
+                 */
+                "suspend",
+                /**
+                 * Fires when the source of a file is updated
+                 * @event setScriptSource
+                 * @param {Object} e
+                 */
+                "setScriptSource",
+                /**
+                 * Fires when the socket experiences an error
+                 * @event error
+                 */
+                "error",
+                /**
+                 * Fires when the current list of breakpoints is needed
+                 * @event getBreakpoints
+                 */
+                "getBreakpoints",
+                /**
+                 * Fires when a breakpoint is updated. This can happen when it
+                 * is set at a location which is not an expression. Certain
+                 * debuggers (such as v8) will move the breakpoint location to
+                 * the first expression that's next in source order.
+                 * @event breakpointUpdate
+                 * @param {Object}               e
+                 * @param {debugger.Breakpoint}  e.breakpoint  
+                 */
+                "breakpointUpdate",
                 /**
                  * Fires when the debugger hits a breakpoint.
                  * @event break

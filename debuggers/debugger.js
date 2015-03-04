@@ -23,6 +23,7 @@ define(function(require, exports, module) {
         var Breakpoint = require("../data/breakpoint");
         var Variable = require("../data/variable");
         var Scope = require("../data/scope");
+        var Data = require("../data/data");
         
         var markup = require("text!./debugger.xml");
         var css = require("text!./debugger.css");
@@ -674,6 +675,13 @@ define(function(require, exports, module) {
             Breakpoint: Breakpoint,
             Variable: Variable,
             Scope: Scope,
+            Data: Data,
+            
+            /**
+             * The source of the default proxy
+             * @property {String} proxySource
+             */
+            proxySource: require("text!./netproxy.js"),
             
             /**
              * When the debugger has hit a breakpoint or an exception, it breaks
