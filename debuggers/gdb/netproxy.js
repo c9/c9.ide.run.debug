@@ -726,7 +726,7 @@ server.on("error", function(err) {
 
 
 // Start listening for browser clients
-var host = process.env.OPENSHIFT_DIY_IP || "127.0.0.1";
+var host = "127.0.0.1";
 server.listen(proxy_port, host, function() {
     start();
 });

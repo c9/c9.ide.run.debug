@@ -52,7 +52,7 @@ define(function(require, exports, module) {
                                 connect(true);
                             }
                             else
-                                emit("err", err);
+                                emit("error", err);
                             return;       
                         }
                     });
@@ -65,6 +65,10 @@ define(function(require, exports, module) {
                     emit("away")
                 }
             }, socket);
+            
+            socket.on("unload", function(){
+                close();
+            });
             
             function connect(force) {
                 if (state == "connected" || state == "connecting") 
@@ -182,6 +186,11 @@ define(function(require, exports, module) {
                  * 
                  */
                 CONNECTING: CONNECTING,
+                
+                /**
+                 * 
+                 */
+                get connected(){ return connected; },
                 
                 // Backward compatibility
                 addEventListener: socket.on,

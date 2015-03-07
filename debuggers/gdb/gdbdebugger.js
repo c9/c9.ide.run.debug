@@ -329,9 +329,6 @@ define(function(require, exports, module) {
             btnStepInto.setAttribute("disabled", false);
             btnStepOver.setAttribute("disabled", false);
 
-            socket.close();
-            socket.unload();
-
             if (reader)
                 reader.destroy();
 

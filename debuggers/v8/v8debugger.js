@@ -640,8 +640,6 @@ define(function(require, exports, module) {
                 v8dbg.removeEventListener("afterCompile", onAfterCompile);
             }
             
-            socket.unload();
-            
             socket = null;
             v8ds = null;
             v8dbg = null;
@@ -803,7 +801,7 @@ define(function(require, exports, module) {
                 }
                 
                 if (!e)
-                    cb(new Error("Could not update source"));
+                    callback(new Error("Could not update source"));
                 else if (e.stepin_recommended)
                     stepInto(cb);
                 else if (e.result.stack_modified === false) {
@@ -1398,12 +1396,19 @@ define(function(require, exports, module) {
             setVariable: setVariable,
             
             /**
-             * 
+             * Starts a frame (usually a function) from the first expression in that frame.
+             * @param {debugger.Frame}   frame          The frame to restart.
+             * @param {Function}         callback
+             * @param {Function}         callback       Called when the frame is restarted.
              */
             restartFrame: restartFrame,
             
             /**
-             * 
+             * Retrieve the value of a variable
+             * @param {debugger.Variable} variable       The variable for which to retrieve the value
+             * @param {Function}          callback
+             * @param {Function}          callback       Called when the value is retrieved
+             * @param {String}            callback.value The value of the variable
              */
             serializeVariable: serializeVariable,
             

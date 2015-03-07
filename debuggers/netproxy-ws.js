@@ -39,7 +39,7 @@ var server = net.createServer(function(client) {
     }
 });
 
-var host = process.env.OPENSHIFT_DIY_IP || "127.0.0.1";
+var host = "127.0.0.1";
 // console.log("started netproxy on ", host + ":" + (port+1));
 
 // Start listening for browser clients
