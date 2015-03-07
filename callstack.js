@@ -192,14 +192,6 @@ define(function(require, exports, module) {
             datagrid.renderer.setTheme({cssClass: "blackdg"});
             datagrid.setOption("maxLines", 200);
             
-            layout.on("eachTheme", function(e){
-                var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
-                // modelFrames.rowHeightInner = height - 1;
-                modelFrames.rowHeight = height;
-                
-                if (e.changed) datagrid.resize(true);
-            });
-            
             datagrid.setDataProvider(modelFrames);
             panels.on("afterAnimate", function(e) {
                 if (panels.isActive("debugger"))
@@ -275,6 +267,7 @@ define(function(require, exports, module) {
             menu.resize = function() {
                 if (!menu.visible) return;
                 
+                list.renderer.setOption("maxLines", Math.floor(window.innerHeight/28 * 3 / 4));
                 setTimeout(function() {
                     if (menu.opener) {
                         menu.reopen = true;
@@ -291,8 +284,6 @@ define(function(require, exports, module) {
             menu.$ext.appendChild(list.container);
             list.setDataProvider(modelSources);
             list.renderer.setTheme({cssClass: "blackdg"});
-            list.setOption("maxLines", 30);
-            modelSources.rowHeight = 18;
             list.on("userSelect", function(e, list){
                 var selected = list.selection.getCursor();
                 debug.openFile({
@@ -301,12 +292,21 @@ define(function(require, exports, module) {
                     generated: true
                 });
             }, plugin);
-            list.renderer.setOption("maxLines", 10);
             list.renderer.setScrollMargin(10, 10);
             list.container.className = "ace_tree c9menu list_dark";
             list.container.style.width = "inherit";
             // Set context menu to the button
             button.setAttribute("submenu", menu);
+
+            layout.on("eachTheme", function(e){
+                var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
+                // modelFrames.rowHeightInner = height - 1;
+                modelFrames.rowHeight = height;
+                modelSources.rowHeight = height;
+                
+                if (e.changed) datagrid.resize(true);
+            });
+            
         }
         
         function setActiveFrame(frame, fromDG) {
