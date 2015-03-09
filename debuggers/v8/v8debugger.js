@@ -1,3 +1,5 @@
+// https://github.com/joyent/node/blob/master/lib/_debugger.js
+// https://code.google.com/p/v8-wiki/wiki/DebuggerProtocol
 define(function(require, exports, module) {
     main.consumes = [
         "Plugin", "debugger", "util", "c9"
@@ -26,7 +28,7 @@ define(function(require, exports, module) {
         var emit = plugin.getEmitter();
         emit.setMaxListeners(1000);
 
-        var stripPrefix = options.basePath || "";
+        var stripPrefix = (options.basePath || "").replace(/[\/\\]$/, "");
         var breakOnExceptions = false;
         var breakOnUncaughtExceptions = false;
         var breakpointQueue = [];
@@ -336,7 +338,7 @@ define(function(require, exports, module) {
                 if (sources[i].id == scriptId)
                     return sources[i].path;
             }
-        };
+        }
         
         function getScriptIdFromPath(path) {
             for (var i = 0; i < sources.length; i++) {
@@ -868,16 +870,10 @@ define(function(require, exports, module) {
             var path = sm.source || bp.path;
             var line = sm.line || bp.line;
             var column = sm.column || bp.column;
-            var scriptId = getScriptIdFromPath(path);
-            
-            if (!scriptId) {
-                // Wait until source is parsed
-                breakpointQueue.push([bp, callback]);
-                callback && callback(new Error("Source not available yet. Queuing request."));
-                return false;
-            }
+            if (path[0] == "/")
+                path = stripPrefix + path;
 
-            v8dbg.setbreakpoint("scriptId", scriptId, line, column, bp.enabled, 
+            v8dbg.setbreakpoint("script", path, line, column, bp.enabled, 
                 bp.condition, bp.ignoreCount, function(info) {
                     if (!info)
                         return callback && callback(new Error());
