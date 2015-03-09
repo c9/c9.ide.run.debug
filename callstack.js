@@ -284,13 +284,14 @@ define(function(require, exports, module) {
             menu.$ext.appendChild(list.container);
             list.setDataProvider(modelSources);
             list.renderer.setTheme({cssClass: "blackdg"});
-            list.on("userSelect", function(e, list){
+            list.on("click", function(e) {
                 var selected = list.selection.getCursor();
                 debug.openFile({
                     scriptId: selected.id,
                     path: selected.path,
                     generated: true
                 });
+                menu.hide();
             }, plugin);
             list.renderer.setScrollMargin(10, 10);
             list.container.className = "ace_tree c9menu list_dark";
