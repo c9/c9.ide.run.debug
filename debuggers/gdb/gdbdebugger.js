@@ -196,8 +196,8 @@ define(function(require, exports, module) {
         /*
          * Set the debugger state and emit state change
          */
-        function setState(state) {
-            state = state;
+        function setState(_state) {
+            state = _state;
             emit("stateChange", {state: state});
         }
 
