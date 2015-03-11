@@ -18,6 +18,13 @@ define(function(require, exports, module) {
         var showError = imports["dialog.error"].show;
         var confirm = imports["dialog.confirm"].show;
         
+        var Frame = require("../data/frame");
+        var Source = require("../data/source");
+        var Breakpoint = require("../data/breakpoint");
+        var Variable = require("../data/variable");
+        var Scope = require("../data/scope");
+        var Data = require("../data/data");
+        
         var markup = require("text!./debugger.xml");
         var css = require("text!./debugger.css");
         
@@ -535,6 +542,8 @@ define(function(require, exports, module) {
             // Hook for plugins to delay or cancel debugger attaching
             // Whoever cancels is responible for calling the callback
             if (emit("beforeAttach", {
+                process: process,
+                reconnect: reconnect,
                 runner: runner, 
                 callback: callback
             }) === false)
@@ -661,6 +670,19 @@ define(function(require, exports, module) {
          * @extends Panel
          */
         plugin.freezePublicAPI({
+            Frame: Frame,
+            Source: Source,
+            Breakpoint: Breakpoint,
+            Variable: Variable,
+            Scope: Scope,
+            Data: Data,
+            
+            /**
+             * The source of the default proxy
+             * @property {String} proxySource
+             */
+            proxySource: require("text!./netproxy.js"),
+            
             /**
              * When the debugger has hit a breakpoint or an exception, it breaks
              * and shows the active frame in the callstack panel. The active

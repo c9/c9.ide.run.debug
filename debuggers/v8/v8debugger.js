@@ -1,5 +1,7 @@
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "debugger", "util", "c9"];
+    main.consumes = [
+        "Plugin", "debugger", "util", "c9"
+    ];
     main.provides = ["v8debugger"];
     return main;
     
@@ -9,11 +11,11 @@ define(function(require, exports, module) {
         var debug = imports["debugger"];
         var c9 = imports.c9;
         
-        var Frame = require("../../data/frame");
-        var Source = require("../../data/source");
-        var Breakpoint = require("../../data/breakpoint");
-        var Variable = require("../../data/variable");
-        var Scope = require("../../data/scope");
+        var Frame = debug.Frame;
+        var Source = debug.Source;
+        var Breakpoint = debug.Breakpoint;
+        var Variable = debug.Variable;
+        var Scope = debug.Scope;
         
         var V8Debugger = require("./lib/V8Debugger");
         var V8DebuggerService = require("./lib/StandaloneV8DebuggerService");
@@ -37,8 +39,6 @@ define(function(require, exports, module) {
         
         var TYPE = "v8";
         
-        var PROXY = require("text!../netproxy.js");
-        
         var attached = false;
         var v8dbg, v8ds, state, activeFrame, sources, socket;
         
@@ -56,19 +56,6 @@ define(function(require, exports, module) {
             "object"   : 8,
             "function" : 4
         };
-        
-        var loaded = false;
-        function load(){
-            if (loaded) return false;
-            loaded = true;
-            
-            debug.registerDebugger(TYPE, plugin);
-        }
-        
-        function unload(){
-            debug.unregisterDebugger(TYPE, plugin);
-            loaded = false;
-        }
         
         /***** Helper Functions *****/
         
@@ -594,7 +581,7 @@ define(function(require, exports, module) {
         /***** Methods *****/
         
         function getProxySource(process){
-            return PROXY
+            return debug.proxySource
                 .replace(/\/\/.*/g, "")
                 .replace(/[\n\r]/g, "")
                 .replace(/\{PORT\}/, process.runner[0].debugport);
@@ -1060,16 +1047,10 @@ define(function(require, exports, module) {
         /***** Lifecycle *****/
         
         plugin.on("load", function(){
-            load();
-        });
-        plugin.on("enable", function(){
-            
-        });
-        plugin.on("disable", function(){
-            
+            debug.registerDebugger(TYPE, plugin);
         });
         plugin.on("unload", function(){
-            unload();
+            debug.unregisterDebugger(TYPE, plugin);
             
             breakOnExceptions = null;
             breakOnUncaughtExceptions = null;
@@ -1099,10 +1080,6 @@ define(function(require, exports, module) {
          * @class debugger.implementation
          */
         plugin.freezePublicAPI({
-            /**
-             * Contains the source code of the proxy to run
-             */
-            proxySource: require("text!../netproxy.js"),
             /**
              * Specifies the features that this debugger implementation supports
              * @property {Object} features
@@ -1161,6 +1138,49 @@ define(function(require, exports, module) {
             get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
             
             _events: [
+                /**
+                 * Fires when the debugger is attached.
+                 * @event attach
+                 * @param {Object}  e
+                 * @param {debugger.Breakpoint[]}   e.breakpoints        A list of breakpoints that is set in the running process
+                 */
+                "attach",
+                /**
+                 * Fires when the debugger is detached.
+                 * @event detach
+                 */
+                "detach",
+                /**
+                 * Fires when execution is suspended (paused)
+                 * @event suspend
+                 */
+                "suspend",
+                /**
+                 * Fires when the source of a file is updated
+                 * @event setScriptSource
+                 * @param {Object} e
+                 */
+                "setScriptSource",
+                /**
+                 * Fires when the socket experiences an error
+                 * @event error
+                 */
+                "error",
+                /**
+                 * Fires when the current list of breakpoints is needed
+                 * @event getBreakpoints
+                 */
+                "getBreakpoints",
+                /**
+                 * Fires when a breakpoint is updated. This can happen when it
+                 * is set at a location which is not an expression. Certain
+                 * debuggers (such as v8) will move the breakpoint location to
+                 * the first expression that's next in source order.
+                 * @event breakpointUpdate
+                 * @param {Object}               e
+                 * @param {debugger.Breakpoint}  e.breakpoint  
+                 */
+                "breakpointUpdate",
                 /**
                  * Fires when the debugger hits a breakpoint.
                  * @event break
