@@ -33,8 +33,8 @@ define(function(require, exports, module) {
         var plugin = new Panel("Ajax.org", main.consumes, {
             index: options.index || 100,
             caption: "Debugger",
-            className: "debugger",
-            elementName: "winDebugger",
+            buttonCSSClass: "debugger",
+            panelCSSClass: "debugcontainer",
             minWidth: 165,
             width: 300,
             where: options.where || "right"
@@ -138,12 +138,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             // Create UI elements
-            var bar = opts.aml.appendChild(new ui.bar({
-                "id"    : "winDebugger",
-                "skin"  : "panel-bar",
-                "class" : "debugcontainer"
-            }));
-            plugin.addElement(bar);
+            var bar = opts.aml;
             
             var scroller = bar.$ext.appendChild(document.createElement("div"));
             scroller.className = "scroller";
