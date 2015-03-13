@@ -12,6 +12,7 @@ var Util = require("./util");
 var EventEmitter = Util.EventEmitter;
 var MessageReader = require("./MessageReader");
 var DevToolsMessage = require("./DevToolsMessage");
+var byteLength = Util.byteLength;
 
 var StandaloneV8DebuggerService = module.exports = function(socket) {
     this.$socket = socket;
@@ -76,7 +77,11 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
             content = JSON.parse(contentText);
         }
         catch (ex) {
-            return;
+            return setTimeout(function() { 
+                var e = new Error("Debugger recieved invalid message");
+                e.data = contentText;
+                throw e;
+            });
         }
         
         for (var i = 0; i < this.$pending.length; i++) {
@@ -98,10 +103,10 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
             
         this.$send(v8Command);
     };
-
+       
     this.$send = function(text) {
-        var msg = ["Content-Length:", text.length, "\r\n\r\n", text].join("");
-        //console.log("SEND>", msg);
+        var msg = ["Content-Length:", byteLength(text), "\r\n\r\n", text].join("");
+        // console.log("SEND>", msg);
         this.$socket.send(msg);
     };
 

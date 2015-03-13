@@ -8,11 +8,16 @@
 define(function(require, exports, module) {
 "use strict";
 
+var Util = require("./util");
+var readBytes = Util.readBytes;
+
 var MessageReader = module.exports = function(socket, callback) {
     this.$socket = socket;
     this.$callback = callback;
 
     this.$received = "";
+    this.$expectedBytes = 0;
+    this.$offset = 0;
     this.$cbReceive = this.$onreceive.bind(this);
     socket.on("data", this.$cbReceive);
 };
@@ -20,7 +25,7 @@ var MessageReader = module.exports = function(socket, callback) {
 (function() {
 
     this.$onreceive = function(data) {
-        //this.$socket.clearBuffer();
+        // this.$socket.clearBuffer();
         this.$received += data;
 
         var fullResponse;
@@ -29,26 +34,31 @@ var MessageReader = module.exports = function(socket, callback) {
     };
 
     this.$checkForWholeMessage = function() {
-        var i, c, l;
-        var responseLength;
         var fullResponse = false;
         var received = this.$received;
-
-        if ((i = received.indexOf("\r\n\r\n")) != -1) {
-            if ((c = received.indexOf("Content-Length:")) != -1) {
-                l = received.substring(c + 15);
-                l = l.substring(0, l.indexOf("\r\n"));
-                responseLength = i + 4 + parseInt(l, 10);
-                if (responseLength <= received.length) {
-                    fullResponse = received.substring(0, responseLength);
-                    this.$received = received.substring(responseLength);
-                    this.$socket.setMinReceiveSize(0);
+        if (!this.$expectedBytes) { // header
+            var i = received.indexOf("\r\n\r\n");
+            if (i !== -1) {
+                var c = received.lastIndexOf("Content-Length:", i);
+                if (c != -1) {
+                    var l = received.indexOf("\r\n", c);
+                    var len = parseInt(received.substring(c + 15, l), 10);
+                    this.$expectedBytes = len;
                 }
-                else {
-                    this.$socket.setMinReceiveSize(responseLength - received.length);
-                }
+                this.$offset = i + 4;
             }
         }
+        if (this.$expectedBytes) { // body
+            var result = readBytes(received, this.$offset, this.$expectedBytes);
+            this.$expectedBytes -= result.bytes;
+            this.$offset += result.length;
+        }
+        if (this.$offset && this.$expectedBytes <= 0) {
+            fullResponse = received.substring(0, this.$offset);
+            this.$received = received.substr(this.$offset);
+            this.$offset = this.$expectedBytes = 0;
+        }
+        // console.log("RECEIVE>", fullResponse, this.$received.length);
         return fullResponse;
     };
     
