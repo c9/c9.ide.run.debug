@@ -1,22 +1,23 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "tabManager", "debugger", "ace",
-        "MenuItem", "Divider", "save", "layout"
+        "MenuItem", "Divider", "save", "layout", "fs"
     ];
     main.provides = ["breakpoints"];
     return main;
 
     function main(options, imports, register) {
-        var save = imports.save;
         var DebugPanel = imports.DebugPanel;
         var settings = imports.settings;
+        var save = imports.save;
         var ui = imports.ui;
-        var layout = imports.layout;
-        var aceHandle = imports.ace;
         var tabs = imports.tabManager;
         var debug = imports.debugger;
+        var layout = imports.layout;
+        var aceHandle = imports.ace;
         var MenuItem = imports.MenuItem;
         var Divider = imports.Divider;
+        var fs = imports.fs;
 
         var Breakpoint = require("./data/breakpoint");
         var basename = require("path").basename;
@@ -68,13 +69,28 @@ define(function(require, exports, module) {
                 return "bpItem " + (node.enabled ? "checked " : " ") + node.className;
             };
 
-            // ide.on("afterfilesave", function(e) {
-            //     var doc = e.doc;
-            //     if (!doc || !doc.acesession)
-            //         return;
-            //     if (doc.acesession.$breakpoints.length)
-            //         _self.updateBreakpointModel(doc.acesession);
-            // });
+            fs.on("afterRename", function(e) {
+                var oldPath = e.args[0];
+                var newPath = e.args[1];
+                
+                var changed = false;
+                breakpoints.forEach(function(bp) {
+                    if (bp.path && bp.path.indexOf(oldPath) === 0) {
+                        var char = bp.path.charAt(oldPath.length);
+                        // Make sure that a path like /Untitled1 is not matched
+                        // by a path like /Untitled, which are clearly different
+                        // files with no relation to each other
+                        if (!char || char == "/") {
+                            bp.path = bp.path.replace(oldPath, newPath);
+                            bp.text = basename(bp.path);
+                            changed = true;
+                            updateBreakpointAtDebugger(bp, "add");
+                        }
+                    }
+                });
+                if (changed)
+                    settings.save();
+            });
 
             tabs.on("tabAfterActivate", function(e) {
                 var tab = e.tab;
