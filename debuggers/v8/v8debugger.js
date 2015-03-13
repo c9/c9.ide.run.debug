@@ -870,6 +870,13 @@ define(function(require, exports, module) {
             var path = sm.source || bp.path;
             var line = sm.line || bp.line;
             var column = sm.column || bp.column;
+            
+            if (!path) {
+                // TODO find out why this happens
+                callback && callback(new Error("Ignoring breakpoint with invalid path."));
+                return false;
+            }
+            
             if (path[0] == "/")
                 path = stripPrefix + path;
 
