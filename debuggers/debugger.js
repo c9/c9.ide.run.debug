@@ -460,9 +460,73 @@ define(function(require, exports, module) {
             });
         }
         
-        function debug(p, reconnect, callback) {
-            var err;
+        function switchDebugger(runner){
+            var debuggerId = runner["debugger"];
             
+            // Only update debugger implementation if switching or not yet set
+            if (!dbg || dbg != debuggers[debuggerId]) {
+                
+                // Currently only supporting one debugger at a time
+                if (dbg) {
+                    // Detach from runner
+                    dbg.detach();
+                    
+                    // Unload the socket
+                    socket.unload();
+                    
+                    // Remove all the set events
+                    plugin.cleanUp(true);
+                }
+                
+                // Find the new debugger
+                dbg = debuggers[debuggerId];
+                if (!dbg) {
+                    var err = new Error(debuggerId
+                        ? "Unable to find a debugger with type " + debuggerId
+                        : "No debugger type specified in runner");
+                    err.code = "EDEBUGGERNOTFOUND";
+                    return err;
+                }
+                
+                // Attach all events necessary
+                initializeDebugger();
+            }
+        }
+        
+        function runNow(runner, options, name, callback) {
+            if (options.debug)
+                switchDebugger(runner);
+            
+            if (options.debug && dbg.features.listeningDebugger)
+                options.deferred = true;
+            
+            var process = run.run(runner, options, name, function(err, pid){
+                if (process.running < process.STARTING)
+                    return;
+                
+                if (options.debug) {
+                    if (dbg.features.listeningDebugger) {
+                        dbg.on("connect", function(){
+                            process.run(callback);
+                        }, plugin);
+                    }
+                    
+                    debug(process, function(err) {
+                        if (err) {
+                            window.console.warn(err);
+                            return; // Either the debugger is not found or paused
+                        }
+                    });
+                }
+                
+                if (!options.debug || !dbg.features.listeningDebugger)
+                    callback(err, pid);
+            });
+            
+            return process;
+        }
+        
+        function debug(p, reconnect, callback) {
             if (reconnect && process == p && dbg.connected) {
                 return; // We're already connecting / connected
             }
@@ -478,34 +542,9 @@ define(function(require, exports, module) {
             if (runner instanceof Array)
                 runner = runner[runner.length - 1];
             
-            // Only update debugger implementation if switching or not yet set
-            if (!dbg || dbg != debuggers[runner["debugger"]]) {
-                
-                // Currently only supporting one debugger at a time
-                if (dbg) {
-                    // Detach from runner
-                    dbg.detach();
-                    
-                    // Unload the socket
-                    socket.unload();
-                    
-                    // Remove all the set events
-                    plugin.cleanUp(true);
-                }
-                
-                // Find the new debugger
-                dbg = debuggers[runner["debugger"]];
-                if (!dbg) {
-                    err = new Error(runner["debugger"]
-                        ? "Unable to find a debugger with type " + runner["debugger"]
-                        : "No debugger type specified in runner");
-                    err.code = "EDEBUGGERNOTFOUND";
-                    return callback(err);
-                }
-                
-                // Attach all events necessary
-                initializeDebugger();
-            }
+            // Switch to the right debugger
+            var err = switchDebugger(runner);
+            if (err) return callback(err);
             
             if (process.running == process.STARTED)
                 running = process.STARTED;
@@ -842,6 +881,11 @@ define(function(require, exports, module) {
                  */
                 "getBreakpoints"
             ],
+            
+            /**
+             * 
+             */
+            run: runNow,
             
             /**
              * Attaches the debugger that is specified by the runner to the
