@@ -506,7 +506,7 @@ define(function(require, exports, module) {
                 
                 if (options.debug) {
                     if (dbg.features.listeningDebugger) {
-                        dbg.on("connect", function(){
+                        dbg.once("connect", function(){
                             process.run(callback);
                         }, plugin);
                     }
