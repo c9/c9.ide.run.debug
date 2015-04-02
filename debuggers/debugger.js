@@ -493,18 +493,19 @@ define(function(require, exports, module) {
             }
         }
         
-        function runNow(runner, options, name, callback) {
+        function doRun(runner, options, name, callback) {
             if (options.debug)
                 switchDebugger(runner);
-                
-            var hasListeningDebugger = options.debug && (dbg && dbg.features.listeningDebugger);
             
-            if (hasListeningDebugger)
-                options.deferred = true;
+            options.deferred = true;
             
             var process = run.run(runner, options, name, function(err, pid){
+                if (err) return callback(err);
+                
                 if (process.running < process.STARTING)
                     return;
+                    
+                var hasListeningDebugger = options.debug && (dbg && dbg.features.listeningDebugger);
                 
                 if (hasListeningDebugger) {
                     dbg.once("connect", function(){
@@ -512,7 +513,7 @@ define(function(require, exports, module) {
                     }, plugin);
                 }
                 else {
-                    callback(err, pid);
+                    process.run(callback);
                 }
                     
                 if (options.debug) {
@@ -887,7 +888,7 @@ define(function(require, exports, module) {
             /**
              * 
              */
-            run: runNow,
+            run: doRun,
             
             /**
              * Attaches the debugger that is specified by the runner to the
