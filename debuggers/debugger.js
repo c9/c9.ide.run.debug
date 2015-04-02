@@ -496,8 +496,10 @@ define(function(require, exports, module) {
         function runNow(runner, options, name, callback) {
             if (options.debug)
                 switchDebugger(runner);
+                
+            var hasListeningDebugger = (dbg && dbg.features.listeningDebugger);
             
-            if (options.debug && (dbg && dbg.features.listeningDebugger))
+            if (options.debug && hasListeningDebugger)
                 options.deferred = true;
             
             var process = run.run(runner, options, name, function(err, pid){
@@ -505,7 +507,7 @@ define(function(require, exports, module) {
                     return;
                 
                 if (options.debug) {
-                    if (dbg && dbg.features.listeningDebugger) {
+                    if (hasListeningDebugger) {
                         dbg.once("connect", function(){
                             process.run(callback);
                         }, plugin);
@@ -519,7 +521,7 @@ define(function(require, exports, module) {
                     });
                 }
                 
-                if (!options.debug || (dbg && !dbg.features.listeningDebugger))
+                if (!options.debug || !hasListeningDebugger)
                     callback(err, pid);
             });
             
