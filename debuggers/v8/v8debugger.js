@@ -803,7 +803,7 @@ define(function(require, exports, module) {
                 }
                 
                 if (!e)
-                    callback(new Error("Could not update source"));
+                    callback(new Error("Debugger could not update source of saved file."));
                 else if (e.stepin_recommended)
                     stepInto(cb);
                 else if (e.result.stack_modified === false) {
