@@ -169,10 +169,15 @@ define(function(require, exports, module) {
                 if (!dbg.features.liveUpdate)
                     return;
     
-                var value = e.document.value;
+                var value = e.document.value, lastError;
                 dbg.setScriptSource(script, value, false, function(err) {
-                    if (err)
-                        return showError(err.message);
+                    if (err) {
+                        if (lastError != err.message) {
+                            lastError = err.message;
+                            showError(err.message);
+                        }
+                        return;
+                    }
                     
                     // @todo update the UI
                 });
