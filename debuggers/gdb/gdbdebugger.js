@@ -16,7 +16,7 @@ define(function(require, exports, module) {
         var c9 = imports.c9;
         var panels = imports.panels;
         var settings = imports.settings;
-        
+
         var Frame = debug.Frame;
         var Source = debug.Source;
         var Variable = debug.Variable;
@@ -71,7 +71,6 @@ define(function(require, exports, module) {
 
         function unload(){
             debug.unregisterDebugger(TYPE, plugin);
-            loaded = false;
         }
 
         /***** Helper Functions *****/
@@ -290,10 +289,10 @@ define(function(require, exports, module) {
                 // send breakpoints to gdb and attach when done
                 var breakpoints = emit("getBreakpoints");
 
-                setManyBreakpoints(breakpoints, function() {
+                setManyBreakpoints(breakpoints, function(bps) {
                     // setup is complete, attach to debugger
                     attached = true;
-                    emit("attach", { breakpoints: breakpoints });
+                    emit("attach", { breakpoints: bps });
 
                     // begin running program
                     resume();
@@ -319,7 +318,7 @@ define(function(require, exports, module) {
 
         function detach() {
             console.log("gdbdebugger: detach");
-                if (!socket)
+            if (!socket)
                 return;
 
             btnResume.$ext.style.display = "inline-block";
@@ -400,7 +399,9 @@ define(function(require, exports, module) {
                 if (reply.state == "done") {
                     callback && callback(null, new Variable({
                         name: expression,
-                        value: reply.status.value
+                        value: reply.status.value,
+                        type: "number", /* other types produce JS errors */
+                        children: false
                     }));
                 }
                 else if (typeof reply.status !== "undefined") {
@@ -427,6 +428,7 @@ define(function(require, exports, module) {
         function setBreakpoint(bp, callback) {
             sendCommand("bp-set", bp.data, function(reply) {
                 if (reply.state == "done") {
+                    bp.id = reply.status.bkpt.number;
                     callback && callback(null, bp, {});
                 }
                 else {
@@ -439,14 +441,20 @@ define(function(require, exports, module) {
             function _setBPs(breakpoints, callback, i) {
                 // run callback once we've exhausted setting breakpoints
                 if (i == breakpoints.length) {
-                    callback();
+                    callback(breakpoints);
                     return;
                 }
 
-                var bp = breakpoints[i];
-
-                sendCommand("bp-set", bp.data, function(reply) {
-                    _setBPs(breakpoints, callback, i+1);
+                sendCommand("bp-set", breakpoints[i].data, function(reply) {
+                    if (reply.state == "done") {
+                        breakpoints[i].id = reply.status.bkpt.number;
+                        _setBPs(breakpoints, callback, i+1);
+                    }
+                    else {
+                        // breakpoint failure, remove it before going on
+                        breakpoints.splice(i, 1);
+                        _setBPs(breakpoints, callback, i);
+                    }
                 });
             }
 
@@ -489,6 +497,8 @@ define(function(require, exports, module) {
         });
         plugin.on("unload", function(){
             unload();
+            loaded = false;
+            attached = false;
         });
 
         /***** Register and define API *****/
@@ -525,7 +535,7 @@ define(function(require, exports, module) {
                 updateWatchedVariables: true,
                 updateScopeVariables: true,
                 setBreakBehavior: false,
-                executeCode: false
+                executeCode: true
             },
             /**
              * The type of the debugger implementation. This is the identifier
