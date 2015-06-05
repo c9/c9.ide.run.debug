@@ -291,15 +291,15 @@ function GDB() {
             in_array = t_in_array[t_in_array.length - 1];
 
             /* If we encounter ',"' inside an array delete until '":' or '"=' */
-            if (in_array 
-                && (args[i] == "," || args[i] == "[") 
+            if (in_array
+                && (args[i] == "," || args[i] == "[")
                 && args[i+1] == "\"") {
                 var k = i;
 
                 /* Walk the label */
-                while ((k < args.length) 
-                       && (args[k] != ":") 
-                       && (args[k] != "=") 
+                while ((k < args.length)
+                       && (args[k] != ":")
+                       && (args[k] != "=")
                        && (args[k] != "]")) {
                     k++;
                 }
@@ -317,7 +317,7 @@ function GDB() {
 
     this._parseStateArgs = function(args) {
         /* This is crazy but GDB almost provides a JSON output */
-        args = args.replace(/=/g, "!:");
+        args = args.replace(/=(?=["|{|\[])/g, '!:');
         args = args.replace(/([a-zA-Z0-9-]*)!:/g, "\"$1\":");
 
         /* Remove array labels */
@@ -451,7 +451,7 @@ function GDB() {
                 frame,
                 "--simple-values"
             ].join(" ");
-            this.issue(4 + frame % 2, "-stack-list-locals", args, 
+            this.issue(4 + frame % 2, "-stack-list-locals", args,
                        frameLocals.bind(this, frame));
         }
         function frameLocals(i, state) {
@@ -580,6 +580,10 @@ function GDB() {
         if (command.text && !isNaN(command.line))
             command.lineno = command.text + ":" + (command.line + 1);
 
+        // fix some condition syntax
+        if (command.condition)
+            command.condition = command.condition.replace(/=(["|{|\[])/g, "= $1");
+
         switch (command.command) {
             case 'run':
             case 'continue':
@@ -597,9 +601,11 @@ function GDB() {
 
             case "bp-change":
                 if (command.enabled === false)
-                    this.issue(id, "clear", command.lineno);
+                    this.issue(id, "-break-disable", command.id);
+                else if (command.condition)
+                    this.issue(id, "-break-condition", command.id + " " + command.condition);
                 else
-                    this.issue(id, "-break-insert", command.lineno);
+                    this.issue(id, "-break-enable", command.id);
                 break;
 
             case "bp-clear":
@@ -608,10 +614,21 @@ function GDB() {
                 break;
 
             case "bp-set":
-                if (command.enabled !== false)
-                    this.issue(id, "-break-insert", command.lineno);
-                else
-                    this.issue(id);
+                var args = [];
+
+                // create a disabled breakpoint if requested
+                if (command.enabled === false)
+                    args.push("-d");
+
+                if (command.condition) {
+                    command.condition = command.condition.replace(/"/g, '\\"');
+                    args.push("-c");
+                    args.push('"' + command.condition + '"');
+                }
+
+                args.push(command.lineno);
+
+                this.issue(id, "-break-insert", args.join(" "));
                 break;
 
             case "bp-list":
