@@ -19,6 +19,7 @@ define(function(require, exports, module) {
 
         var Frame = debug.Frame;
         var Source = debug.Source;
+        var Breakpoint = debug.Breakpoint;
         var Variable = debug.Variable;
         var Scope = debug.Scope;
 
@@ -484,21 +485,36 @@ define(function(require, exports, module) {
 
 
         function changeBreakpoint(bp, callback) {
-            sendCommand("bp-change", bp.data, function() {
-                callback && callback(bp);
+            sendCommand("bp-change", bp.data, function(err) {
+                // TODO should bp be newly created based on reply?
+                callback && callback(err, bp);
             });
         }
 
         function clearBreakpoint(bp, callback) {
-            sendCommand("bp-clear", bp.data, function() {
-                callback && callback(bp);
+            sendCommand("bp-clear", bp.data, function(err) {
+                // TODO should bp be newly created based on reply?
+                callback && callback(err, bp);
             });
         }
 
         function listBreakpoints(callback) {
-            // normally we'd send bp-list, but since gdb breakpoint state
-            // is entirely dependent on UI, we'll manage it globally
-            callback && callback(null, emit("getBreakpoints"));
+            sendCommand("bp-list", {}, function(err, reply) {
+                if (err)
+                    return callback && callback(err);
+
+                console.log(reply);
+                callback(null, reply.BreakpointTable.body.map(function (bp) {
+                    return new Breakpoint({
+                        id: bp.number,
+                        path: bp.fullname,
+                        line: bp.line,
+                        ignoreCount: (bp.hasOwnProperty("ignore")) ? bp.ignore : "",
+                        condition: (bp.hasOwnProperty("cond")) ? bp.cond : "",
+                        enabled: (bp.enabled == "y") ? true : false
+                    });
+                }));
+            });
         }
 
         function serializeVariable(variable, callback) {
