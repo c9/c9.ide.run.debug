@@ -186,7 +186,9 @@ define(function(require, exports, module) {
          * A special case of sendCommand that demands a status update on reply.
          */
         function sendExecutionCommand(command, callback) {
-            sendCommand(command, {}, function(reply) {
+            sendCommand(command, {}, function(err, reply) {
+                if (err)
+                    return callback && callback(err);
                 if (reply.status !== 'undefined')
                     setState(reply.status);
                 callback && callback();
@@ -231,12 +233,22 @@ define(function(require, exports, module) {
             if (typeof callbacks[content._id] === "function")
                 callback = callbacks[content._id];
 
+            // generate an error if the command did not complete successfully
+            var err = null;
+            if (!content.hasOwnProperty("state") || content.state != "done") {
+                var str = "Command " + commands[content._id] + " failed";
+                if (content.hasOwnProperty("msg"))
+                    str += content.msg;
+
+                err = new Error(str);
+            }
+
             // remove buffers
             delete callbacks[content._id];
             delete commands[content._id];
 
             // run callback
-            callback && callback(content);
+            callback && callback(err, content);
         }
 
 
@@ -268,7 +280,10 @@ define(function(require, exports, module) {
 
             socket.on("back", function() {
                 console.log("gdbdebugger: socket's back");
-                sendExecutionCommand("status", function() {
+                sendExecutionCommand("status", function(err) {
+                    if (err)
+                        return callback(err);
+
                     // flush any remaining pending requests
                     for (var id in commands) {
                         if (!commands.hasOwnProperty(id))
@@ -396,24 +411,27 @@ define(function(require, exports, module) {
         }
 
         function suspend(callback) {
-            sendCommand("suspend", {}, function() {
+            sendCommand("suspend", {}, function(err) {
+                if (err)
+                    return callback && callback(err);
                 emit("suspend");
+                callback && callback();
             });
         }
 
         function evaluate(expression, frame, global, disableBreak, callback) {
-            sendCommand("eval", { exp: expression }, function(reply) {
-                if (reply.state == "done") {
-                    callback && callback(null, new Variable({
-                        name: expression,
-                        value: reply.status.value,
-                        type: "number", /* other types produce JS errors */
-                        children: false
-                    }));
-                }
-                else if (typeof reply.status !== "undefined") {
-                    callback && callback(new Error(reply.status.msg));
-                }
+            sendCommand("eval", { exp: expression }, function(err, reply) {
+                if (err)
+                    return callback && callback(err);
+                else if (typeof reply.status !== "undefined")
+                    return callback && callback(new Error(reply.status.msg));
+
+                callback && callback(null, new Variable({
+                    name: expression,
+                    value: reply.status.value,
+                    type: "number", /* other types produce JS errors */
+                    children: false
+                }));
             });
         }
 
@@ -422,25 +440,21 @@ define(function(require, exports, module) {
                 "name": variable.name,
                 "val": value
             };
-            sendCommand('setvar', args, function(reply) {
-                if (reply.state == "done") {
-                    callback && callback(null, variable);
-                }
-                else {
-                    callback && callback(new Error("setVariable error"));
-                }
+            sendCommand('setvar', args, function(err, reply) {
+                if (err)
+                    return callback && callback(err);
+
+                callback && callback(null, variable);
             });
         }
 
         function setBreakpoint(bp, callback) {
-            sendCommand("bp-set", bp.data, function(reply) {
-                if (reply.state == "done") {
-                    bp.id = reply.status.bkpt.number;
-                    callback && callback(null, bp, {});
-                }
-                else {
-                    callback(new Error("setBreakpoint error: " + reply.msg));
-                }
+            sendCommand("bp-set", bp.data, function(err, reply) {
+                if (err)
+                    return callback && callback(err);
+
+                bp.id = reply.status.bkpt.number;
+                callback && callback(null, bp, {});
             });
         }
 
@@ -452,15 +466,15 @@ define(function(require, exports, module) {
                     return;
                 }
 
-                sendCommand("bp-set", breakpoints[i].data, function(reply) {
-                    if (reply.state == "done") {
-                        breakpoints[i].id = reply.status.bkpt.number;
-                        _setBPs(breakpoints, callback, i+1);
-                    }
-                    else {
+                sendCommand("bp-set", breakpoints[i].data, function(err, reply) {
+                    if (err) {
                         // breakpoint failure, remove it before going on
                         breakpoints.splice(i, 1);
                         _setBPs(breakpoints, callback, i);
+                    }
+                    else {
+                        breakpoints[i].id = reply.status.bkpt.number;
+                        _setBPs(breakpoints, callback, i+1);
                     }
                 });
             }
