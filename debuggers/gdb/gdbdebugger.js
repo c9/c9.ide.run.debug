@@ -243,16 +243,23 @@ define(function(require, exports, module) {
         /***** Methods *****/
 
         function getProxySource(process){
-            var bin = process.runner[0].executable;
             var max_depth = (process.runner[0].maxdepth) ?
                             process.runner[0].maxdepth : 50;
+
+            var bin;
+            try {
+                bin = process.insertVariables(process.runner[0].executable);
+            }
+            catch(e) {
+                bin = "!";
+            }
 
             return PROXY
                 .replace(/\/\/.*/g, "")
                 .replace(/[\n\r]/g, "")
                 .replace(/\{PATH\}/, c9.workspaceDir)
                 .replace(/\{MAX_DEPTH\}/, max_depth)
-                .replace(/\{BIN\}/, process.insertVariables(bin))
+                .replace(/\{BIN\}/, bin)
                 .replace(/\{PORT\}/, process.runner[0].debugport);
         }
 
@@ -276,7 +283,7 @@ define(function(require, exports, module) {
                 emit("error", err);
             }, plugin);
 
-            socket.on('connect', function() {
+            socket.on("connect", function() {
                 console.log("gdbdebugger: socket connect");
             }, plugin);
 
