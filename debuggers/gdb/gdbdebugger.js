@@ -310,16 +310,85 @@ define(function(require, exports, module) {
                 reader = new MessageReader(socket, receiveMessage.bind(self));
 
                 // send breakpoints to gdb and attach when done
-                var breakpoints = emit("getBreakpoints");
+                var localBkpts = emit("getBreakpoints");
 
-                setManyBreakpoints(breakpoints, function(bps) {
-                    // setup is complete, attach to debugger
-                    attached = true;
-                    emit("attach", { breakpoints: bps });
+                listBreakpoints(function(err, remoteBkpts) {
+                    if (err) return callback(err);
 
-                    // begin running program
-                    resume();
-                    callback();
+                    /* There exist two sets of breakpoints. One local as shown
+                     * in the GUI, L, and one "remote" that already exists in
+                     * GDB's state, R.
+                     * Syncing L and R must prioritize L's elements. We'll
+                     * create three sets:
+                     * to_remove = R\L (or {x∈R|x∉L})
+                     *  BPs present in R but not in L, must be removed from R
+                     * to_add = L/R (or {x∈L|x∉R})
+                     *  BPs present in L but not in R, must be added to R
+                     * synced = L∩R
+                     *  BPs already in both.
+                     */
+
+                     var to_add = [];
+                     var synced = [];
+
+                    // compare the GUI breakpoints to those already created
+                    for (var i = 0, j = localBkpts.length; i < j; i++) {
+                        var bp = localBkpts[i];
+                        var missing = true;
+
+                        // test for membership of bp in remoteBkpts
+                        for (var x = 0, y = remoteBkpts.length; x < y; x++) {
+                            var rbp = remoteBkpts[x];
+                            if (bp.text == rbp.text && bp.line == rbp.line &&
+                                bp.condition == rbp.condition) {
+                                // make sure synced BP has correct id
+                                bp.id = rbp.id;
+
+                                // track necessary removals by removing used BPs
+                                remoteBkpts.splice(x, 1);
+                                missing = false;
+                                break;
+                            }
+                        }
+
+                        if (missing)
+                            to_add.push(bp);
+                        else
+                            synced.push(bp);
+                    }
+
+
+                    console.log("TO ADD");
+                    console.log(to_add);
+                    console.log("TO REMOVE");
+                    console.log(remoteBkpts);
+                    console.log("SYNCED");
+                    console.log(synced);
+
+                    // notify GDB of new breakpoints
+                    manyBreakpoints(to_add, setBreakpoint, function(added) {
+                        // successfully created BPs are now synced
+                        synced = synced.concat(added);
+
+                        // now remove extraneous BPs
+                        manyBreakpoints(remoteBkpts, clearBreakpoint, function(cleared, clrfail) {
+                            // BPs that failed to remove need to be present locally
+                            synced = synced.concat(clrfail);
+
+                            attached = true;
+                            emit("attach", { breakpoints: synced });
+
+                            // begin running program, if we're not reconnecting
+                            if (reconnect)
+                                sendExecutionCommand("status");
+                            else
+                                resume();
+                            callback();
+
+                        });
+                    });
+
+
                 });
 
                 // show the debug panel immediately
@@ -459,28 +528,28 @@ define(function(require, exports, module) {
             });
         }
 
-        function setManyBreakpoints(breakpoints, callback) {
-            function _setBPs(breakpoints, callback, i) {
+        function manyBreakpoints(breakpoints, command, callback) {
+            function _setBPs(breakpoints, failed, callback, i) {
                 // run callback once we've exhausted setting breakpoints
                 if (i == breakpoints.length) {
-                    callback(breakpoints);
+                    callback(breakpoints, failed);
                     return;
                 }
 
-                sendCommand("bp-set", breakpoints[i].data, function(err, reply) {
+                command(breakpoints[i], function(err, bp) {
                     if (err) {
                         // breakpoint failure, remove it before going on
-                        breakpoints.splice(i, 1);
-                        _setBPs(breakpoints, callback, i);
+                        failed.push(breakpoints.splice(i, 1));
+                        _setBPs(breakpoints, failed, callback, i);
                     }
                     else {
-                        breakpoints[i].id = reply.status.bkpt.number;
-                        _setBPs(breakpoints, callback, i+1);
+                        breakpoints[i].id = bp.id;
+                        _setBPs(breakpoints, failed, callback, i+1);
                     }
                 });
             }
 
-            _setBPs(breakpoints, callback, 0);
+            _setBPs(breakpoints, [], callback, 0);
         }
 
 
