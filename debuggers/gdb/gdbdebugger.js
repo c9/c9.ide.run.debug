@@ -572,15 +572,15 @@ define(function(require, exports, module) {
                 if (err)
                     return callback && callback(err);
 
-                console.log(reply);
                 callback(null, reply.BreakpointTable.body.map(function (bp) {
                     return new Breakpoint({
                         id: bp.number,
                         path: bp.fullname,
-                        line: bp.line,
+                        line: parseInt(bp.line, 10)-1,
                         ignoreCount: (bp.hasOwnProperty("ignore")) ? bp.ignore : "",
                         condition: (bp.hasOwnProperty("cond")) ? bp.cond : "",
-                        enabled: (bp.enabled == "y") ? true : false
+                        enabled: (bp.enabled == "y")? true : false,
+                        text: bp.file
                     });
                 }));
             });
