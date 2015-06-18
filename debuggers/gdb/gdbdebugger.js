@@ -572,17 +572,18 @@ define(function(require, exports, module) {
                 if (err)
                     return callback && callback(err);
 
-                callback(null, reply.BreakpointTable.body.map(function (bp) {
+                var bps = reply.status.BreakpointTable.body.map(function (bp) {
                     return new Breakpoint({
                         id: bp.number,
                         path: bp.fullname,
                         line: parseInt(bp.line, 10)-1,
-                        ignoreCount: (bp.hasOwnProperty("ignore")) ? bp.ignore : "",
-                        condition: (bp.hasOwnProperty("cond")) ? bp.cond : "",
+                        ignoreCount: (bp.hasOwnProperty("ignore")) ? bp.ignore : undefined,
+                        condition: (bp.hasOwnProperty("cond")) ? bp.cond : undefined,
                         enabled: (bp.enabled == "y")? true : false,
                         text: bp.file
                     });
-                }));
+                });
+                callback(null, bps);
             });
         }
 
