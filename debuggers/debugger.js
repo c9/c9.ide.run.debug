@@ -499,10 +499,10 @@ define(function(require, exports, module) {
             
             options.deferred = true;
             
-            var process = run.run(runner, options, name, function(err, pid){
+            var createdProcess = run.run(runner, options, name, function(err, pid){
                 if (err) return callback(err);
                 
-                if (process.running < process.STARTING)
+                if (!process || process.running < process.STARTING)
                     return;
                     
                 var hasListeningDebugger = options.debug && (dbg && dbg.features.listeningDebugger);
@@ -526,6 +526,7 @@ define(function(require, exports, module) {
                 }
             });
             
+            process = createdProcess;
             return process;
         }
         
