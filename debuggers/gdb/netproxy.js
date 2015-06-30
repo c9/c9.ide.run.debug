@@ -592,7 +592,6 @@ function GDB() {
             case 'finish':
                 this.running = true;
                 this.issue(id, "-exec-" + command.command);
-                //this._updateState();
                 break;
 
             case "setvar":
