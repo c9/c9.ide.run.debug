@@ -190,8 +190,8 @@ define(function(require, exports, module) {
             sendCommand(command, {}, function(err, reply) {
                 if (err)
                     return callback && callback(err);
-                if (reply.status !== 'undefined')
-                    setState(reply.status);
+
+                setState(reply.state);
                 callback && callback();
             });
         }
@@ -236,7 +236,7 @@ define(function(require, exports, module) {
 
             // generate an error if the command did not complete successfully
             var err = null;
-            if (!content.hasOwnProperty("state") || content.state != "done") {
+            if (!content.hasOwnProperty("state") || content.state == "error") {
                 var str = "Command " + commands[content._id] + " failed";
                 if (content.hasOwnProperty("msg"))
                     str += content.msg;
@@ -577,9 +577,11 @@ define(function(require, exports, module) {
                         id: bp.number,
                         path: bp.fullname,
                         line: parseInt(bp.line, 10)-1,
-                        ignoreCount: (bp.hasOwnProperty("ignore")) ? bp.ignore : undefined,
-                        condition: (bp.hasOwnProperty("cond")) ? bp.cond : undefined,
-                        enabled: (bp.enabled == "y")? true : false,
+                        ignoreCount: (bp.hasOwnProperty("ignore")) ?
+                                      bp.ignore : undefined,
+                        condition: (bp.hasOwnProperty("cond")) ?
+                                    bp.cond : undefined,
+                        enabled: (bp.enabled == "y") ? true : false,
                         text: bp.file
                     });
                 });
