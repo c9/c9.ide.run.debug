@@ -163,6 +163,7 @@ function GDB() {
     this.abortStepIn = false;
     this.state = {};
     this.running = false;
+    this.clientReconnect = false;
     this.memoized_files = [];
     this.command_queue = [];
 
@@ -383,6 +384,9 @@ function GDB() {
 
     // Stack State Step 0; initiate request
     this._updateState = function(segfault, thread) {
+        // don't send state updates on reconnect, wait for plugin to request
+        if (this.clientReconnect) return;
+
         this.state.segfault = (segfault === true);
         if (thread) {
             this.state.thread = thread;
@@ -594,6 +598,7 @@ function GDB() {
             case 'step':
             case 'next':
             case 'finish':
+                this.clientReconnect = false;
                 this.running = true;
                 this.issue(id, "-exec-" + command.command);
                 break;
@@ -644,17 +649,27 @@ function GDB() {
                 this.issue(id, "-data-evaluate-expression", exp);
                 break;
 
+            case "reconnect":
+                if (this.running) {
+                    this.clientReconnect = true;
+                    this.suspend();
+                    client.send({ _id: id, state: "running" });
+                }
+                else
+                    client.send({ _id: id, state: "stopped" });
+                break;
+
             case "suspend":
                 this.suspend();
-                client.send({ _id: id, status: "stopped" });
+                client.send({ _id: id, state: "stopped" });
                 break;
 
             case "status":
                 if (this.running) {
-                    client.send({ _id: id, status: "running" });
+                    client.send({ _id: id, state: "running" });
                 }
                 else {
-                    client.send({ _id: id, status: "stopped" });
+                    client.send({ _id: id, state: "stopped" });
                     this._updateState();
                 }
                 break;
