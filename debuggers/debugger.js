@@ -499,7 +499,7 @@ define(function(require, exports, module) {
             
             options.deferred = true;
             
-            var createdProcess = run.run(runner, options, name, function(err, pid){
+            process = run.run(runner, options, name, function(err, pid){
                 if (err) return callback(err);
                 
                 if (!process || process.running < process.STARTING)
@@ -526,7 +526,6 @@ define(function(require, exports, module) {
                 }
             });
             
-            process = createdProcess;
             return process;
         }
         
