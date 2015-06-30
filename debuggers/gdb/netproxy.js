@@ -79,9 +79,9 @@ function Client(c) {
             }
         });
 
-        this.connection.on('end', function() {
+        this.connection.on("end", function() {
             this.connection = null;
-            gdb.cleanup(false, "server disconnected");
+            //gdb.cleanup(false, "server disconnected");
         });
 
         callback();
@@ -193,8 +193,8 @@ function GDB() {
 
     this.proc.on('close', function(code, signal) {
         self.proc.stdin.end();
-        cleanup(true, "GDB terminated with code " + code +
-                      " and signal " + signal);
+        log("GDB terminated with code " + code + " and signal " + signal);
+        process.exit();
     });
 
     /////
@@ -221,10 +221,6 @@ function GDB() {
 
     ////
     // Public Methods
-
-    this.cleanup = function() {
-        this.proc.kill("SIGHUP");
-    };
 
     // issue a command to GDB
     this.issue = function(seq, cmd, args, callback) {
@@ -255,6 +251,14 @@ function GDB() {
     this.suspend = function() {
         this.proc.kill('SIGINT');
     };
+
+    this.cleanup = function() {
+        if (this.proc) {
+            this.proc.kill("SIGHUP");
+            this.proc = null;
+        }
+    };
+
 
     //////
     // Parsing via:
@@ -500,7 +504,7 @@ function GDB() {
                  || cause === "function-finished")
             this._updateState(false, thread);
         else if (cause === "exited-normally")
-            cleanup(true);
+            process.exit();
         else if (this.abortStepIn > 0 && state.state === "stopped") {
             // sometimes gdb does not auto-advance. if this stop matches the
             // prior step-in, let's advance
@@ -655,6 +659,13 @@ function GDB() {
                 }
                 break;
 
+            case "detach":
+                this.issue(id, "monitor", "exit", function() {
+                    log("shutdown requested");
+                    process.exit();
+                });
+                break;
+
             default:
                 log("PROXY: received unknown request: " + command.command);
         }
@@ -688,20 +699,11 @@ gdb = new GDB();
 gdb.connect(function(reply) {
     if (reply.state == "connected")
         start();
-    else
-        cleanup(true, "Quitting: cannot connect to gdbserver");
-});
-
-function cleanup(exit, msg) {
-    if (msg)
-        log(msg);
-
-    if (client)
-        client.cleanup();
-    gdb.cleanup();
-    if (exit)
+    else {
+        log("cannot connect to gdbserver");
         process.exit();
-}
+    }
+});
 
 // handle process events
 // pass along SIGINT to suspend gdb, only if program is running
@@ -717,15 +719,19 @@ process.on('SIGINT', function() {
 });
 
 process.on("SIGHUP", function() {
-    cleanup(true, "Received SIGHUP, cleaning up");
+    log("Received SIGHUP");
+    process.exit();
 });
 
 process.on("exit", function() {
-    cleanup(false, "quitting!");
+    log("quitting!");
+    if (gdb) gdb.cleanup();
+    if (client) client.cleanup();
 });
 
 process.on("uncaughtException", function(e) {
-    cleanup(true, "Quitting: uncaught exception (" + e + ")");
+    log("uncaught exception (" + e + ")");
+    process.exit();
 });
 
 // handle server events

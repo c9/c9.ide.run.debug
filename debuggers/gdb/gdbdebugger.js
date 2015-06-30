@@ -413,13 +413,10 @@ define(function(require, exports, module) {
             if (!socket)
                 return;
 
-            btnResume.$ext.style.display = "inline-block";
-            btnSuspend.$ext.style.display = "none";
-            btnSuspend.setAttribute("disabled", false);
-            btnStepOut.setAttribute("disabled", false);
-            btnStepInto.setAttribute("disabled", false);
-            btnStepOver.setAttribute("disabled", false);
+            // notify gdb it should shut down
+            sendCommand("detach");
 
+            // clean up without waiting for gdb to shut down
             if (reader)
                 reader.destroy();
 
@@ -430,6 +427,14 @@ define(function(require, exports, module) {
             emit("frameActivate", {frame: null});
             setState(null);
             emit("detach");
+
+            btnResume.$ext.style.display = "inline-block";
+            btnSuspend.$ext.style.display = "none";
+            btnSuspend.setAttribute("disabled", false);
+            btnStepOut.setAttribute("disabled", false);
+            btnStepInto.setAttribute("disabled", false);
+            btnStepOver.setAttribute("disabled", false);
+
         }
 
         /*
