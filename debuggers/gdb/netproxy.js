@@ -49,16 +49,9 @@ function Client(c) {
 
     this.reconnect = function(c) {
         // replace old connection
-        this.connection.destroy();
+        if (this.connection)
+            this.connection.destroy();
         this.connection = c;
-
-        // flush buffer
-        if (this.buffer.length) {
-            this.buffer.forEach(function(msg) {
-                this.connection.write(msg);
-            });
-            this.buffer = [];
-        }
     };
 
     this.connect = function(callback) {
@@ -66,12 +59,13 @@ function Client(c) {
             callback(new Error("GDB not yet initialized"));
         }
 
-        var self = this;
+        var parser = this._parse();
+
         this.connection.on("data", function(data) {
             log("PLUGIN: " + data.toString());
 
             // parse commands and begin processing queue
-            var commands = self._parse(data);
+            var commands = parser(data);
 
             if (commands.length > 0) {
                 gdb.command_queue = gdb.command_queue.concat(commands);
@@ -79,12 +73,26 @@ function Client(c) {
             }
         });
 
+        this.connection.on("error", function(e) {
+            log(e);
+        });
+
         this.connection.on("end", function() {
             this.connection = null;
-            //gdb.cleanup(false, "server disconnected");
         });
 
         callback();
+    };
+
+    // flush response buffer
+    this.flush = function() {
+        if (!this.connection) return;
+        if (this.buffer.length == 0) return;
+
+        this.buffer.forEach(function(msg) {
+            this.connection.write(msg);
+        });
+        this.buffer = [];
     };
 
     this.cleanup = function() {
@@ -139,7 +147,7 @@ function Client(c) {
             return parser("");
         }
         return parser;
-    }();
+    };
 
     this.send = function(args) {
         args = JSON.stringify(args);
@@ -704,6 +712,9 @@ var server = net.createServer(function(c) {
         else {
             log("PROXY: server connected");
             client.send("connect");
+
+            // flush buffer of pending requests
+            client.flush();
         }
     });
 
