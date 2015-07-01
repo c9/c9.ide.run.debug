@@ -281,23 +281,31 @@ define(function(require, exports, module) {
 
             socket.on("back", function() {
                 console.log("gdbdebugger: socket's back");
-                sendExecutionCommand("status", function(err) {
-                    if (err)
-                        return callback(err);
-
-                    // flush any remaining pending requests
-                    for (var id in commands) {
-                        if (!commands.hasOwnProperty(id))
-                            continue;
-                        socket.send(commands[id]);
-                    }
-                    callback();
-                });
+                reconnectSync();
             }, plugin);
+
             socket.on("error", function(err) {
                 console.log("gdbdebugger err: ", err);
                 emit("error", err);
             }, plugin);
+
+            // flush command queue when coming back
+            socket.on("beforeBack", function() {
+                for (var i = 0, j = commands.length; i < j; i++) {
+                    if (!commands[i]) continue;
+                    socket.send(commands[i]);
+                }
+            });
+
+            // notify all callbacks that debug session has ended
+            socket.on("end", function() {
+                console.log("gdbdebugger went away");
+                for (var id in callbacks) {
+                    if (!callbacks.hasOwnProperty(id) || !callbacks[id])
+                        continue;
+                    callbacks[id](new Error("Debug session ended"));
+                }
+            });
 
             socket.on("connect", function() {
                 console.log("gdbdebugger: socket connect");
@@ -310,16 +318,8 @@ define(function(require, exports, module) {
                 reader = new MessageReader(socket, receiveMessage.bind(self));
 
                 // if we're reconnecting, check GDB's state
-                if (reconnect) {
-                    sendCommand("reconnect", {}, function(err, reply) {
-                        // if program is executing on reconnect, pause
-                        // to fetch state and re-start
-                        if (!err && reply.state == "running")
-                            sync(true, callback);
-                        else
-                            sync(false, callback);
-                    });
-                }
+                if (reconnect)
+                    reconnectSync(callback);
                 else
                     sync(true, callback);
 
@@ -353,12 +353,10 @@ define(function(require, exports, module) {
                 reader.destroy();
 
             sendCommand = function() {};
-            socket = null;
-            attached = false;
-
             emit("frameActivate", {frame: null});
             setState(null);
-            emit("detach");
+            socket = null;
+            attached = false;
 
             btnResume.$ext.style.display = "inline-block";
             btnSuspend.$ext.style.display = "none";
@@ -367,6 +365,7 @@ define(function(require, exports, module) {
             btnStepInto.setAttribute("disabled", false);
             btnStepOver.setAttribute("disabled", false);
 
+            emit("detach");
         }
 
         function sync(begin, callback) {
@@ -444,7 +443,7 @@ define(function(require, exports, module) {
                         else
                             sendExecutionCommand("status");
 
-                        callback();
+                        callback && callback();
 
                     });
                 });
@@ -505,6 +504,15 @@ define(function(require, exports, module) {
                     return callback && callback(err);
                 emit("suspend");
                 callback && callback();
+            });
+        }
+
+        function reconnectSync(callback) {
+            // If a program is executing when debugger reconnects, GDB must
+            // be paused to fetch the state and then restarted or it will hang
+            sendCommand("reconnect", {}, function(err, reply) {
+                var restart = !err && reply.state == "running";
+                sync(restart, callback);
             });
         }
 
