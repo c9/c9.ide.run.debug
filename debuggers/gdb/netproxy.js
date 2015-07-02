@@ -23,22 +23,33 @@ var client = null, // Client class instance with connection to browser
 
 var DEBUG = true;
 
-var old_log = console.log;
+var old_console = console.log;
+var log_file = null;
+var log = function() {};
 
 console.warn = console.log = function() {
+    if (DEBUG) {
+        var args = Array.prototype.slice.call(arguments);
+        log_file.write(args.join(" ") + "\n");
+    }
     return console.error.apply(console, arguments);
 };
 function send() {
-    old_log.apply(console, arguments);
+    old_console.apply(console, arguments);
 }
 
-//var log_file = fs.createWriteStream("./.gdb_proxy.log");
-function log(str) {
-    if (DEBUG)
+if (DEBUG) {
+    log_file = fs.createWriteStream("./.gdb_proxy.log");
+    log = function(str) {
         console.log(str);
-    //log_file.write(str + "\n");
+    };
 }
 
+// problem!
+if (executable === "!") {
+    console.log("The debugger provided bad data. Please try again.");
+    process.exit(0);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Client class to buffer and parse full JSON objects from plugin
@@ -49,8 +60,7 @@ function Client(c) {
 
     this.reconnect = function(c) {
         // replace old connection
-        if (this.connection)
-            this.connection.destroy();
+        this.cleanup();
         this.connection = c;
     };
 
@@ -97,7 +107,7 @@ function Client(c) {
 
     this.cleanup = function() {
         if (this.connection)
-            this.connection.destroy();
+            this.connection.end();
     };
 
     this._parse = function() {
@@ -178,7 +188,7 @@ function GDB() {
     // spawn gdb proc
     // TODO sigh
     var gdb_args = ['-q', '--interpreter=mi2', executable];
-    this.proc = spawn('gdb', gdb_args, { detached: true });
+    this.proc = spawn('gdb', gdb_args, { detached: true, cwd: dirname });
 
     var self = this;
 
@@ -200,7 +210,7 @@ function GDB() {
         server.close();
     });
 
-    this.proc.on('close', function(code, signal) {
+    this.proc.on("close", function(code, signal) {
         self.proc.stdin.end();
         log("GDB terminated with code " + code + " and signal " + signal);
         process.exit();
@@ -753,6 +763,7 @@ process.on("exit", function() {
     log("quitting!");
     if (gdb) gdb.cleanup();
     if (client) client.cleanup();
+    if (DEBUG) log_file.end();
 });
 
 process.on("uncaughtException", function(e) {

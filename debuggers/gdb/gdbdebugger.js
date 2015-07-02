@@ -5,7 +5,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "debugger", "c9", "panels", "settings", "dialog.alert"
+        "Plugin", "debugger", "c9", "panels", "settings"
     ];
     main.provides = ["gdbdebugger"];
     return main;
@@ -30,9 +30,6 @@ define(function(require, exports, module) {
         var plugin = new Plugin("CS50", main.consumes);
         var emit = plugin.getEmitter();
         emit.setMaxListeners(1000);
-
-        var breakOnExceptions = true;
-        var breakOnUncaughtExceptions = true;
 
         var TYPE = "gdb";
 
@@ -68,10 +65,6 @@ define(function(require, exports, module) {
             });
 
             debug.registerDebugger(TYPE, plugin);
-        }
-
-        function unload(){
-            debug.unregisterDebugger(TYPE, plugin);
         }
 
         /***** Helper Functions *****/
@@ -200,6 +193,7 @@ define(function(require, exports, module) {
          * Set the debugger state and emit state change
          */
         function setState(_state) {
+            if (state === _state) return;
             state = _state;
             emit("stateChange", {state: state});
         }
@@ -307,10 +301,6 @@ define(function(require, exports, module) {
                 }
             });
 
-            socket.on("connect", function() {
-                console.log("gdbdebugger: socket connect");
-            }, plugin);
-
             var self = this;
             reader = new MessageReader(socket, function(messageText) {
                 reader.destroy();
@@ -322,26 +312,24 @@ define(function(require, exports, module) {
                     reconnectSync(callback);
                 else
                     sync(true, callback);
-
-                // show the debug panel immediately
-                if (settings.getBool("user/debug/@autoshow"))
-                    panels.activate("debugger");
-
-                // attach to GUI elements
-                btnResume = debug.getElement("btnResume");
-                btnStepOver = debug.getElement("btnStepOver");
-                btnStepInto = debug.getElement("btnStepInto");
-                btnStepOut = debug.getElement("btnStepOut");
-                btnSuspend = debug.getElement("btnSuspend");
-
             });
 
             sendCommand = _sendCommand;
             socket.connect();
+
+            // show the debug panel immediately
+            if (settings.getBool("user/debug/@autoshow"))
+                panels.activate("debugger");
+
+            // attach to GUI elements
+            btnResume = debug.getElement("btnResume");
+            btnStepOver = debug.getElement("btnStepOver");
+            btnStepInto = debug.getElement("btnStepInto");
+            btnStepOut = debug.getElement("btnStepOut");
+            btnSuspend = debug.getElement("btnSuspend");
         }
 
         function detach() {
-            console.log("gdbdebugger: detach");
             if (!socket)
                 return;
 
@@ -417,14 +405,6 @@ define(function(require, exports, module) {
                         synced.push(bp);
                 }
 
-
-                console.log("TO ADD");
-                console.log(to_add);
-                console.log("TO REMOVE");
-                console.log(remoteBkpts);
-                console.log("SYNCED");
-                console.log(synced);
-
                 // notify GDB of new breakpoints
                 manyBreakpoints(to_add, setBreakpoint, function(added, fail) {
                     // successfully created BPs are now synced
@@ -439,12 +419,9 @@ define(function(require, exports, module) {
                         emit("attach", { breakpoints: synced });
 
                         if (begin)
-                            resume();
+                            resume(callback);
                         else
-                            sendExecutionCommand("status");
-
-                        callback && callback();
-
+                            sendExecutionCommand("status", callback);
                     });
                 });
             });
@@ -510,6 +487,7 @@ define(function(require, exports, module) {
         function reconnectSync(callback) {
             // If a program is executing when debugger reconnects, GDB must
             // be paused to fetch the state and then restarted or it will hang
+            if (!callback) callback = function() {};
             sendCommand("reconnect", {}, function(err, reply) {
                 var restart = !err && reply.state == "running";
                 sync(restart, callback);
@@ -582,14 +560,12 @@ define(function(require, exports, module) {
 
         function changeBreakpoint(bp, callback) {
             sendCommand("bp-change", bp.data, function(err) {
-                // TODO should bp be newly created based on reply?
                 callback && callback(err, bp);
             });
         }
 
         function clearBreakpoint(bp, callback) {
             sendCommand("bp-clear", bp.data, function(err) {
-                // TODO should bp be newly created based on reply?
                 callback && callback(err, bp);
             });
         }
@@ -632,7 +608,14 @@ define(function(require, exports, module) {
 
         });
         plugin.on("unload", function(){
-            unload();
+            debug.unregisterDebugger(TYPE, plugin);
+
+            state = null;
+            socket = null;
+            reader = null;
+            stack = null;
+            sendCommand = null;
+            btnResume = btnSuspend = btnStepOver = btnStepInto = btnStepOut = null;
             loaded = false;
             attached = false;
         });
@@ -701,14 +684,14 @@ define(function(require, exports, module) {
              * @property {Boolean} breakOnExceptions
              * @readonly
              */
-            get breakOnExceptions(){ return breakOnExceptions; },
+            get breakOnExceptions(){ return false; },
             /**
              * Whether the debugger will break when it encounters an uncaught
              * exception.
              * @property {Boolean} breakOnUncaughtExceptions
              * @readonly
              */
-            get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
+            get breakOnUncaughtExceptions(){ return false; },
 
             _events: [
                 /**
