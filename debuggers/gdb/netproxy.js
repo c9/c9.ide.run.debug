@@ -262,8 +262,18 @@ function GDB() {
 
     this.connect = function(callback) {
         // have gdb connect to gdbserver
-        log("PROXY: connecting gdb to gdbserver");
-        this.issue(0, "-target-select", "remote localhost:"+gdb_port, callback);
+        this.issue(0, "-target-select", "remote localhost:"+gdb_port, function(reply) {
+            if (reply.state != "connected")
+                return callback("Cannot connect to gdbserver");
+
+            // now notify GDB to evaluate conditional breakpoints on server
+            this.issue(1, "set breakpoint", "condition-evaluation target", function(reply) {
+                if (reply.state == "done")
+                    callback();
+                else
+                    callback("Could not set GDB breakpoint condition");
+            });
+        }.bind(this));
     };
 
     // Suspend program operation by sending sigint and prepare for state update
@@ -732,13 +742,12 @@ var server = net.createServer(function(c) {
 
 gdb = new GDB();
 
-gdb.connect(function(reply) {
-    if (reply.state == "connected")
-        start();
-    else {
-        log("cannot connect to gdbserver");
+gdb.connect(function(err) {
+    if (err) {
+        log(err);
         process.exit();
     }
+    start();
 });
 
 // handle process events
@@ -782,7 +791,6 @@ server.on("error", function(err) {
     }
     process.exit(0);
 });
-
 
 // Start listening for browser clients
 var host = "127.0.0.1";

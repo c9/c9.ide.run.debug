@@ -497,11 +497,11 @@ define(function(require, exports, module) {
         function evaluate(expression, frame, global, disableBreak, callback) {
             sendCommand("eval", { exp: expression }, function(err, reply) {
                 if (err)
-                    return callback && callback(err);
-                else if (typeof reply.status !== "undefined")
-                    return callback && callback(new Error(reply.status.msg));
+                    return callback(err);
+                else if (typeof reply.status === "undefined")
+                    return callback(new Error(reply.status.msg));
 
-                callback && callback(null, new Variable({
+                callback(null, new Variable({
                     name: expression,
                     value: reply.status.value,
                     type: "number", /* other types produce JS errors */
