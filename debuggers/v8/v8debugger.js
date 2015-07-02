@@ -29,7 +29,7 @@ define(function(require, exports, module) {
         var emit = plugin.getEmitter();
         emit.setMaxListeners(1000);
 
-        var stripPrefix = (options.basePath || "").replace(/[\/\\]$/, "");
+        var stripPrefix = c9.toInternalPath((options.basePath || "").replace(/[\/\\]$/, ""));
         var breakOnExceptions = false;
         var breakOnUncaughtExceptions = false;
         var breakpointQueue = [];
@@ -43,7 +43,7 @@ define(function(require, exports, module) {
         var TYPE = "v8";
         
         var attached = false;
-        var v8dbg, v8ds, state, activeFrame, sources, socket;
+        var v8dbg, v8ds, state, activeFrame, sources, socket, pathMap;
         
         var scopeTypes = {
             "0" : "global",
@@ -253,6 +253,9 @@ define(function(require, exports, module) {
          * Removes the path prefix from a string
          */
         function strip(str) {
+            if (!str) return "";
+            str = c9.toInternalPath(str);
+            str = applyPathMap(str, "toInternal");
             return str && str.lastIndexOf(stripPrefix, 0) === 0
                 ? util.normalizePath(str.slice(stripPrefix.length))
                 : util.normalizePath(str || "");
@@ -867,12 +870,14 @@ define(function(require, exports, module) {
                 return false;
             }
             
+            path = applyPathMap(path, "toExternal");
+            
             if (path[0] == "/")
                 path = stripPrefix + path;
             else if (path[0] == "~")
                 path = c9.home + path.substr(1);
             
-            c9.toExternalPath(path);
+            path = c9.toExternalPath(path);
 
             v8dbg.setbreakpoint("script", path, line, column, bp.enabled, 
                 bp.condition, bp.ignoreCount, function(info) {
@@ -1038,6 +1043,28 @@ define(function(require, exports, module) {
             
             v8dbg.setexceptionbreak(enabled ? type : "all", enabled, callback);
         }
+        
+        function setPathMap(v) {
+            if (!Array.isArray(v)) v = null;
+            pathMap = v && v.map(function(x) {
+                if (!x.toInternal || !x.toExternal) return;
+                if (typeof x.toInternal.regex == "string")
+                    x.toInternal.regex = new RegExp(x.toInternal.regex, "g");
+                if (typeof x.toExternal.regex == "string")
+                    x.toExternal.regex = new RegExp(x.toExternal.regex, "g");
+                return x;
+            }).filter(Boolean);
+        }
+        
+        function applyPathMap(path, dir) {
+            if (!pathMap)
+                return path;
+            pathMap.forEach(function(record) {
+                var mapping = record[dir];
+                path = path.replace(mapping.regex, mapping.replacement);
+            });
+            return path;
+        }
     
         /***** Lifecycle *****/
         
@@ -1057,6 +1084,7 @@ define(function(require, exports, module) {
             activeFrame = null;
             sources = null;
             socket = null;
+            pathMap = null;
         });
         
         /***** Register and define API *****/
@@ -1421,7 +1449,13 @@ define(function(require, exports, module) {
             /**
              * Returns the source of the proxy
              */
-            getProxySource: getProxySource
+            getProxySource: getProxySource,
+            
+            /**
+             * @ignore
+             * Experimental method for meteor runner
+             */
+            setPathMap: setPathMap
         });
         
         register(null, {

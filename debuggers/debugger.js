@@ -591,6 +591,8 @@ define(function(require, exports, module) {
             // Create the socket
             socket = new Socket(runner.debugport, dbg.getProxySource(process), reconnect);
             
+            if (dbg.setPathMap)
+                dbg.setPathMap(runner.pathMap);
             // Attach the debugger to the running process
             dbg.attach(socket, reconnect, callback);
         }
