@@ -259,8 +259,8 @@ define(function(require, exports, module) {
          */
         function strip(str) {
             return str && str.lastIndexOf(stripPrefix, 0) === 0
-                ? str.slice(stripPrefix.length)
-                : str || "";
+                ? util.normalizePath(str.slice(stripPrefix.length))
+                : util.normalizePath(str || "");
         }
     
         /**
@@ -349,20 +349,15 @@ define(function(require, exports, module) {
 
         function getLocalScriptPath(script) {
             var scriptName = script.name || ("-anonymous-" + script.id);
-            if (stripPrefix == "/") {
-                if (c9.platform == "win32" &&  scriptName[1] == ":")
-                    scriptName = "/" + scriptName;
-            } else if (scriptName.substring(0, stripPrefix.length) == stripPrefix)
-                scriptName = scriptName.substr(stripPrefix.length);
-                
-            // windows paths come here independantly from vfs
-            return scriptName.replace(/\\/g, "/");
+            scriptName = c9.toExternalPath(scriptName);
+            scriptName = strip(scriptName);
+            return scriptName;
         }
         
         function createFrame(options, script) {
             var frame = new Frame({
                 index: options.index,
-                name: apf.escapeXML(frameToString(options)), //dual escape???
+                name: frameToString(options),
                 column: options.column,
                 id: getFrameId(options),
                 line: options.line,
@@ -879,6 +874,10 @@ define(function(require, exports, module) {
             
             if (path[0] == "/")
                 path = stripPrefix + path;
+            else if (path[0] == "~")
+                path = c9.home + path.substr(1);
+            
+            c9.toExternalPath(path);
 
             v8dbg.setbreakpoint("script", path, line, column, bp.enabled, 
                 bp.condition, bp.ignoreCount, function(info) {
