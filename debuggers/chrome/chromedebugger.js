@@ -31,8 +31,8 @@ define(function(require, exports, module) {
         var Variable = require("../../data/variable");
         var Scope = require("../../data/scope");
         
-        var V8Debugger = require("./lib/V8Debugger");
-        var V8DebuggerService = require("./lib/StandaloneV8DebuggerService");
+        var V8Debugger = require("../v8/lib/V8Debugger");
+        var V8DebuggerService = require("../v8/lib/StandaloneV8DebuggerService");
 
         /***** Initialization *****/
         
