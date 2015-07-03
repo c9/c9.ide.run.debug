@@ -83,6 +83,7 @@ define(function(require, exports, module) {
                 }
 
                 return new Variable({
+                   ref: variable.name,
                    name: (variable.exp) ? variable.exp : variable.name,
                    value: variable.value,
                    type: variable.type,
@@ -526,7 +527,8 @@ define(function(require, exports, module) {
 
         function setVariable(variable, parents, value, frame, callback) {
             var args = {
-                "name": variable.name,
+                "name": variable.ref,
+                "complex": (variable.parent.tagName == "variable"),
                 "val": value
             };
             sendCommand('setvar', args, function(err, reply) {
