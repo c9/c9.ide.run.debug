@@ -73,6 +73,25 @@ define(function(require, exports, module) {
          * Create a scope and variables from data received from GDB
          */
         function buildScopeVariables(frame_vars, scope_index, frame_index, vars) {
+            function buildVariable(variable, scope) {
+                var props = null;
+                if (variable.hasOwnProperty("children")) {
+                    props = [];
+                    variable.children.forEach(function(child) {
+                        props.push(buildVariable(child, scope));
+                    });
+                }
+
+                return new Variable({
+                   name: (variable.exp) ? variable.exp : variable.name,
+                   value: variable.value,
+                   type: variable.type,
+                   children: !!props,
+                   properties: props,
+                   scope: scope
+                });
+            }
+
             var scope = new Scope({
                 index: scope_index,
                 type: SCOPES[scope_index],
@@ -80,12 +99,7 @@ define(function(require, exports, module) {
             });
 
             for (var i = 0, j = vars.length; i < j; i++) {
-                frame_vars.push(new Variable({
-                    name: vars[i].name,
-                    value: vars[i].value,
-                    type: vars[i].type,
-                    scope: scope
-                }));
+                frame_vars.push(buildVariable(vars[i], scope));
             }
         }
 

@@ -180,6 +180,7 @@ function GDB() {
     this.callbacks = {};
     this.abortStepIn = false;
     this.state = {};
+    this.varstack = [];
     this.running = false;
     this.clientReconnect = false;
     this.memoized_files = [];
@@ -477,7 +478,7 @@ function GDB() {
         }.bind(this));
     };
 
-    // Stack State Step 4 (final): fetch each frame's locals & send all to proxy
+    // Stack State Step 4: fetch each frame's locals & send all to proxy
     this._updateLocals = function() {
         function requestLocals(frame) {
             var args = [
@@ -496,14 +497,73 @@ function GDB() {
                 requestLocals.call(this, i);
             }
             else {
-                // send and flush compiled data; set stack frame to topmost
-                this.issue(null, "-stack-select-frame", "0");
-                client.send(this.state);
-                this.state = {};
+                // final step: fetch complex vars
+                this._recurseVars();
             }
         }
         // work from bottom of stack; upon completion, active frame should be 0
         requestLocals.call(this, this.state.frames.length - 1);
+    };
+
+    // Stack State Step 5 (final): fetch information for all non-trivial vars
+    this._recurseVars = function() {
+
+        function __iterVars(vars) {
+            for (var i = 0; i < vars.length; i++) {
+                if (vars[i].hasOwnProperty("value"))
+                    continue;
+                this.varstack.push(vars[i]);
+            }
+            console.log(this.varstack);
+        }
+
+        function __createVars() {
+            if (this.varstack.length == 0) {
+                // DONE: set stack frame to topmost; send & flush compiled data
+                this.issue(null, "-stack-select-frame", "0");
+                client.send(this.state);
+                this.state = {};
+                this.varstack = [];
+                return;
+            }
+
+            var item = this.varstack.pop();
+
+            if (item.objname)
+                return __listChildren.call(this, item);
+
+            // TODO: change * to frame-addr
+            var args = ["-", "*", item.name].join(" ");
+            this.issue(6, "-var-create", args, function(item, state) {
+                item.objname = state.status.name;
+                __listChildren.call(this, item);
+            }.bind(this, item));
+        }
+
+        // created the variable, now request its children
+        function __listChildren(item) {
+            var args = ["--simple-values", item.objname].join(" ");
+            this.issue(7, "-var-list-children", args, function(item, state) {
+                item.children = state.status.children;
+                __iterVars.call(this, item.children);
+                __createVars.call(this);
+                //__deleteVarObj(item).call(this);
+            }.bind(this, item));
+        }
+
+        // fetched the variable's children; parse, delete, then do next item
+        function __deleteVarObj(item) {
+            var args = ["-c", item.objname].join(" ");
+            this.issue(8, "-var-delete", args, __createVars.bind(this));
+        }
+
+        // iterate over all locals and args and push complex vars onto stack
+        for (var i = 0; i < this.state.frames.length; i++) {
+            var frame = this.state.frames[i];
+            __iterVars.call(this, frame.args);
+            __iterVars.call(this, frame.locals);
+        }
+        __createVars.call(this);
     };
 
     // Received a result set from GDB; initiate callback on that request
