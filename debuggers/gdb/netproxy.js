@@ -664,8 +664,7 @@ function GDB() {
         var command = this.command_queue.shift();
 
         if (typeof command.command === "undefined") {
-            log('PROXY: Received empty request from plugin');
-            console.log("ERROR: Please try re-running the debugger.");
+            console.log("ERROR: Received an empty request, ignoring.");
         }
 
         if (typeof command._id !== "number")
@@ -692,7 +691,10 @@ function GDB() {
                 break;
 
             case "setvar":
-                this.issue(id, "set variable", command.name + "=" + command.val);
+                if (command.complex)
+                    this.issue(id, "-var-assign", command.name + " " + command.val);
+                else
+                    this.issue(id, "set variable", command.name + "=" + command.val);
                 break;
 
             case "bp-change":
