@@ -511,7 +511,7 @@ define(function(require, exports, module) {
         function evaluate(expression, frame, global, disableBreak, callback) {
             sendCommand("eval", { exp: expression }, function(err, reply) {
                 if (err)
-                    return callback(err);
+                    return callback(new Error("No value"));
                 else if (typeof reply.status === "undefined")
                     return callback(new Error(reply.status.msg));
 
