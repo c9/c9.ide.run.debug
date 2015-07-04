@@ -42,7 +42,7 @@ define(function(require, exports, module) {
             socket,           // socket to proxy
             reader,           // messagereader object
             stack,            // always up-to-date frame stack
-            sequence_id = 10, // message sequence number (0-9 reserved by proxy)
+            sequence_id = 0,  // message sequence number
             commands = [],    // queue of commands to debugger
             callbacks = {};   // callbacks to initiate when msg returned
 
