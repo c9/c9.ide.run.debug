@@ -694,10 +694,7 @@ function GDB() {
                 break;
 
             case "setvar":
-                if (command.complex)
-                    this.post(id, "-var-assign", command.name + " " + command.val);
-                else
-                    this.post(id, "set variable", command.name + "=" + command.val);
+                this.post(id, "-var-assign", command.name + " " + command.val);
                 break;
 
             case "bp-change":
@@ -768,7 +765,7 @@ function GDB() {
                 break;
 
             case "detach":
-                this.post(id, "monitor", "exit", function() {
+                this.issue("monitor", "exit", function() {
                     log("shutdown requested");
                     process.exit();
                 });
