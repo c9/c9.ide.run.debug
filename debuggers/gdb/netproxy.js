@@ -177,6 +177,7 @@ function Client(c) {
 // GDB class; connecting, parsing, issuing commands
 
 function GDB() {
+    this.sequence_id = 0;
     this.callbacks = {};
     this.abortStepIn = false;
     this.state = {};
@@ -243,32 +244,35 @@ function GDB() {
     // Public Methods
 
     // issue a command to GDB
-    this.issue = function(seq, cmd, args, callback) {
-        if (seq !== null && typeof callback !== "function") {
-            this.callbacks[seq] = function(output) {
-                client.send(output);
-            };
-        }
-        else if (seq !== null && typeof callback === "function") {
+    this.issue = function(cmd, args, callback) {
+        var seq = "";
+        if (!args) args = "";
+
+        if (typeof callback === "function") {
+            seq = ++this.sequence_id;
             this.callbacks[seq] = callback;
         }
-
-        if (!args)
-            args = "";
 
         var msg = [seq, cmd, " ", args, "\n"].join("");
         log(msg);
         this.proc.stdin.write(msg);
     };
 
+    this.post = function(client_seq, command, args) {
+        this.issue(command, args, function(output) {
+            output._id = client_seq;
+            client.send(output);
+        });
+    };
+
     this.connect = function(callback) {
         // have gdb connect to gdbserver
-        this.issue(0, "-target-select", "remote localhost:"+gdb_port, function(reply) {
+        this.issue("-target-select", "remote localhost:"+gdb_port, function(reply) {
             if (reply.state != "connected")
                 return callback("Cannot connect to gdbserver");
 
             // now notify GDB to evaluate conditional breakpoints on server
-            this.issue(1, "set breakpoint", "condition-evaluation target", function(reply) {
+            this.issue("set breakpoint", "condition-evaluation target", function(reply) {
                 if (reply.state == "done")
                     callback();
                 else
@@ -428,7 +432,7 @@ function GDB() {
 
     // Stack State Step 1; find the thread ID
     this._updateThreadId = function() {
-        this.issue(1, "-thread-info", null, function(state) {
+        this.issue("-thread-info", null, function(state) {
             this.state.thread = state.status["current-thread-id"];
             this._updateStack();
         }.bind(this));
@@ -436,7 +440,7 @@ function GDB() {
 
     // Stack State Step 2; process stack frames and request arguments
     this._updateStack = function() {
-        this.issue(2, "-stack-list-frames", STACK_RANGE, function(state) {
+        this.issue("-stack-list-frames", STACK_RANGE, function(state) {
             this.state.frames = state.status.stack;
 
             // provide relative path of script to IDE
@@ -455,7 +459,7 @@ function GDB() {
                 if (!this.memoized_files[file].exists) {
                     this.abortStepIn = this.state.frames[i+1].line;
                     this.state = {};
-                    this.issue(null, "-exec-finish");
+                    this.issue("-exec-finish");
                     return;
                 }
 
@@ -468,7 +472,7 @@ function GDB() {
 
     // Stack State Step 3; append stack args to frames; request top frame locals
     this._updateStackArgs = function() {
-        this.issue(3, "-stack-list-arguments", "--simple-values " + STACK_RANGE,
+        this.issue("-stack-list-arguments", "--simple-values " + STACK_RANGE,
         function(state) {
             var args = state.status['stack-args'];
             for (var i = 0; i < args.length; i++) {
@@ -488,8 +492,7 @@ function GDB() {
                 frame,
                 "--simple-values"
             ].join(" ");
-            this.issue(4 + frame % 2, "-stack-list-locals", args,
-                       frameLocals.bind(this, frame));
+            this.issue("-stack-list-locals", args, frameLocals.bind(this, frame));
         }
         function frameLocals(i, state) {
             this.state.frames[i].locals = state.status.locals;
@@ -510,8 +513,8 @@ function GDB() {
 
         function __iterVars(vars) {
             for (var i = 0; i < vars.length; i++) {
-                if (vars[i].hasOwnProperty("value"))
-                    continue;
+                // if (vars[i].hasOwnProperty("value"))
+                //     continue;
                 this.varstack.push(vars[i]);
             }
             console.log(this.varstack);
@@ -520,7 +523,7 @@ function GDB() {
         function __createVars() {
             if (this.varstack.length == 0) {
                 // DONE: set stack frame to topmost; send & flush compiled data
-                this.issue(null, "-stack-select-frame", "0");
+                this.issue("-stack-select-frame", "0");
                 client.send(this.state);
                 this.state = {};
                 this.varstack = [];
@@ -534,16 +537,19 @@ function GDB() {
 
             // TODO: change * to frame-addr
             var args = ["-", "*", item.name].join(" ");
-            this.issue(6, "-var-create", args, function(item, state) {
+            this.issue("-var-create", args, function(item, state) {
                 item.objname = state.status.name;
-                __listChildren.call(this, item);
+                if (state.status.numchild > 0)
+                    __listChildren.call(this, item);
+                else
+                    __createVars.call(this);
             }.bind(this, item));
         }
 
         // created the variable, now request its children
         function __listChildren(item) {
             var args = ["--simple-values", item.objname].join(" ");
-            this.issue(7, "-var-list-children", args, function(item, state) {
+            this.issue("-var-list-children", args, function(item, state) {
                 item.children = state.status.children;
                 __iterVars.call(this, item.children);
                 __createVars.call(this);
@@ -554,7 +560,7 @@ function GDB() {
         // fetched the variable's children; parse, delete, then do next item
         function __deleteVarObj(item) {
             var args = ["-c", item.objname].join(" ");
-            this.issue(8, "-var-delete", args, __createVars.bind(this));
+            this.issue("-var-delete", args, __createVars.bind(this));
         }
 
         // iterate over all locals and args and push complex vars onto stack
@@ -568,13 +574,13 @@ function GDB() {
 
     // Received a result set from GDB; initiate callback on that request
     this._handleRecordsResult = function(state) {
-        if (typeof state._id === "undefined")
+        if (typeof state._seq === "undefined")
             return;
 
         // command is awaiting result, issue callback and remove from queue
-        if (this.callbacks[state._id]) {
-            this.callbacks[state._id](state);
-            delete this.callbacks[state._id];
+        if (this.callbacks[state._seq]) {
+            this.callbacks[state._seq](state);
+            delete this.callbacks[state._seq];
         }
         this.handleCommands();
     };
@@ -601,7 +607,7 @@ function GDB() {
             // sometimes gdb does not auto-advance. if this stop matches the
             // prior step-in, let's advance
             if (state.status.frame.line == this.abortStepIn) {
-                this.issue(null, "-exec-next");
+                this.issue("-exec-next");
             }
             else {
                 this.abortStepIn = false;
@@ -625,9 +631,9 @@ function GDB() {
         if (line_split) {
             state = this._parseState(line_split[2]);
 
-            // line_id is present if the initiating command had an _id
+            // line_id is present if the initiating command had a _seq
             if (line_split[1])
-                state._id = line_split[1];
+                state._seq = line_split[1];
         }
         else {
             token = line[0];
@@ -672,9 +678,6 @@ function GDB() {
 
         var id = command._id;
 
-        if (command.text && !isNaN(command.line))
-            command.lineno = command.text + ":" + (command.line + 1);
-
         // fix some condition syntax
         if (command.condition)
             command.condition = command.condition.replace(/=(["|{|\[])/g, "= $1");
@@ -687,28 +690,28 @@ function GDB() {
             case 'finish':
                 this.clientReconnect = false;
                 this.running = true;
-                this.issue(id, "-exec-" + command.command);
+                this.post(id, "-exec-" + command.command);
                 break;
 
             case "setvar":
                 if (command.complex)
-                    this.issue(id, "-var-assign", command.name + " " + command.val);
+                    this.post(id, "-var-assign", command.name + " " + command.val);
                 else
-                    this.issue(id, "set variable", command.name + "=" + command.val);
+                    this.post(id, "set variable", command.name + "=" + command.val);
                 break;
 
             case "bp-change":
                 if (command.enabled === false)
-                    this.issue(id, "-break-disable", command.id);
+                    this.post(id, "-break-disable", command.id);
                 else if (command.condition)
-                    this.issue(id, "-break-condition", command.id + " " + command.condition);
+                    this.post(id, "-break-condition", command.id + " " + command.condition);
                 else
-                    this.issue(id, "-break-enable", command.id);
+                    this.post(id, "-break-enable", command.id);
                 break;
 
             case "bp-clear":
                 // include filename for multiple files
-                this.issue(id, "clear", command.lineno);
+                this.post(id, "-break-delete", command.id);
                 break;
 
             case "bp-set":
@@ -724,19 +727,19 @@ function GDB() {
                     args.push('"' + command.condition + '"');
                 }
 
-                args.push(command.lineno);
+                args.push(command.text + ":" + (command.line + 1));
 
-                this.issue(id, "-break-insert", args.join(" "));
+                this.post(id, "-break-insert", args.join(" "));
                 break;
 
             case "bp-list":
-                this.issue(id, "-break-list");
+                this.post(id, "-break-list");
                 break;
 
             case "eval":
                 // replace quotes with escaped quotes
                 var exp = '"' + command.exp.replace(/"/g, '\\"') + '"';
-                this.issue(id, "-data-evaluate-expression", exp);
+                this.post(id, "-data-evaluate-expression", exp);
                 break;
 
             case "reconnect":
@@ -765,7 +768,7 @@ function GDB() {
                 break;
 
             case "detach":
-                this.issue(id, "monitor", "exit", function() {
+                this.post(id, "monitor", "exit", function() {
                     log("shutdown requested");
                     process.exit();
                 });
