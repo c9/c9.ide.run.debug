@@ -530,7 +530,7 @@ define(function(require, exports, module) {
         }
         
         function debug(p, reconnect, callback) {
-            if (reconnect && process == p && dbg.connected) {
+            if (reconnect && process == p && dbg && dbg.connected) {
                 return; // We're already connecting / connected
             }
             
