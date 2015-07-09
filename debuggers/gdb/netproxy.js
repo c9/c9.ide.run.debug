@@ -18,6 +18,8 @@ var proxy_port = gdb_port + 1;
 var MAX_STACK_DEPTH = parseInt("{MAX_DEPTH}", 10);
 var STACK_RANGE = "0 " + MAX_STACK_DEPTH;
 
+var MAX_RETRY = 300;
+
 var client = null, // Client class instance with connection to browser
     gdb = null;    // GDB class instance with spawned gdb process
 
@@ -188,9 +190,10 @@ function GDB() {
     this.command_queue = [];
 
     // spawn gdb proc
-    // TODO sigh
-    var gdb_args = ['-q', '--interpreter=mi2', executable];
-    this.proc = spawn('gdb', gdb_args, { detached: true, cwd: dirname });
+    this.proc = spawn('gdb', ['-q', '--interpreter=mi2'], {
+        detached: true,
+        cwd: dirname
+    });
 
     var self = this;
 
@@ -266,18 +269,22 @@ function GDB() {
     };
 
     this.connect = function(callback) {
-        // have gdb connect to gdbserver
-        this.issue("-target-select", "remote localhost:"+gdb_port, function(reply) {
-            if (reply.state != "connected")
-                return callback("Cannot connect to gdbserver");
+        // ask GDB to retry connections to server with a given timeout
+        this.issue("set tcp connect-timeout", MAX_RETRY, function() {
+            // now connect
+            this.issue("-target-select", "remote localhost:"+gdb_port, function(reply) {
+                if (reply.state != "connected")
+                    return callback(reply, "Cannot connect to gdbserver");
 
-            // now notify GDB to evaluate conditional breakpoints on server
-            this.issue("set breakpoint", "condition-evaluation target", function(reply) {
-                if (reply.state == "done")
-                    callback();
-                else
-                    callback("Could not set GDB breakpoint condition");
-            });
+                // connected! set evaluation of conditional breakpoints on server
+                this.issue("set breakpoint", "condition-evaluation target", function(reply) {
+                    if (reply.state != "done")
+                        return callback(reply, "Settings error");
+
+                    // finally, load symbol file
+                    this.issue("-file-exec-and-symbols", executable, callback);
+                }.bind(this));
+            }.bind(this));
         }.bind(this));
     };
 
@@ -804,7 +811,7 @@ var server = net.createServer(function(c) {
 
 gdb = new GDB();
 
-gdb.connect(function(err) {
+gdb.connect(function(reply, err) {
     if (err) {
         log(err);
         process.exit();
