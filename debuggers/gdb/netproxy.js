@@ -278,7 +278,7 @@ function GDB() {
                     return callback(reply, "Cannot connect to gdbserver");
 
                 // connected! set eval of conditional breakpoints on server
-                this.issue("set breakpoint", "condition-evaluation target");
+                this.issue("set breakpoint", "condition-evaluation host");
 
                 // finally, load symbol file
                 this.issue("-file-exec-and-symbols", executable, callback);
