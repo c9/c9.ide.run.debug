@@ -289,7 +289,6 @@ define(function(require, exports, module) {
             socket = s;
 
             socket.on("back", function() {
-                console.log("gdbdebugger: socket's back");
                 reconnectSync();
             }, plugin);
 
@@ -308,7 +307,6 @@ define(function(require, exports, module) {
 
             // notify all callbacks that debug session has ended
             socket.on("end", function() {
-                console.log("gdbdebugger went away");
                 for (var id in callbacks) {
                     if (!callbacks.hasOwnProperty(id) || !callbacks[id])
                         continue;

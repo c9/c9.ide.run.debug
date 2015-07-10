@@ -85,9 +85,7 @@ function Client(c) {
             }
         });
 
-        this.connection.on("error", function(e) {
-            log(e);
-        });
+        this.connection.on("error", log);
 
         this.connection.on("end", function() {
             this.connection = null;
