@@ -183,7 +183,8 @@ function GDB() {
     this.callbacks = {};
     this.abortStepIn = false;
     this.state = {};
-    this.varstack = [];
+    this.framecache = {};
+    this.varcache = {};
     this.running = false;
     this.clientReconnect = false;
     this.memoized_files = [];
@@ -419,6 +420,19 @@ function GDB() {
     // GDB Output handling
     ////
 
+    // stack frame cache getter function
+    this._cachedFrame = function(frame, create) {
+        var key = frame.file + frame.line + frame.func;
+        if (!this.framecache.hasOwnProperty(key)) {
+            if (create)
+                this.framecache[key] = create;
+            else
+                return false;
+        }
+        return this.framecache[key];
+    };
+
+
     // Stack State Step 0; initiate request
     this._updateState = function(segfault, thread) {
         // don't send state updates on reconnect, wait for plugin to request
@@ -489,6 +503,10 @@ function GDB() {
     // Stack State Step 4: fetch each frame's locals & send all to proxy
     this._updateLocals = function() {
         function requestLocals(frame) {
+            // skip this frame if we have its variables cached
+            if (this._cachedFrame(this.state.frames[frame]))
+                return frameLocals.call(this, frame, null, true);
+
             var args = [
                 "--thread",
                 this.state.thread,
@@ -498,82 +516,134 @@ function GDB() {
             ].join(" ");
             this.issue("-stack-list-locals", args, frameLocals.bind(this, frame));
         }
-        function frameLocals(i, state) {
-            this.state.frames[i].locals = state.status.locals;
-            if (--i >= 0) {
+        function frameLocals(i, state, cache) {
+            var f = this.state.frames[i];
+            if (cache)
+                f.locals = this._cachedFrame(f).locals;
+            else
+                f.locals = state.status.locals;
+
+            if (--i >= 0)
                 requestLocals.call(this, i);
-            }
-            else {
-                // final step: fetch complex vars
-                this._recurseVars();
-            }
+            else
+                // update vars and fetch remaining
+                this._updateCachedVars();
         }
         // work from bottom of stack; upon completion, active frame should be 0
         requestLocals.call(this, this.state.frames.length - 1);
     };
 
-    // Stack State Step 5 (final): fetch information for all non-trivial vars
-    this._recurseVars = function() {
+    // Stack State Step 5: update cached vars
+    this._updateCachedVars = function() {
+        this.issue("-var-update", "--all-values *", function(reply) {
+            //update cache
+            for (var i = 0; i < reply.status.changelist.length; i++) {
+                var obj = reply.status.changelist[i];
 
-        function __iterVars(vars) {
-            for (var i = 0; i < vars.length; i++) {
-                // if (vars[i].hasOwnProperty("value"))
-                //     continue;
-                this.varstack.push(vars[i]);
+                // updates to out-of-scope vars are irrelevant
+                if (obj.in_scope != "true") {
+                    if (obj.in_scope == "invalid")
+                        this.issue("-var-delete", obj.name);
+                    continue;
+                }
+
+                this.varcache[obj.name].value = obj.value;
+
+                if (obj.type_changed == "true")
+                    this.varcache[obj.name].type = obj.new_type;
             }
-            console.log(this.varstack);
+
+            // stitch cache together in state
+            for (var i = 0; i < this.state.frames.length; i++) {
+                var frame = this.state.frames[i];
+                var cache = this._cachedFrame(frame);
+
+                // cache miss
+                if (cache === false) continue;
+
+                // rebuild from cache
+                frame.args = [];
+                for (var i = 0; i < cache.args.length; i++)
+                    frame.args.push(this.varcache[cache.args[i]]);
+
+                frame.locals = [];
+                for (var i = 0; i < cache.locals.length; i++)
+                    frame.locals.push(this.varcache[cache.locals[i]]);
+            }
+
+            this._recurseVars();
+        }.bind(this));
+    };
+
+    // Stack State Step 6 (final): fetch information for all non-trivial vars
+    this._recurseVars = function() {
+        var newvars = [];
+
+        function __iterVars(vars, varstack, f) {
+            for (var i = 0; i < vars.length; i++)
+                varstack.push({ frame: f, item: vars[i] });
         }
 
-        function __createVars() {
-            if (this.varstack.length == 0) {
+        function __createVars(varstack) {
+            if (varstack.length == 0) {
                 // DONE: set stack frame to topmost; send & flush compiled data
                 this.issue("-stack-select-frame", "0");
                 client.send(this.state);
                 this.state = {};
-                this.varstack = [];
                 return;
             }
 
-            var item = this.varstack.pop();
+            var obj = varstack.pop();
+
+            var item = obj.item;
+            var frame = obj.frame;
 
             if (item.objname)
-                return __listChildren.call(this, item);
+                return __listChildren.call(this, item, varstack, frame);
 
-            // TODO: change * to frame-addr
+            // TODO: change * to frame-addr (or set current frame)?
             var args = ["-", "*", item.name].join(" ");
             this.issue("-var-create", args, function(item, state) {
                 item.objname = state.status.name;
-                if (state.status.numchild > 0)
-                    __listChildren.call(this, item);
+                this.varcache[item.objname] = item;
+                frame.push(item.objname);
+
+                if (parseInt(state.status.numchild, 10) > 0)
+                    __listChildren.call(this, item, varstack, frame);
                 else
-                    __createVars.call(this);
+                    __createVars.call(this, varstack);
             }.bind(this, item));
         }
 
         // created the variable, now request its children
-        function __listChildren(item) {
+        function __listChildren(item, varstack) {
             var args = ["--simple-values", item.objname].join(" ");
             this.issue("-var-list-children", args, function(item, state) {
-                item.children = state.status.children;
-                __iterVars.call(this, item.children);
-                __createVars.call(this);
-                //__deleteVarObj(item).call(this);
+                if (parseInt(state.status.numchild, 10) > 0) {
+                    item.children = state.status.children;
+                    for (var i = 0; i < item.children.length; i++) {
+                        var child = item.children[i];
+                        child.objname = child.name;
+                        this.varcache[child.name] = child;
+                    }
+                    __iterVars(item.children, varstack, []);
+                }
+                __createVars.call(this, varstack);
             }.bind(this, item));
-        }
-
-        // fetched the variable's children; parse, delete, then do next item
-        function __deleteVarObj(item) {
-            var args = ["-c", item.objname].join(" ");
-            this.issue("-var-delete", args, __createVars.bind(this));
         }
 
         // iterate over all locals and args and push complex vars onto stack
         for (var i = 0; i < this.state.frames.length; i++) {
             var frame = this.state.frames[i];
-            __iterVars.call(this, frame.args);
-            __iterVars.call(this, frame.locals);
+
+            // skip the frame if it's already cached
+            if (this._cachedFrame(frame) !== false) continue;
+
+            var cache = this._cachedFrame(frame, { args: [], locals: [] });
+            __iterVars(frame.args, newvars, cache.args);
+            __iterVars(frame.locals, newvars, cache.locals);
         }
-        __createVars.call(this);
+        __createVars.call(this, newvars);
     };
 
     // Received a result set from GDB; initiate callback on that request
