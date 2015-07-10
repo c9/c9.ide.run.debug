@@ -276,14 +276,11 @@ function GDB() {
                 if (reply.state != "connected")
                     return callback(reply, "Cannot connect to gdbserver");
 
-                // connected! set evaluation of conditional breakpoints on server
-                this.issue("set breakpoint", "condition-evaluation target", function(reply) {
-                    if (reply.state != "done")
-                        return callback(reply, "Settings error");
+                // connected! set eval of conditional breakpoints on server
+                this.issue("set breakpoint", "condition-evaluation target");
 
-                    // finally, load symbol file
-                    this.issue("-file-exec-and-symbols", executable, callback);
-                }.bind(this));
+                // finally, load symbol file
+                this.issue("-file-exec-and-symbols", executable, callback);
             }.bind(this));
         }.bind(this));
     };
