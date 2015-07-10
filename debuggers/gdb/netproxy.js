@@ -23,7 +23,7 @@ var MAX_RETRY = 300;
 var client = null, // Client class instance with connection to browser
     gdb = null;    // GDB class instance with spawned gdb process
 
-var DEBUG = true;
+var DEBUG = false;
 
 var old_console = console.log;
 var log_file = null;
