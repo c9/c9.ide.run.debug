@@ -12,6 +12,7 @@ define(function(require, exports, module) {
         var util = imports.util;
         var debug = imports["debugger"];
         var c9 = imports.c9;
+        var async = require("async");
         
         var Frame = debug.Frame;
         var Source = debug.Source;
@@ -135,18 +136,12 @@ define(function(require, exports, module) {
                         notfound.push(rbp);
                 });
                 
-                var i = 0;
-                function next(){
-                    var bp = list[i++];
-                    if (!bp)
-                        done();
-                    else if (found.indexOf(bp) == -1)
+                async.each(list, function(bp, next) {
+                    if (found.indexOf(bp) == -1)
                         setBreakpoint(bp, next);
                     else
                         next();
-                }
-                
-                next();
+                }, done);
                 
                 function done(){
                     notfound.forEach(function(bp) { 
@@ -163,7 +158,7 @@ define(function(require, exports, module) {
                     
                     callback(null, list);
                 }
-            })
+            });
         }
         
         /**
