@@ -5,7 +5,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "debugger", "c9", "panels", "settings"
+        "Plugin", "debugger", "c9", "panels", "settings", "dialog.error"
     ];
     main.provides = ["gdbdebugger"];
     return main;
@@ -16,6 +16,7 @@ define(function(require, exports, module) {
         var c9 = imports.c9;
         var panels = imports.panels;
         var settings = imports.settings;
+        var showError = imports["dialog.error"].show;
 
         var Frame = debug.Frame;
         var Source = debug.Source;
@@ -138,8 +139,14 @@ define(function(require, exports, module) {
         /*
          * Process frame information on breakpoint hit
          */
-        function processBreak(frames, segfault) {
+        function processBreak(frames, segfault, overflow) {
             stack = [];
+
+            // do we have a stack overflow?
+            if (overflow) {
+                showError("GDB has detected a corrupt execution environment and has shut down!");
+                return detach();
+            }
 
             // process frames
             for (var i = 0, j = frames.length; i < j; i++) {
@@ -232,7 +239,7 @@ define(function(require, exports, module) {
 
             // we've received a frame stack from GDB on break, segfault, pause
             if ("frames" in content)
-                processBreak(content.frames, content.segfault);
+                processBreak(content.frames, content.segfault, content.overflow);
 
             // run pending callback if sequence number matches one we sent
             if (typeof content._id == "undefined")

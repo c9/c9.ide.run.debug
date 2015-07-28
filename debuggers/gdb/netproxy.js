@@ -187,7 +187,6 @@ function GDB() {
     this.clientReconnect = false;
     this.memoized_files = [];
     this.command_queue = [];
-    this.fullname = "";
 
     // spawn gdb proc
     this.proc = spawn('gdb', ['-q', '--interpreter=mi2'], {
@@ -280,19 +279,8 @@ function GDB() {
                 this.issue("set breakpoint", "condition-evaluation host");
 
                 // load symbol file
-                this.issue("-file-exec-and-symbols", executable, function(reply) {
-                    if (reply.state != "done")
-                        return callback(reply, "Cannot load symbol file");
+                this.issue("-file-exec-and-symbols", executable, callback);
 
-                    // ask gdb for source location (this may be unnecessary)
-                    this.issue("-file-list-exec-source-file", null, function(reply) {
-                        if (reply.state != "done")
-                            return callback(reply, "Cannot find source file");
-
-                        this.fullname = reply.status.fullname;
-                        callback();
-                    }.bind(this));
-                }.bind(this));
             }.bind(this));
         }.bind(this));
     };
@@ -474,8 +462,16 @@ function GDB() {
 
             // provide relative path of script to IDE
             for (var i = 0, j = this.state.frames.length; i < j; i++) {
-                if (!this.state.frames[i].hasOwnProperty("fullname"))
-                    this.state.frames[i].fullname = this.fullname;
+                // if file name is not here a stack overflow has probably occurred
+                if (this.state.frames[i].func == "??" ||
+                    !this.state.frames[i].hasOwnProperty("fullname"))
+                {
+                    log("Probable stack overflow!");
+                    this.state.overflow = true;
+                    client.send(this.state);
+                    this.state = {};
+                    return;
+                }
 
                 var file = this.state.frames[i].fullname;
 
