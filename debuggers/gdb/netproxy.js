@@ -577,12 +577,12 @@ function GDB() {
 
                 // rebuild from cache
                 frame.args = [];
-                for (var i = 0; i < cache.args.length; i++)
-                    frame.args.push(this.varcache[cache.args[i]]);
+                for (var j = 0; j < cache.args.length; j++)
+                    frame.args.push(this.varcache[cache.args[j]]);
 
                 frame.locals = [];
-                for (var i = 0; i < cache.locals.length; i++)
-                    frame.locals.push(this.varcache[cache.locals[i]]);
+                for (var j = 0; j < cache.locals.length; j++)
+                    frame.locals.push(this.varcache[cache.locals[j]]);
             }
 
             this._recurseVars();
