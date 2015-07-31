@@ -270,11 +270,11 @@ function GDB() {
             if (retries < 0)
                 return callback(null, "Waited for gdbserver beyond timeout");
 
-            var cmd = "sleep 1 && lsof -i :"+gdb_port+" -sTCP:LISTEN|grep -q gdbserver";
-            exec(cmd, function(err) {
+            // determine if gdbserver has opened the port yet
+            exec("lsof -i :"+gdb_port+" -sTCP:LISTEN|grep -q gdbserver", function(err) {
                 // if we get an error code back, gdbserver is not yet running
                 if (err !== null)
-                    return wait.call(this, --retries, callback);
+                    return setTimeout(wait.bind(this, --retries, callback), 1000);
 
                 // success! load gdb and connect to server
                 this.spawn();
