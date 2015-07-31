@@ -9,6 +9,7 @@ var net = require('net');
 var path = require('path');
 var fs = require('fs');
 var spawn = require('child_process').spawn;
+var exec = require('child_process').exec;
 
 var executable = "{BIN}";
 var dirname = "{PATH}";
@@ -187,38 +188,7 @@ function GDB() {
     this.clientReconnect = false;
     this.memoized_files = [];
     this.command_queue = [];
-
-    // spawn gdb proc
-    this.proc = spawn('gdb', ['-q', '--interpreter=mi2'], {
-        detached: true,
-        cwd: dirname
-    });
-
-    var self = this;
-
-    // handle gdb output
-    var stdout_buff = buffers();
-    this.proc.stdout.on("data", function(stdout_data) {
-        stdout_buff(stdout_data, self._handleLine.bind(self));
-    });
-
-    // handle gdb stderr
-    var stderr_buff = buffers();
-    this.proc.stderr.on("data", function(stderr_data) {
-        stderr_buff(stderr_data, function(line) {
-            log("GDB STDERR: " + line);
-        });
-    });
-
-    this.proc.on("end", function() {
-        server.close();
-    });
-
-    this.proc.on("close", function(code, signal) {
-        self.proc.stdin.end();
-        log("GDB terminated with code " + code + " and signal " + signal);
-        process.exit();
-    });
+    this.proc = null;
 
     /////
     // Private methods
@@ -245,6 +215,88 @@ function GDB() {
     ////
     // Public Methods
 
+    // spawn the GDB client process
+    this.spawn = function() {
+        this.proc = spawn('gdb', ['-q', '--interpreter=mi2', executable], {
+            detached: true,
+            cwd: dirname
+        });
+
+        var self = this;
+
+        // handle gdb output
+        var stdout_buff = buffers();
+        this.proc.stdout.on("data", function(stdout_data) {
+            stdout_buff(stdout_data, self._handleLine.bind(self));
+        });
+
+        // handle gdb stderr
+        var stderr_buff = buffers();
+        this.proc.stderr.on("data", function(stderr_data) {
+            stderr_buff(stderr_data, function(line) {
+                log("GDB STDERR: " + line);
+            });
+        });
+
+        this.proc.on("end", function() {
+            log("gdb proc ended");
+            server.close();
+        });
+
+        this.proc.on("close", function(code, signal) {
+            self.proc.stdin.end();
+            log("GDB terminated with code " + code + " and signal " + signal);
+            process.exit();
+        });
+    };
+
+    this.connect = function(callback) {
+        // ask GDB to retry connections to server with a given timeout
+        this.issue("set tcp connect-timeout", MAX_RETRY, function() {
+            // now connect
+            this.issue("-target-select", "remote localhost:"+gdb_port, function(reply) {
+                if (reply.state != "connected")
+                    return callback(reply, "Cannot connect to gdbserver");
+
+                // connected! set eval of conditional breakpoints on server
+                this.issue("set breakpoint", "condition-evaluation host", callback);
+
+            }.bind(this));
+        }.bind(this));
+    };
+
+    // spawn GDB client only after gdbserver is ready
+    this.waitConnect = function(callback) {
+        function wait(retries, callback) {
+            if (retries < 0)
+                return callback(null, "Waited for gdbserver beyond timeout");
+
+            var cmd = "sleep 1 && lsof -i :"+gdb_port+" -sTCP:LISTEN|grep -q gdbserver";
+            exec(cmd, function(err) {
+                // if we get an error code back, gdbserver is not yet running
+                if (err !== null)
+                    return wait.call(this, --retries, callback);
+
+                // success! load gdb and connect to server
+                this.spawn();
+                this.connect(callback);
+            }.bind(this));
+        }
+        wait.call(this, MAX_RETRY, callback);
+    };
+
+    // Suspend program operation by sending sigint and prepare for state update
+    this.suspend = function() {
+        this.proc.kill('SIGINT');
+    };
+
+    this.cleanup = function() {
+        if (this.proc) {
+            this.proc.kill("SIGHUP");
+            this.proc = null;
+        }
+    };
+
     // issue a command to GDB
     this.issue = function(cmd, args, callback) {
         var seq = "";
@@ -265,36 +317,6 @@ function GDB() {
             output._id = client_seq;
             client.send(output);
         });
-    };
-
-    this.connect = function(callback) {
-        // ask GDB to retry connections to server with a given timeout
-        this.issue("set tcp connect-timeout", MAX_RETRY, function() {
-            // now connect
-            this.issue("-target-select", "remote localhost:"+gdb_port, function(reply) {
-                if (reply.state != "connected")
-                    return callback(reply, "Cannot connect to gdbserver");
-
-                // connected! set eval of conditional breakpoints on server
-                this.issue("set breakpoint", "condition-evaluation host");
-
-                // load symbol file
-                this.issue("-file-exec-and-symbols", executable, callback);
-
-            }.bind(this));
-        }.bind(this));
-    };
-
-    // Suspend program operation by sending sigint and prepare for state update
-    this.suspend = function() {
-        this.proc.kill('SIGINT');
-    };
-
-    this.cleanup = function() {
-        if (this.proc) {
-            this.proc.kill("SIGHUP");
-            this.proc = null;
-        }
     };
 
 
@@ -888,7 +910,7 @@ var server = net.createServer(function(c) {
 
 gdb = new GDB();
 
-gdb.connect(function(reply, err) {
+gdb.waitConnect(function(reply, err) {
     if (err) {
         log(err);
         process.exit();
