@@ -442,8 +442,10 @@ function GDB() {
     ////
 
     // stack frame cache getter function
-    this._cachedFrame = function(frame, create) {
-        var key = frame.file + frame.line + frame.func;
+    this._cachedFrame = function(frame, frameNum, create) {
+        // the uniqueness of a frame is determined by the function and its depth
+        var depth = this.state.frames.length - 1 - frameNum;
+        var key = frame.file + frame.line + frame.func + depth;
         if (!this.framecache.hasOwnProperty(key)) {
             if (create)
                 this.framecache[key] = create;
@@ -536,7 +538,7 @@ function GDB() {
     this._updateLocals = function() {
         function requestLocals(frame) {
             // skip this frame if we have its variables cached
-            if (this._cachedFrame(this.state.frames[frame]))
+            if (this._cachedFrame(this.state.frames[frame], frame))
                 return frameLocals.call(this, frame, null, true);
 
             var args = [
@@ -551,7 +553,7 @@ function GDB() {
         function frameLocals(i, state, cache) {
             var f = this.state.frames[i];
             if (cache)
-                f.locals = this._cachedFrame(f).locals;
+                f.locals = this._cachedFrame(f, i).locals;
             else
                 f.locals = state.status.locals;
 
@@ -588,7 +590,7 @@ function GDB() {
             // stitch cache together in state
             for (var i = 0; i < this.state.frames.length; i++) {
                 var frame = this.state.frames[i];
-                var cache = this._cachedFrame(frame);
+                var cache = this._cachedFrame(frame, i);
 
                 // cache miss
                 if (cache === false) continue;
@@ -669,9 +671,9 @@ function GDB() {
             var frame = this.state.frames[i];
 
             // skip the frame if it's already cached
-            if (this._cachedFrame(frame) !== false) continue;
+            if (this._cachedFrame(frame, i) !== false) continue;
 
-            var cache = this._cachedFrame(frame, { args: [], locals: [] });
+            var cache = this._cachedFrame(frame, i, { args: [], locals: [] });
             __iterVars(frame.args, newvars, cache.args);
             __iterVars(frame.locals, newvars, cache.locals);
         }
