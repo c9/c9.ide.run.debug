@@ -180,7 +180,6 @@ function Client(c) {
 function GDB() {
     this.sequence_id = 0;
     this.callbacks = {};
-    this.abortStepIn = false;
     this.state = {};
     this.framecache = {};
     this.varcache = {};
@@ -509,7 +508,6 @@ function GDB() {
 
                 // we must abort step if we cannot show source for this function
                 if (!this.memoized_files[file].exists && !this.state.segfault) {
-                    this.abortStepIn = this.state.frames[i+1].line;
                     this.state = {};
                     this.issue("-exec-finish");
                     return;
@@ -715,17 +713,6 @@ function GDB() {
         else if (cause === "exited-normally")
             // program has quit
             process.exit();
-        else if (this.abortStepIn > 0 && state.state === "stopped") {
-            // sometimes gdb does not auto-advance. if this stop matches the
-            // prior step-in, let's advance
-            if (state.status.frame.line == this.abortStepIn) {
-                this.issue("-exec-next");
-            }
-            else {
-                this.abortStepIn = false;
-                this._updateState(false, thread);
-            }
-        }
     };
 
     // handle a line of stdout from gdb
