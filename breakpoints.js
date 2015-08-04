@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "tabManager", "debugger", "ace",
-        "MenuItem", "Divider", "save", "layout", "fs"
+        "MenuItem", "Divider", "save", "layout", "fs", "analytics"
     ];
     main.provides = ["breakpoints"];
     return main;
@@ -18,6 +18,7 @@ define(function(require, exports, module) {
         var MenuItem = imports.MenuItem;
         var Divider = imports.Divider;
         var fs = imports.fs;
+        var analytics = imports.analytics;
 
         var Breakpoint = require("./data/breakpoint");
         var basename = require("path").basename;
@@ -652,6 +653,18 @@ define(function(require, exports, module) {
             // Create
             else if (action == "create") {
                 if (!enableBreakpoints)
+                    if (editor.type === "ace") {
+                        var mode = editor.ace.session.syntax;
+                        var analyticsOptions = {
+                            integrations: {
+                                "All": false
+                            }
+                        };
+
+                        analytics.track("Breakpoint Created: " + mode, {
+                            mode: mode,
+                        }, analyticsOptions);
+                    }
                     activateAll();
             }
             // Toggle add/remove
