@@ -710,10 +710,11 @@ function GDB() {
 
         if (cause == "signal-received")
             this._updateState((state.status['signal-name']=="SIGSEGV"), thread);
-        else if (cause === "function-finished")
-            // automatically go to next line on step out
+        else if (cause === "function-finished" && state.status.hasOwnProperty("gdb-result-var"))
+            // automatically go to next line on step out of non-void function
             this.issue("-exec-next");
-        else if (cause === "breakpoint-hit" || cause === "end-stepping-range")
+        else if (cause === "breakpoint-hit" || cause === "end-stepping-range" ||
+                 cause === "function-finished")
             // update GUI state at breakpoint or after a step in/out
             this._updateState(false, thread);
         else if (cause === "exited-normally")
