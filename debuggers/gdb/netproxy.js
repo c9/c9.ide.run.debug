@@ -610,14 +610,24 @@ function GDB() {
     // Stack State Step 6 (final): fetch information for all non-trivial vars
     this._recurseVars = function() {
         var newvars = [];
+        var ptrcache = {};
 
         function __iterVars(vars, varstack, f) {
             for (var i = 0; i < vars.length; i++) {
-                var is_pointer = vars[i].type.indexOf('*') !== -1;
-                if (is_pointer && !parseInt(vars[i].value, 16)) {
-                    // don't allow null pointers' children to be evaluated
-                    vars[i].value = "NULL";
-                    continue;
+                if (vars[i].type.indexOf('*') !== -1) {
+                    vars[i].address = parseInt(vars[i].value, 16);
+
+                    // variable is a pointer, find out its address
+                    if (!vars[i].address) {
+                        // don't allow null pointers' children to be evaluated
+                        vars[i].value = "NULL";
+                        continue;
+                    }
+                    if (ptrcache.hasOwnProperty(vars[i].address)) {
+                        console.log("ptr_cache hit");
+                        f.push(ptrcache[vars[i].address]);
+                        continue;
+                    }
                 }
                 varstack.push({ frame: f, item: vars[i] });
             }
@@ -640,10 +650,17 @@ function GDB() {
             if (item.objname)
                 return __listChildren.call(this, item, varstack, frame);
 
+            if (item.address && ptrcache.hasOwnProperty(item.address)) {
+                frame.push(ptrcache[item.address]);
+                return __createVars.call(this, varstack);
+            }
+
             var args = ["-", "*", item.name].join(" ");
             this.issue("-var-create", args, function(item, state) {
                 item.objname = state.status.name;
                 this.varcache[item.objname] = item;
+                if (item.hasOwnProperty("address"))
+                    ptrcache[item.address] = item.objname;
                 frame.push(item.objname);
 
                 if (parseInt(state.status.numchild, 10) > 0)
@@ -663,6 +680,8 @@ function GDB() {
                         var child = item.children[i];
                         child.objname = child.name;
                         this.varcache[child.name] = child;
+                        if (child.hasOwnProperty("address"))
+                            ptrcache[child.address] = child.objname;
                     }
                     __iterVars(item.children, varstack, []);
                 }
