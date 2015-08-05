@@ -157,6 +157,7 @@ define(function(require, exports, module) {
             emit("frameActivate", { frame: stack[0] });
 
             if (segfault) {
+                showError("GDB has detected a segmentation fault and execution has stopped!");
                 emit("exception", stack[0], new Error("Segfault!"));
                 btnResume.$ext.style.display = "none";
                 btnSuspend.$ext.style.display = "inline-block";
