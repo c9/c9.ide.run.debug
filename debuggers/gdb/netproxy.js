@@ -612,8 +612,15 @@ function GDB() {
         var newvars = [];
 
         function __iterVars(vars, varstack, f) {
-            for (var i = 0; i < vars.length; i++)
+            for (var i = 0; i < vars.length; i++) {
+                var is_pointer = vars[i].type.indexOf('*') !== -1;
+                if (is_pointer && !parseInt(vars[i].value, 16)) {
+                    // don't allow null pointers' children to be evaluated
+                    vars[i].value = "NULL";
+                    continue;
+                }
                 varstack.push({ frame: f, item: vars[i] });
+            }
         }
 
         function __createVars(varstack) {
@@ -633,7 +640,6 @@ function GDB() {
             if (item.objname)
                 return __listChildren.call(this, item, varstack, frame);
 
-            // TODO: change * to frame-addr (or set current frame)?
             var args = ["-", "*", item.name].join(" ");
             this.issue("-var-create", args, function(item, state) {
                 item.objname = state.status.name;
