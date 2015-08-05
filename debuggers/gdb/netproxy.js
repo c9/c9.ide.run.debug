@@ -614,18 +614,18 @@ function GDB() {
 
         function __iterVars(vars, varstack, f) {
             for (var i = 0; i < vars.length; i++) {
-                if (vars[i].type.indexOf('*') !== -1) {
+                if (vars[i].type.slice(-1) === '*') {
+                    // variable is a pointer, store its address
                     vars[i].address = parseInt(vars[i].value, 16);
 
-                    // variable is a pointer, find out its address
                     if (!vars[i].address) {
                         // don't allow null pointers' children to be evaluated
+                        vars[i].address = 0;
                         vars[i].value = "NULL";
                         continue;
                     }
-                    if (ptrcache.hasOwnProperty(vars[i].address)) {
-                        console.log("ptr_cache hit");
-                        f.push(ptrcache[vars[i].address]);
+                    else if (ptrcache.hasOwnProperty(vars[i].address)) {
+                        // don't re-compute pointers that we've already seen
                         continue;
                     }
                 }
@@ -647,22 +647,31 @@ function GDB() {
             var item = obj.item;
             var frame = obj.frame;
 
-            if (item.objname)
-                return __listChildren.call(this, item, varstack, frame);
-
+            // if this is a pointer, check if we have already created a varobj
             if (item.address && ptrcache.hasOwnProperty(item.address)) {
                 frame.push(ptrcache[item.address]);
                 return __createVars.call(this, varstack);
             }
 
+            // if this variable already has a corresponding varobj, get children
+            if (item.objname)
+                return __listChildren.call(this, item, varstack, frame);
+
+            // no corresponding varobj for this variable, create one
             var args = ["-", "*", item.name].join(" ");
             this.issue("-var-create", args, function(item, state) {
+                // allow the item to remember the varobj's ID
                 item.objname = state.status.name;
+
+                // store this varobj in caches
                 this.varcache[item.objname] = item;
                 if (item.hasOwnProperty("address"))
                     ptrcache[item.address] = item.objname;
+
+                // notify the frame of this variable
                 frame.push(item.objname);
 
+                // fetch this varobj's children, if it has any
                 if (parseInt(state.status.numchild, 10) > 0)
                     __listChildren.call(this, item, varstack, frame);
                 else
@@ -674,17 +683,18 @@ function GDB() {
         function __listChildren(item, varstack) {
             var args = ["--simple-values", item.objname].join(" ");
             this.issue("-var-list-children", args, function(item, state) {
+                // if these children have children, add them to process queue
                 if (parseInt(state.status.numchild, 10) > 0) {
                     item.children = state.status.children;
                     for (var i = 0; i < item.children.length; i++) {
                         var child = item.children[i];
                         child.objname = child.name;
                         this.varcache[child.name] = child;
-                        if (child.hasOwnProperty("address"))
-                            ptrcache[child.address] = child.objname;
                     }
                     __iterVars(item.children, varstack, []);
                 }
+
+                // process remaining variables in queue
                 __createVars.call(this, varstack);
             }.bind(this, item));
         }
