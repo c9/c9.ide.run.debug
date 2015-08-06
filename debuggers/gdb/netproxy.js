@@ -245,6 +245,7 @@ function GDB() {
         this.proc.on("close", function(code, signal) {
             self.proc.stdin.end();
             log("GDB terminated with code " + code + " and signal " + signal);
+            client.send({ err:"killed", code:code, signal:signal });
             process.exit();
         });
     };
@@ -460,7 +461,8 @@ function GDB() {
         // don't send state updates on reconnect, wait for plugin to request
         if (this.clientReconnect) return;
 
-        this.state.segfault = (segfault === true);
+        this.state.err = (segfault === true)? "segfault" : null;
+
         if (thread) {
             this.state.thread = thread;
             this._updateStack();
@@ -489,8 +491,8 @@ function GDB() {
                 if (this.state.frames[i].func == "??" ||
                     !this.state.frames[i].hasOwnProperty("fullname"))
                 {
-                    log("Probable stack overflow!");
-                    this.state.overflow = true;
+                    log("Probable stack corruption!");
+                    this.state.err = "corrupt";
                     client.send(this.state);
                     this.state = {};
                     return;
@@ -507,7 +509,7 @@ function GDB() {
                 }
 
                 // we must abort step if we cannot show source for this function
-                if (!this.memoized_files[file].exists && !this.state.segfault) {
+                if (!this.memoized_files[file].exists && !this.state.err) {
                     this.state = {};
                     this.issue("-exec-finish");
                     return;
