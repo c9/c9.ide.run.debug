@@ -139,14 +139,8 @@ define(function(require, exports, module) {
         /*
          * Process frame information on breakpoint hit
          */
-        function processBreak(frames, segfault, overflow) {
+        function processBreak(frames, err) {
             stack = [];
-
-            // do we have a stack overflow?
-            if (overflow) {
-                showError("GDB has detected a corrupt execution environment and has shut down!");
-                return detach();
-            }
 
             // process frames
             for (var i = 0, j = frames.length; i < j; i++) {
@@ -156,7 +150,7 @@ define(function(require, exports, module) {
             setState("stopped");
             emit("frameActivate", { frame: stack[0] });
 
-            if (segfault) {
+            if (err === "segfault") {
                 showError("GDB has detected a segmentation fault and execution has stopped!");
                 emit("exception", stack[0], new Error("Segfault!"));
                 btnResume.$ext.style.display = "none";
@@ -238,9 +232,18 @@ define(function(require, exports, module) {
             if (content === null || typeof content !== "object")
                 return;
 
+            if (content.err === "killed") {
+                showError("GDB was killed and the debug session must end!");
+                return detach();
+            }
+            else if (content.err === "corrupt") {
+                showError("GDB has detected a corrupt execution environment and has shut down!");
+                return detach();
+            }
+
             // we've received a frame stack from GDB on break, segfault, pause
             if ("frames" in content)
-                processBreak(content.frames, content.segfault, content.overflow);
+                processBreak(content.frames, content.err);
 
             // run pending callback if sequence number matches one we sent
             if (typeof content._id == "undefined")
