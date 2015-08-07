@@ -455,25 +455,49 @@ function GDB() {
         return this.framecache[key];
     };
 
-
     // Stack State Step 0; initiate request
     this._updateState = function(segfault, thread) {
         // don't send state updates on reconnect, wait for plugin to request
         if (this.clientReconnect) return;
 
         this.state.err = (segfault === true)? "segfault" : null;
+        this.state.thread = (thread)? thread : null;
 
-        if (thread) {
-            this.state.thread = thread;
-            this._updateStack();
-        }
-        else {
+        if (segfault === true)
+            // dump the varobj cache in segfault so var-updates don't crash GDB
+            this._flushVarCache();
+        else
             this._updateThreadId();
+    };
+
+    // Stack State Step 0a; flush var objects in event of a segfault
+    this._flushVarCache = function() {
+        // determine all the varobj names by pulling keys from the cache
+        var keys = [];
+        for (var key in this.varcache) {
+            if (this.varcache.hasOwnProperty(key))
+                keys.push(key);
         }
+
+        function __flush(varobjs) {
+            // once we've run out of keys, resume state compilation
+            if (varobjs.length == 0)
+                return this._updateThreadId();
+
+            // pop a key from the varobjs stack and delete it
+            var v = varobjs.pop();
+            this.issue("-var-delete", v, __flush.bind(this, varobjs));
+        }
+
+        // begin flushing the keys
+        __flush.call(this, keys);
     };
 
     // Stack State Step 1; find the thread ID
     this._updateThreadId = function() {
+        if (this.state.thread !== null)
+            return this._updateStack();
+
         this.issue("-thread-info", null, function(state) {
             this.state.thread = state.status["current-thread-id"];
             this._updateStack();
