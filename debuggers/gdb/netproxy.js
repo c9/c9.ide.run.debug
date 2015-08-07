@@ -478,6 +478,7 @@ function GDB() {
             if (this.varcache.hasOwnProperty(key))
                 keys.push(key);
         }
+        this.varcache = {};
 
         function __flush(varobjs) {
             // once we've run out of keys, resume state compilation
