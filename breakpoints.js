@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "tabManager", "debugger", "ace",
-        "MenuItem", "Divider", "save", "layout", "fs", "analytics"
+        "MenuItem", "Divider", "save", "layout", "fs", "c9.analytics"
     ];
     main.provides = ["breakpoints"];
     return main;
@@ -18,7 +18,7 @@ define(function(require, exports, module) {
         var MenuItem = imports.MenuItem;
         var Divider = imports.Divider;
         var fs = imports.fs;
-        var analytics = imports.analytics;
+        var analytics = imports["c9.analytics"];
 
         var Breakpoint = require("./data/breakpoint");
         var basename = require("path").basename;
@@ -622,6 +622,7 @@ define(function(require, exports, module) {
             var obp = findBreakpoint(path, line, true).filter(function(b) {
                 return b.invalid && b.line != line ? false : true;
             })[0];
+            analytics.track(action);
 
             function createBreakpoint(condition) {
                 var caption = basename(path);
@@ -649,28 +650,32 @@ define(function(require, exports, module) {
             else if (action == "enable" || action == "disable") {
                 enabled = action == "enable";
                 removed = false;
+                analytics.track("Toggle disabled/enabled");
             }
             // Create
             else if (action == "create") {
-                if (!enableBreakpoints)
-                    if (editor.type === "ace") {
-                        var mode = editor.ace.session.syntax;
-                        var analyticsOptions = {
-                            integrations: {
-                                "All": false
-                            }
-                        };
+                analytics.track("Breakpoint created!");
+                analytics.track(editor.type);
+                if (editor.type === "ace") {
+                    var mode = editor.ace.session.syntax;
+                    var analyticsOptions = {
+                        integrations: {
+                            "All": false
+                        }
+                    };
 
-                        analytics.track("Breakpoint Created: " + mode, {
-                            mode: mode,
-                        }, analyticsOptions);
-                    }
+                    analytics.track("Breakpoint Create : " + mode, {
+                        mode: mode,
+                    }, analyticsOptions);
+                }
+                if (!enableBreakpoints)
                     activateAll();
             }
             // Toggle add/remove
             else {
                 removed = action == "remove";
                 enabled = true;
+                analytics.track("Toggle disabled/enabled");
             }
 
             // Remove old breakpoint
