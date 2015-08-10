@@ -622,7 +622,6 @@ define(function(require, exports, module) {
             var obp = findBreakpoint(path, line, true).filter(function(b) {
                 return b.invalid && b.line != line ? false : true;
             })[0];
-            analytics.track(action);
 
             function createBreakpoint(condition) {
                 var caption = basename(path);
@@ -650,24 +649,11 @@ define(function(require, exports, module) {
             else if (action == "enable" || action == "disable") {
                 enabled = action == "enable";
                 removed = false;
-                analytics.track("Toggle disabled/enabled");
             }
             // Create
             else if (action == "create") {
-                analytics.track("Breakpoint created!");
-                analytics.track(editor.type);
-                if (editor.type === "ace") {
-                    var mode = editor.ace.session.syntax;
-                    var analyticsOptions = {
-                        integrations: {
-                            "All": false
-                        }
-                    };
-
-                    analytics.track("Breakpoint Create : " + mode, {
-                        mode: mode,
-                    }, analyticsOptions);
-                }
+                var mode = session.syntax;
+                analytics.track("Breakpoint Created: " + mode);
                 if (!enableBreakpoints)
                     activateAll();
             }
@@ -675,7 +661,6 @@ define(function(require, exports, module) {
             else {
                 removed = action == "remove";
                 enabled = true;
-                analytics.track("Toggle disabled/enabled");
             }
 
             // Remove old breakpoint
