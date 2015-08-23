@@ -568,7 +568,6 @@ define(function(require, exports, module) {
                 });
                 
                 process.on("stopped", function(){
-                    running = run.STOPPED;
                     stop();
                 }, plugin);
                 
@@ -596,6 +595,8 @@ define(function(require, exports, module) {
         
         function stop(){
             if (!dbg) return;
+            
+            running = run.STOPPED;
             
             // Detach from runner
             dbg && dbg.detach();
