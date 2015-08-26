@@ -76,6 +76,9 @@ define(function(require, exports, module) {
         function buildScopeVariables(frame_vars, scope_index, frame_index, vars) {
             function buildVariable(variable, scope) {
                 var props = null;
+
+                if (variable == null) return;
+
                 if (variable.hasOwnProperty("children")) {
                     props = [];
                     variable.children.forEach(function(child) {
