@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "DebugPanel", "settings", "ui", "tabManager", "debugger", "ace",
-        "MenuItem", "Divider", "save", "layout", "fs"
+        "MenuItem", "Divider", "save", "layout", "fs", "c9.analytics"
     ];
     main.provides = ["breakpoints"];
     return main;
@@ -18,6 +18,7 @@ define(function(require, exports, module) {
         var MenuItem = imports.MenuItem;
         var Divider = imports.Divider;
         var fs = imports.fs;
+        var analytics = imports["c9.analytics"];
 
         var Breakpoint = require("./data/breakpoint");
         var basename = require("path").basename;
@@ -651,6 +652,8 @@ define(function(require, exports, module) {
             }
             // Create
             else if (action == "create") {
+                var mode = session.syntax;
+                analytics.track("Breakpoint Created: " + mode);
                 if (!enableBreakpoints)
                     activateAll();
             }

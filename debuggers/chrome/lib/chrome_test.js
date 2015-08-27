@@ -1,7 +1,7 @@
 /*global describe it before */
 
 "use client";
-"use mocha";
+
 
 require([
     "plugins/c9.ide.run.debug/debuggers/chrome/lib/chrome", 
