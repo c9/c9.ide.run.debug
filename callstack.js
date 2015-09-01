@@ -166,7 +166,7 @@ define(function(require, exports, module) {
                 if (!script)
                     return;
                     
-                if (!dbg.features.liveUpdate && !debug.disabled.liveUpdate)
+                if (!dbg.features.liveUpdate || debug.disabledFeatures.liveUpdate)
                     return;
     
                 var value = e.document.value, lastError;

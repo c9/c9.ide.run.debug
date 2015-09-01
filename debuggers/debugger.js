@@ -45,7 +45,7 @@ define(function(require, exports, module) {
         var pauseOnBreaks = 0;
         var state = "disconnected";
         var sources = [];
-        var running, activeFrame, dbg, name, process, socket, disabled;
+        var running, activeFrame, dbg, name, process, socket, disabledFeatures;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
@@ -586,7 +586,7 @@ define(function(require, exports, module) {
             }) === false)
                 return;
                 
-            disabled = runner.disabled || {};
+            disabledFeatures = runner.disabled || {};
             
             // Create the socket
             socket = new Socket(runner.debugport, dbg.getProxySource(process), reconnect);
@@ -660,7 +660,7 @@ define(function(require, exports, module) {
             name = null;
             process = null;
             socket = null;
-            disabled = null;
+            disabledFeatures = null;
             container = null;
             btnResume = null;
             btnStepOver = null;
@@ -758,7 +758,7 @@ define(function(require, exports, module) {
             /**
              * 
              */
-            get disabled(){ return disabled; },
+            get disabledFeatures(){ return disabledFeatures || {}; },
             /**
              * The state of the debugger
              * @property {"running"|"stopped"|"disconnected"} sources
