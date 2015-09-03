@@ -22,7 +22,7 @@ define(function(require, exports, module) {
         /***** Initialization *****/
         
         var plugin = new DebugPanel("Ajax.org", main.consumes, {
-            caption: "Scope Variables",
+            caption: "Local Variables",
             index: 300
         });
         var emit = plugin.getEmitter();
