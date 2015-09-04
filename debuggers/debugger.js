@@ -45,7 +45,7 @@ define(function(require, exports, module) {
         var pauseOnBreaks = 0;
         var state = "disconnected";
         var sources = [];
-        var running, activeFrame, dbg, name, process, socket;
+        var running, activeFrame, dbg, name, process, socket, disabledFeatures;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
             btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
@@ -568,7 +568,6 @@ define(function(require, exports, module) {
                 });
                 
                 process.on("stopped", function(){
-                    running = run.STOPPED;
                     stop();
                 }, plugin);
                 
@@ -586,6 +585,8 @@ define(function(require, exports, module) {
                 callback: callback
             }) === false)
                 return;
+                
+            disabledFeatures = runner.disabled || {};
             
             // Create the socket
             socket = new Socket(runner.debugport, dbg.getProxySource(process), reconnect);
@@ -596,6 +597,8 @@ define(function(require, exports, module) {
         
         function stop(){
             if (!dbg) return;
+            
+            running = run.STOPPED;
             
             // Detach from runner
             dbg && dbg.detach();
@@ -647,6 +650,26 @@ define(function(require, exports, module) {
         plugin.on("unload", function(){
             loaded = false;
             drawn = false;
+            
+            pauseOnBreaks = null;
+            state = null;
+            sources = null;
+            running = null;
+            activeFrame = null;
+            dbg = null;
+            name = null;
+            process = null;
+            socket = null;
+            disabledFeatures = null;
+            container = null;
+            btnResume = null;
+            btnStepOver = null;
+            btnStepInto = null;
+            btnStepOut = null;
+            btnSuspend = null;
+            btnPause = null;
+            btnOutput = null;
+            btnImmediate = null;
         });
         
         /***** Register and define API *****/
@@ -732,6 +755,10 @@ define(function(require, exports, module) {
                 activeFrame = frame; 
                 emit("frameActivate", { frame: frame });
             },
+            /**
+             * 
+             */
+            get disabledFeatures(){ return disabledFeatures || {}; },
             /**
              * The state of the debugger
              * @property {"running"|"stopped"|"disconnected"} sources

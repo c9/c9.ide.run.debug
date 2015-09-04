@@ -576,7 +576,7 @@ define(function(require, exports, module) {
             return debug.proxySource
                 .replace(/\/\/.*/g, "")
                 .replace(/[\n\r]/g, "")
-                .replace(/\{PORT\}/, process.runner[0].debugport);
+                .replace(/\{PORT\}/, (process.runner[0] || process.runner).debugport);
         }
         
         function attach(s, reconnect, callback) {
