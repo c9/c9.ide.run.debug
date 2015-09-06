@@ -46,6 +46,9 @@ var V8Message = module.exports = function(type) {
             if (typeof this[name] != "undefined")
                 tmp[name] = this[name];
         }
+        // TODO is there a better place for this
+        if (tmp.arguments && !tmp.arguments.maxStringLength)
+            tmp.arguments.maxStringLength = 10000;
         return JSON.stringify(tmp);
     };
 
