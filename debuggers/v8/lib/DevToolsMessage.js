@@ -39,7 +39,7 @@ var DevToolsMessage = module.exports = function(headers, content) {
         var headerText = responseParts[0];
         this.$content = responseParts[1];
 
-        var re = /([\w\-\d]+):([\w\-\d]*)(\r\n|$)/g;
+        var re = /([\w\-\d]+)\s*:\s*([^\r\n]*)(\r|$)/g;
         headerText.replace(re, function(str, key, value) {
             headers[key] = value;
         });

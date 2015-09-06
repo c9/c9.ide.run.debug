@@ -250,13 +250,13 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("error", function(err) {
-                if (err.code == "ECONNREFUSED") {
+                if (err.code == "ECONNREFUSED" || err.code == "ECONNRESET") {
                     // Ignore error if process has stopped
                     if (process.running >= process.STARTING)
                         showError("Could not connect debugger to the debugger proxy");
                 }
                 else
-                    showError(err.message);
+                    showError(err.message || "Debugger connection error " + err.code);
             });
             
             dbg.on("getBreakpoints", function(){

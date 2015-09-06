@@ -18,6 +18,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
     this.$socket = socket;
     this.$attached = false;
     this.$pending = [];
+    this.$connected = false;
 };
 
 (function() {
@@ -29,11 +30,8 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
             throw new Error("already attached!");
 
         var self = this;
-        this.$reader = new MessageReader(this.$socket, function(messageText) {
-            //console.log("Connect>", messageText);
-            self.$reader.destroy();
-            self.emit("connect");
-            self.$reader = new MessageReader(self.$socket, self.$onMessage.bind(self));
+        this.$reader = new MessageReader(this.$socket, this.$onMessage.bind(this));
+        this.on("connect", function() {
             callback();
         });
         this.$socket.connect();
@@ -60,6 +58,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
     this.detach = function(tabId, callback) {
         this.$socket.close();
         this.$attached = false;
+        this.$connected = false;
         if (this.$reader)
             this.$reader.destroy();
         callback && callback();
@@ -69,8 +68,13 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         var response = new DevToolsMessage.fromString(messageText);
 
         var contentText = response.getContent();
-        if (!contentText)
+        if (!contentText) {
+            if (response.$headers.Type == "connect" || !this.$connected) {
+                this.emit("connect");
+                this.$connected = true;
+            }
             return;
+        }
 
         var content;
         try {
