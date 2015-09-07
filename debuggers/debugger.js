@@ -255,8 +255,11 @@ define(function(require, exports, module) {
                     if (process.running >= process.STARTING)
                         showError("Could not connect debugger to the debugger proxy");
                 }
-                else
+                else if (err.code) {
                     showError(err.message || "Debugger connection error " + err.code);
+                }
+                if (process.running >= process.STARTING)
+                    socket.connect();
             });
             
             dbg.on("getBreakpoints", function(){

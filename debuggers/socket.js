@@ -109,9 +109,11 @@ define(function(require, exports, module) {
                                 console.log("[netproxy] unexpected data", data);
                         });
 
-                        process.on("exit", function(){
+                        process.on("exit", function(code){
                             connected = DISCONNECTED;
                             state = "disconnected";
+                            // debugger will call connect again if process is still running 
+                            emit("error", {code: code});
                         });
                         
                         // Make sure the process keeps running
@@ -130,9 +132,10 @@ define(function(require, exports, module) {
                         emit("data", data);
                     });
                     // Don't call end because session will remain in between disconnects
-                    // stream.on("end", function(err) {
-                    //     emit("end", err);
-                    // });
+                    stream.on("end", function(err) {
+                        console.log("end", err);
+                        // emit("end", err);
+                    });
                     stream.on("error", function(err) {
                         emit("error", err);
                     });

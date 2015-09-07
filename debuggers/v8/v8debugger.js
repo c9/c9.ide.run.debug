@@ -190,13 +190,16 @@ define(function(require, exports, module) {
             
             // Check for a serverOnly breakpoint on line 0
             // this bp, is automatically created by v8 to stop on break
-            if (bp.id === 1 && bp.serverOnly && bp.line === 0) {
+            if (bp.id === 1 && bp.serverOnly) {
                 // The breakpoint did it's job, now lets remove it
+                reconnect = false;
                 v8dbg.clearbreakpoint(1, wait);
                 breakpoints.remove(bp);
             }
-            else wait();
-            
+            else {
+                wait();
+                reconnect = true;
+            }
             function wait(){
                 // Check if there is a real breakpoint here, so we don't resume
                 function checkEval(err, variable) {
@@ -596,7 +599,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             v8ds = new V8DebuggerService(socket);
-            v8ds.attach(0, function(err) {
+            v8ds.attach(0, function(err, msg) {
                 if (err) return callback(err);
 
                 v8dbg = new V8Debugger(0, v8ds);
@@ -609,6 +612,8 @@ define(function(require, exports, module) {
                 
                 onChangeFrame(null);
                 
+                if (msg && msg.type == "connect")
+                    reconnect = false;
                 // This fixes reconnecting. I dont understand why, but without
                 // this timeout during reconnect the getSources() call never
                 // returns
@@ -1048,11 +1053,17 @@ define(function(require, exports, module) {
             if (!Array.isArray(v)) v = null;
             pathMap = v && v.map(function(x) {
                 if (!x.toInternal || !x.toExternal) return;
+                var map = {
+                    toInternal: {},
+                    toExternal: {}
+                };
                 if (typeof x.toInternal.regex == "string")
-                    x.toInternal.regex = new RegExp(x.toInternal.regex, "g");
+                    map.toInternal.regex = new RegExp(x.toInternal.regex, "g");
+                map.toInternal.replacement = x.toInternal.replacement;
                 if (typeof x.toExternal.regex == "string")
-                    x.toExternal.regex = new RegExp(x.toExternal.regex, "g");
-                return x;
+                    map.toExternal.regex = new RegExp(x.toExternal.regex, "g");
+                map.toExternal.replacement = x.toExternal.replacement;
+                return map;
             }).filter(Boolean);
         }
         

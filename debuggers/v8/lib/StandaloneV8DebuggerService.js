@@ -31,8 +31,8 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
 
         var self = this;
         this.$reader = new MessageReader(this.$socket, this.$onMessage.bind(this));
-        this.on("connect", function() {
-            callback();
+        this.on("connect", function(e) {
+            callback(null, e);
         });
         this.$socket.connect();
         
@@ -70,7 +70,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         var contentText = response.getContent();
         if (!contentText) {
             if (response.$headers.Type == "connect" || !this.$connected) {
-                this.emit("connect");
+                this.emit("connect", {type: response.$headers.Type});
                 this.$connected = true;
             }
             return;
