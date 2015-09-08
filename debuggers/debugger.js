@@ -165,6 +165,8 @@ define(function(require, exports, module) {
             
             if (dbg)
                 btnPause.setAttribute("visible", !!dbg.features.setBreakBehavior);
+                
+            togglePause(pauseOnBreaks);
             
             btnPause.on("click", function(){
                 togglePause();
