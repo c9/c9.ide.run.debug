@@ -24,6 +24,7 @@ define(function(require, exports, module) {
         
         var Tree = require("ace_tree/tree");
         var TreeData = require("ace_tree/data_provider");
+        var LineWidgets = require("ace/line_widgets").LineWidgets;
         
         /***** Initialization *****/
         
@@ -37,7 +38,7 @@ define(function(require, exports, module) {
         var sources = [];
         var frames = [];
         
-        var activeFrame, dbg, menu, button;
+        var activeFrame, dbg, menu, button, lastException;
         
         var loaded = false;
         function load(){
@@ -136,6 +137,12 @@ define(function(require, exports, module) {
             });
             
             debug.on("break", function(e) {
+                if (e.exception && e.frame) {
+                    lastException = e;
+                } else if (lastException) {
+                    if (!e.frame || frameId(e.frame) != frameId(lastException.frame))
+                        lastException = null;
+                }
                 // Show the frame in the editor
                 debug.showDebugFrame(activeFrame);
             });
@@ -359,6 +366,59 @@ define(function(require, exports, module) {
         function removeMarkerFromSession(session) {
             session.$stackMarker && removeMarker(session, "stack");
             session.$stepMarker && removeMarker(session, "step");
+            session.$exceptionWidget && session.$exceptionWidget.destroy();
+        }
+        
+        function addExceptionWidget(editor, ev) {
+            var session = editor.session;
+            if (!session.widgetManager) {
+                session.widgetManager = new LineWidgets(session);
+                session.widgetManager.attach(editor);
+            }
+            
+            var oldWidget = session.$exceptionWidget;
+            if (oldWidget)
+                oldWidget.destroy();
+                
+            var row = ev.frame.line;
+            var column = ev.frame.column || 0;
+            var w = {
+                row: row, 
+                fixedWidth: true,
+                coverGutter: true,
+                el: document.createElement("div"),
+                type: "debuggerException"
+            };
+            var el = w.el.appendChild(document.createElement("div"));
+            var arrow = w.el.appendChild(document.createElement("div"));
+            arrow.className = "error_widget_arrow ace_error";
+            
+            var left = editor.renderer.$cursorLayer
+                .getPixelPosition({row: row, column: column}).left;
+            arrow.style.left = left + editor.renderer.gutterWidth - 5 + "px";
+            
+            w.el.className = "error_widget_wrapper";
+            el.className = "error_widget ace_error";
+            el.textContent = ev.exception.value;
+            el.appendChild(document.createElement("div"));
+            
+            w.destroy = function() {
+                session.$exceptionWidget = null;
+                session.off("change", w.destroy);
+                session.widgetManager.removeLineWidget(w);
+            };
+            session.$exceptionWidget = w;
+            session.on("change", w.destroy);
+            
+            editor.session.widgetManager.addLineWidget(w);
+            
+            w.el.onmousedown = function(e) {
+                e.stopPropagation();
+            };
+            
+            // TODO add buttons to: close, disable break on exception, not break on current line
+            
+            editor.renderer.scrollCursorIntoView(null, 0.5, {bottom: w.el.offsetHeight});
         }
 
         function updateMarker(frame, scrollToLine) {
@@ -415,6 +475,10 @@ define(function(require, exports, module) {
                 if (path == topFrame.path)
                     addMarker(session, "step", topFrame.line);
             }
+            
+            if (lastException && frameId(frame) == frameId(lastException.frame)) {
+                addExceptionWidget(editor.ace, lastException);
+            }
         }
         
         /***** Methods *****/
@@ -448,6 +512,9 @@ define(function(require, exports, module) {
             }
         }
         
+        function frameId(frame) {
+            return [frame.path, frame.line,frame.column, frame.sourceId].join(":");
+        }
         /**
          * Assumptions:
          *  - .index stays the same

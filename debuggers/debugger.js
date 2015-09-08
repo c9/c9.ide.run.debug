@@ -163,8 +163,9 @@ define(function(require, exports, module) {
             //     suspend();
             // });
             
-            if (dbg)
-                btnPause.setAttribute("visible", !!dbg.features.setBreakBehavior);
+            // can't use visible true since it changes display to block
+            if (dbg && btnPause.$ext)
+                btnPause.$ext.style.display = dbg.features.setBreakBehavior ? "" : "none";
                 
             togglePause(pauseOnBreaks);
             
@@ -238,8 +239,8 @@ define(function(require, exports, module) {
                 e.implementation = dbg;
                 togglePause(pauseOnBreaks);
                 
-                if (btnPause)
-                    btnPause.setAttribute("visible", !!dbg.features.setBreakBehavior);
+                if (btnPause && btnPause.$ext)
+                    btnPause.$ext.style.display = dbg.features.setBreakBehavior ? "" : "none";
                 
                 emit("attach", e);
             }, plugin);
@@ -279,7 +280,6 @@ define(function(require, exports, module) {
                 // Process Exception
                 if (e.exception) {
                     emit("exception", e);
-                    // @todo add this into the ace view?
                 }
                 
                 emit("break", e);
