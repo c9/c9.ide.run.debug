@@ -480,7 +480,7 @@ define(function(require, exports, module) {
                     socket.unload();
                     
                     // Remove all the set events
-                    plugin.cleanUp(true);
+                    plugin.cleanUp("events|other");
                 }
                 
                 // Find the new debugger
