@@ -147,8 +147,6 @@ var V8Debugger = module.exports = function(tabId, v8service) {
     };
 
     this.evaluate = function(expression, frame, global, disableBreak, callback) {
-        var _self = this;
-
         var msg = new V8Message("request");
         msg.command = "evaluate";
         msg.arguments = { expression : expression };
@@ -162,45 +160,10 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         if (disableBreak)
             msg.arguments.disable_break = disableBreak;
 
-        /* evaluation always take place on one single frame, but we need additional variables
-         * that are not there, because the v8 debugger only passes variables to the frame that
-         * are needed. Therefore we need to push additional items to the stack, and we gain them
-         * from the backtrace
-         */
-        this.backtrace(null, null, false, true, function (resp) {
-            // build a hashtable
-            var addContext = { };
-            
-            // run over all frames
-            if (resp && resp.totalFrames > 0) {
-                for (var ix = 0, frames = resp.frames, frame = frames[ix]; ix < frames.length; frame = frames[++ix]) {
-                    // then over all the locals
-                    for (var lix = 0, local = frame.locals[lix]; lix < frame.locals.length; local = frame.locals[++lix]) {
-                        // check whether a higher frame already has a variable declared under this name
-                        // this way we prevent property overwriting
-                        if (!addContext[local.name]) {
-                            addContext[local.name] = local.value.ref;
-                        }
-                    }
-                }
-            }
-
-            // the message needs an array so we map the object to one
-            msg.arguments.additional_context = [];
-            for (var name in addContext) {
-                if (!addContext.hasOwnProperty(name)) continue;
-
-                msg.arguments.additional_context.push({ name: name, handle: addContext[name] });
-            }
-
-            // and now send the complete message to the debugger
-            _self.$send(msg, callback);
-        });
+        this.$send(msg, callback);
     };
     
     this.simpleevaluate = function(expression, frame, global, additionalContext, callback) {
-        var _self = this;
-
         var msg = new V8Message("request");
         msg.command = "evaluate";
         msg.arguments = { expression : expression };
@@ -216,8 +179,8 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         if (additionalContext)
             msg.arguments.additional_context = additionalContext;
             
-        _self.$send(msg, callback);
-    }
+        this.$send(msg, callback);
+    };
     
     this.setexceptionbreak = function(type, enabled, callback) {
         var msg = new V8Message("request");
