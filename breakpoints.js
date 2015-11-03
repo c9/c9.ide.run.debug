@@ -493,6 +493,7 @@ define(function(require, exports, module) {
                     bindKey: "ESC",
                     exec: function(){ hCondition.style.display = "none"; }
                 }, {
+                    name: "confirmCondition",
                     bindKey: "Enter",
                     exec: function(){
                         setCondition(conditionBreakpoint, codebox.getValue());
@@ -503,7 +504,7 @@ define(function(require, exports, module) {
 
             apf.addEventListener("movefocus", function(e) {
                 if (e.toElement != codebox)
-                    hCondition.style.display = "none";
+                    codebox.execCommand("confirmCondition");
             });
         }
 
