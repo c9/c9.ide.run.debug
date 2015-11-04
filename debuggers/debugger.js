@@ -253,16 +253,18 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("error", function(err) {
-                if (err.code == "ECONNREFUSED" || err.code == "ECONNRESET") {
-                    // Ignore error if process has stopped
+                process.checkState(function() {
+                    if (err.code == "ECONNREFUSED" || err.code == "ECONNRESET") {
+                        // Ignore error if process has stopped
+                        if (process.running >= process.STARTING)
+                            showError("Could not connect debugger to the debugger proxy");
+                    }
+                    else if (err.code) {
+                        showError(err.message || "Debugger connection error " + err.code);
+                    }
                     if (process.running >= process.STARTING)
-                        showError("Could not connect debugger to the debugger proxy");
-                }
-                else if (err.code) {
-                    showError(err.message || "Debugger connection error " + err.code);
-                }
-                if (process.running >= process.STARTING)
-                    socket.connect();
+                        socket.connect();
+                });
             });
             
             dbg.on("getBreakpoints", function(){
