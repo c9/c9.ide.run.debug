@@ -1,7 +1,8 @@
 var net = require("net");
 var port = parseInt("{PORT}", 10);
 
-var buffer = [];
+var debugBuffer = [];
+var browserBuffer = [];
 var browserClient, debugClient;
 
 var MAX_RETRIES = 100;
@@ -21,20 +22,25 @@ var server = net.createServer(function(client) {
         browserClient.destroy(); // Client is probably unloaded because a new client is connecting
     
     browserClient = client;
+    debugBuffer = [];
     
     browserClient.on("end", function() {
         browserClient = null;
     });
     
     browserClient.on("data", function(data) {
-        debugClient.write(data);
+        if (debugClient) {
+            debugClient.write(data);
+        } else {
+            debugBuffer.push(data);
+        }
     });
     
-    if (buffer.length) {
-        buffer.forEach(function(data) {
+    if (browserBuffer.length) {
+        browserBuffer.forEach(function(data) {
             browserClient.write(data);
         });
-        buffer = [];
+        browserBuffer = [];
     }
 });
 
@@ -78,12 +84,13 @@ tryConnect(MAX_RETRIES, function(err, connection) {
         return errHandler(err);
         
     debugClient = connection;
+    browserBuffer = [];
     
     debugClient.on("data", function(data) {
         if (browserClient) {
             browserClient.write(data);
         } else {
-            buffer.push(data);
+            browserBuffer.push(data);
         }
     });
     
@@ -99,6 +106,13 @@ tryConnect(MAX_RETRIES, function(err, connection) {
     });
     
     start();
+    
+    if (debugBuffer.length) {
+        debugBuffer.forEach(function(data) {
+            debugClient.write(data);
+        });
+        debugBuffer = [];
+    }
 });
 
 
