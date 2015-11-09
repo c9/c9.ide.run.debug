@@ -134,7 +134,7 @@ define(function(require, exports, module) {
                     // Don't call end because session will remain in between disconnects
                     stream.on("end", function(err) {
                         console.log("end", err);
-                        // emit("end", err);
+                        emit("end", err);
                     });
                     stream.on("error", function(err) {
                         emit("error", err);
