@@ -190,7 +190,7 @@ define(function(require, exports, module) {
                 state = e.state;
                 
                 updateButtonState(state);
-            }, plugin);
+            });
             
             updateButtonState(state);
             
@@ -306,7 +306,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("sources", function(e) {
-                sources = e.sources.slice()
+                sources = e.sources.slice();
                 emit("sources", e);
             }, plugin);
             
@@ -482,7 +482,7 @@ define(function(require, exports, module) {
                     socket.unload();
                     
                     // Remove all the set events
-                    plugin.cleanUp("events|other");
+                    plugin.cleanUp("events", dbg);
                 }
                 
                 // Find the new debugger
