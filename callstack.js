@@ -49,7 +49,7 @@ define(function(require, exports, module) {
             modelSources.$sortNodes = false;
             
             modelFrames = new TreeData();
-            modelFrames.emptyMessage = "No callstack to display";
+            modelFrames.emptyMessage = "No call stack to display";
             modelFrames.$sortNodes = false;
             
             modelFrames.$sorted = false;
