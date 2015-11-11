@@ -39,7 +39,7 @@ define(function(require, exports, module) {
             model.emptyMessage = "No variables to display";
             
             model.columns = [{
-                caption: "Property",
+                caption: "Variable",
                 value: "name",
                 defaultValue: "Scope",
                 width: "40%",
