@@ -36,7 +36,6 @@ define(function(require, exports, module) {
             buttonCSSClass: "debugger",
             panelCSSClass: "debugcontainer",
             minWidth: 165,
-            // autohide: true,
             width: 300,
             where: options.where || "right"
         });
