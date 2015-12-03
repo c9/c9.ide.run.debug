@@ -253,6 +253,7 @@ define(function(require, exports, module) {
             }, plugin);
             
             dbg.on("error", function(err) {
+                if (!process || !process.checkState) return;
                 process.checkState(function() {
                     if (err.code == "ECONNREFUSED" || err.code == "ECONNRESET") {
                         // Ignore error if process has stopped
