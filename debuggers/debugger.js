@@ -48,7 +48,7 @@ define(function(require, exports, module) {
         var running, activeFrame, dbg, name, process, socket, disabledFeatures;
         
         var container, btnResume, btnStepOver, btnStepInto, btnStepOut, 
-            btnSuspend, btnPause, btnOutput, btnImmediate; // ui elements
+            btnSuspend, btnPause, btnOutput, btnImmediate, btnSnapshots; // ui elements
         
         var loaded = false;
         function load(){
@@ -98,7 +98,7 @@ define(function(require, exports, module) {
                 hint: "step into the function that is next on the execution stack",
                 bindKey: {mac: "F11", win: "F11"},
                 exec: function(){
-                    dbg && dbg.stepInto()
+                    dbg && dbg.stepInto();
                 }
             }, plugin);
             commands.addCommand({
@@ -163,10 +163,6 @@ define(function(require, exports, module) {
             //     suspend();
             // });
             
-            // can't use visible true since it changes display to block
-            if (dbg && btnPause.$ext)
-                btnPause.$ext.style.display = dbg.features.setBreakBehavior ? "" : "none";
-                
             togglePause(pauseOnBreaks);
             
             btnPause.on("click", function(){
@@ -215,6 +211,56 @@ define(function(require, exports, module) {
             btnStepInto.setAttribute("disabled", notConnected || state != "stopped");
             btnStepOut.setAttribute("disabled",  notConnected || state != "stopped");
             btnOutput.setAttribute("disabled",  notConnected);
+            
+            if (!dbg) return;
+            // can't use visible true since it changes display to block
+            btnStepOver.$ext.style.display = 
+            btnStepInto.$ext.style.display = 
+            btnStepOut.$ext.style.display = dbg.features.snapshotDebugger ? "none" : "";
+            
+            if (dbg.features.snapshotDebugger) {
+                btnResume.$ext.style.display = 
+                btnSuspend.$ext.style.display = "none";
+                updateSnapshotList();
+                btnSnapshots.$ext.style.display = "";
+            }
+            else {
+                if (btnSnapshots)
+                    btnSnapshots.$ext.style.display = "none";
+            }
+            
+            btnPause.$ext.style.display = dbg.features.setBreakBehavior ? "" : "none";
+            btnImmediate.$ext.style.display = dbg.features.executeCode ? "" : "none";
+        }
+        
+        function updateSnapshotList(snapshots) {
+            if (!btnSnapshots) {
+                btnSnapshots = ui.dropdown({skin: "black_dropdown", "empty-message": "Waiting for snapshot..."});
+                btnResume.parentNode.insertBefore(btnSnapshots, btnResume.parentNode.firstChild);
+                plugin.addElement(btnSnapshots);
+                btnSnapshots.on("afterchange", function(e) {
+                    if (dbg.features.snapshotDebugger) {
+                        dbg.selectSnapshot(e.value && e.value.data);
+                        dbg.getFrames(function(err, frames) {
+                            if (!err && frames.length) {
+                                emit("framesLoad", {
+                                    frames: frames,
+                                    frame: frames[0]
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            if (snapshots) {
+                while (btnSnapshots.lastChild)
+                    btnSnapshots.removeChild(btnSnapshots.lastChild);
+                snapshots.forEach(function(x) {
+                    var item = ui.item({caption: x.caption, value: x});
+                    btnSnapshots.appendChild(item);
+                });
+                btnSnapshots.select(btnSnapshots.firstChild);
+            }
         }
         
         function initializeDebugger(){
@@ -239,10 +285,8 @@ define(function(require, exports, module) {
                 e.implementation = dbg;
                 togglePause(pauseOnBreaks);
                 
-                if (btnPause && btnPause.$ext)
-                    btnPause.$ext.style.display = dbg.features.setBreakBehavior ? "" : "none";
-                
                 emit("attach", e);
+                updateButtonState();
             }, plugin);
             
             dbg.on("detach", function(e) {
@@ -322,6 +366,15 @@ define(function(require, exports, module) {
                     breakpoint: e.breakpoint
                 });
             }, plugin);
+            
+            if (dbg.features.snapshotDebugger) {
+                dbg.on("snapshotUpdate", function(e) {
+                    if (settings.getBool("user/debug/@autoshow"))
+                        panels.activate("debugger");
+                    updateSnapshotList(e.snapshots);
+                    updatePanels("enable", dbg.state);
+                }, plugin);
+            }
         }
         
         function updatePanels(action, runstate) {
@@ -681,6 +734,7 @@ define(function(require, exports, module) {
             btnPause = null;
             btnOutput = null;
             btnImmediate = null;
+            btnSnapshots = null;
         });
         
         /***** Register and define API *****/
