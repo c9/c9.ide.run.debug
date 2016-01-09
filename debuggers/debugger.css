@@ -105,7 +105,7 @@
 
 .liveinspect {
     box-shadow: @liveinspect-shadow;
-    z-index : 100000;
+    z-index : 100001;
     background-color: @liveinspect-background;
     position: absolute;
     cursor: auto;

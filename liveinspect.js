@@ -235,7 +235,7 @@ define(function(require, exports, module) {
         /**
          * Execute live watching
          */
-        function liveWatch (data) {
+        function liveWatch(data) {
             if (!dbg) return;
             
             var expr = data.value;
@@ -269,6 +269,10 @@ define(function(require, exports, module) {
             
             if (!marker)
                 return;
+            
+            dbg.on("break", updateOnBreak, plugin);
+            
+            marker.data = data;
             
             var evalId = ++evalCounter;
     
@@ -323,7 +327,7 @@ define(function(require, exports, module) {
             }
         }
     
-        function hide () {
+        function hide() {
             if (windowHtml)
                 windowHtml.style.display = "none";
             
@@ -334,6 +338,9 @@ define(function(require, exports, module) {
             
             if (activeTimeout)
                 activeTimeout = clearTimeout(activeTimeout);
+            
+            if (dbg)
+                dbg.off("break", updateOnBreak);
         }
     
         function addMarker(data) {
@@ -357,14 +364,24 @@ define(function(require, exports, module) {
             marker = {
                 id: session.addMarker(range, "ace_bracket ace_highlight", "text", true),
                 session: session,
-                range: range
+                range: range,
+                data: data
             };
         }
     
-        function getNumericProperties (obj) {
+        function getNumericProperties(obj) {
             return Object.keys(obj)
                 .filter(function (k) { return !isNaN(k); })
                 .map(function (k) { return obj[k]; });
+        }
+        
+        function updateOnBreak() {
+            currentExpression = null;
+            if (marker && dbg) {
+                dbg.off("break", updateOnBreak);
+                if (marker.data)
+                    liveWatch(marker.data);
+            }
         }
         
         /***** Lifecycle *****/
