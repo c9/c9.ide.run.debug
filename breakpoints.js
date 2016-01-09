@@ -633,7 +633,8 @@ define(function(require, exports, module) {
                     line: line,
                     column: (lineContents.match(/^(\s+)/) ||[0,""])[1].length,
                     text: caption,
-                    content: lineContents,
+                    content: lineContents.slice(0, 200),
+                    time: Date.now(),
                     enabled: enabled,
                     condition: condition
                 });
