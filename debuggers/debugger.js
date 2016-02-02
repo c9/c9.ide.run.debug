@@ -562,7 +562,7 @@ define(function(require, exports, module) {
             
             options.deferred = true;
             
-            process = run.run(runner, options, name, function(err, pid){
+            var process = run.run(runner, options, name, function(err, pid){
                 if (err) return callback(err);
                 
                 if (!process || process.running < process.STARTING)
