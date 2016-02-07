@@ -740,7 +740,7 @@ define(function(require, exports, module) {
 
                 var len, firstRow;
                 len = delta.end.row - delta.start.row;
-                if (delta.action == "insertText") {
+                if (delta.action == "insert") {
                     firstRow = delta.start.column
                         ? delta.start.row + 1
                         : delta.start.row;
