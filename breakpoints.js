@@ -655,7 +655,7 @@ define(function(require, exports, module) {
             // Create
             else if (action == "create") {
                 var mode = session.syntax;
-                if (mode === "nodejs" || mode === "php")
+                if (mode === "php")
                     analytics.track("Breakpoint Created: " + mode);
                 if (!enableBreakpoints)
                     activateAll();
