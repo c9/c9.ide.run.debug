@@ -18,15 +18,18 @@ define(function(require, exports, module) {
         
         var counter = 0;
         
-        function Socket(port, proxySource, reconnect) {
+        function Socket(port, proxy, reconnect) {
             var socket = new Plugin();
             var emit = socket.getEmitter();
             var state, stream, connected, away;
             
-            var PROXY = require("text!./netproxy.js")
-                .replace(/\/\/.*/g, "")
-                .replace(/[\n\r]/g, "")
-                .replace(/\{PORT\}/, port);
+            if (typeof proxy == "string")
+                proxy = { source: proxy };
+            
+            if (!proxy.port)
+                proxy.port = port + 1;
+            
+            var proxySource = proxy.source;
             socket.__defineGetter__("state", function(){ return state; });
             
             c9.on("connect", function(){
@@ -62,7 +65,7 @@ define(function(require, exports, module) {
                 if (!away) {
                     away = true;
                     state = "away";
-                    emit("away")
+                    emit("away");
                 }
             }, socket);
             
@@ -77,7 +80,7 @@ define(function(require, exports, module) {
                 connected = CONNECTING;
                 state = "connecting";
                 
-                if (reconnect && !force) {
+                if ((reconnect || proxy.reuseExisting) && !force) {
                     connectToPort(function(err) {
                         if (!err) return;
                         
@@ -89,6 +92,17 @@ define(function(require, exports, module) {
                         }
                         else
                             return emit("err", err);
+                    });
+                }
+                if (proxy.detach) {
+                    proc.spawn(nodeBin, {
+                        args: ["-e", proxySource],
+                        detached: true,
+                        stdio: "ignore"
+                    }, function(err, process) {
+                        if (err)
+                            return emit("error", err);
+                        connectToPort();
                     });
                 }
                 else {
@@ -123,7 +137,7 @@ define(function(require, exports, module) {
             }
             
             function connectToPort(callback) {
-                net.connect(port + 1, {}, function(err, s) {
+                net.connect(proxy.port || proxy.socketpath, {}, function(err, s) {
                     if (err)
                         return callback ? callback(err) : emit("error", err);
                     
