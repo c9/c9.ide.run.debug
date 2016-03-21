@@ -516,15 +516,16 @@ function GDB() {
                 if (this.state.frames[i].func == "??" ||
                     !this.state.frames[i].hasOwnProperty("fullname"))
                 {
-                    log("Probable stack corruption!");
-                    this.state.err = "corrupt";
-                    client.send(this.state);
-                    this.state = {};
-                    return;
+                    // go code often has "??" at the top of the stack, ignore that
+                    this.state.frames.length = i
+                    break;
                 }
 
                 var file = this.state.frames[i].fullname;
 
+                if (!file) {
+                    continue;
+                }
                 // remember if we can view the source for this frame
                 if (!(file in this.memoized_files)) {
                     this.memoized_files[file] = {
@@ -532,9 +533,8 @@ function GDB() {
                         relative: path.relative(dirname, file)
                     };
                 }
-
                 // we must abort step if we cannot show source for this function
-                if (!this.memoized_files[file].exists && !this.state.err) {
+                if (!this.memoized_files[file] || !this.memoized_files[file].exists && !this.state.err) {
                     this.state = {};
                     this.issue("-exec-finish");
                     return;
@@ -553,7 +553,8 @@ function GDB() {
         function(state) {
             var args = state.status['stack-args'];
             for (var i = 0; i < args.length; i++) {
-                this.state.frames[i].args = args[i].args;
+                if (this.state.frames[i])
+                    this.state.frames[i].args = args[i].args;
             }
             this._updateLocals();
         }.bind(this));
@@ -640,23 +641,27 @@ function GDB() {
         var ptrcache = {};
 
         function __iterVars(vars, varstack, f) {
+            if (!vars) return;
             for (var i = 0; i < vars.length; i++) {
-                if (vars[i].type.slice(-1) === '*') {
+                var vari = vars[i];
+                if (!vari.type)
+                    continue; // TODO how to properly display this?
+                if (vari.type.slice(-1) === '*') {
                     // variable is a pointer, store its address
-                    vars[i].address = parseInt(vars[i].value, 16);
+                    vari.address = parseInt(vari.value, 16);
 
-                    if (!vars[i].address) {
+                    if (!vari.address) {
                         // don't allow null pointers' children to be evaluated
-                        vars[i].address = 0;
-                        vars[i].value = "NULL";
+                        vari.address = 0;
+                        vari.value = "NULL";
                         continue;
                     }
-                    else if (ptrcache.hasOwnProperty(vars[i].address)) {
+                    else if (ptrcache.hasOwnProperty(vari.address)) {
                         // don't re-compute pointers that we've already seen
                         continue;
                     }
                 }
-                varstack.push({ frame: f, item: vars[i] });
+                varstack.push({ frame: f, item: vari });
             }
         }
 
