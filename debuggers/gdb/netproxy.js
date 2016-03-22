@@ -517,7 +517,7 @@ function GDB() {
                     !this.state.frames[i].hasOwnProperty("fullname"))
                 {
                     // go code often has "??" at the top of the stack, ignore that
-                    this.state.frames.length = i
+                    this.state.frames.length = i;
                     break;
                 }
 

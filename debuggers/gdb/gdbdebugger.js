@@ -554,7 +554,8 @@ define(function(require, exports, module) {
             sendCommand("bp-set", bp.data, function(err, reply) {
                 if (err)
                     return callback && callback(err);
-
+                if (!reply.status || !reply.status.bkpt)
+                    return callback && callback(new Error("Can't set breakpoint"));
                 bp.id = reply.status.bkpt.number;
                 callback && callback(null, bp, {});
             });
