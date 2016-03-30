@@ -607,6 +607,9 @@ function GDB() {
                     continue;
                 }
 
+                if (this.varcache[obj.name])
+                    continue; // TODO why?
+
                 this.varcache[obj.name].value = obj.value;
 
                 if (obj.type_changed == "true")
