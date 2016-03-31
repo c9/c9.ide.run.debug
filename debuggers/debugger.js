@@ -679,11 +679,9 @@ define(function(require, exports, module) {
         
         function checkAttached(callback) {
             if (state != "disconnected") {
-                confirm("The debugger is already connected to another process.",
-                    "Would you like to stop the existing process?",
-                    "Click OK to stop the existing process and start the new "
-                    + "process with the debugger attached. Click Cancel to "
-                    + " prevent starting the new process.",
+                confirm("Debugger",
+                    "The debugger is already connected to another process.",
+                    "Would you like to stop the current debugger process?",
                     function(){ // Confirm
                         process.stop(function(){
                             callback();
@@ -691,7 +689,9 @@ define(function(require, exports, module) {
                     },
                     function(){ // Cancel
                         // Do Nothing
-                    });
+                    },
+                    { yes: "Stop current process", no: "Cancel" }
+                );
             }
             else {
                 callback();
