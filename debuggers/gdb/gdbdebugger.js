@@ -24,7 +24,7 @@ define(function(require, exports, module) {
         var Variable = debug.Variable;
         var Scope = debug.Scope;
 
-        var MessageReader = require("./lib/MessageReader");
+        var GDBProxyService = require("./lib/GDBProxyService");
 
         /***** Initialization *****/
 
@@ -39,18 +39,13 @@ define(function(require, exports, module) {
 
         var attached = false;
 
-        var state,            // debugger state
-            socket,           // socket to proxy
-            reader,           // messagereader object
-            stack,            // always up-to-date frame stack
-            sequence_id = 0,  // message sequence number
-            commands = [],    // queue of commands to debugger
-            callbacks = {};   // callbacks to initiate when msg returned
+        var state,          // debugger state
+            socket,         // socket to proxy
+            stack,          // always up-to-date frame stack
+            proxy = null;   // GDB service proxy
 
         // GUI buttons
         var btnResume, btnSuspend, btnStepOver, btnStepInto, btnStepOut;
-
-        var sendCommand = function() {};
 
         var SCOPES = ["Arguments", "Locals"];
 
@@ -140,9 +135,20 @@ define(function(require, exports, module) {
         }
 
         /*
-         * Process frame information on breakpoint hit
+         * Process out-of-sequence information received from proxy,
+         * like errors or frames on breakpoint hit.
          */
-        function processBreak(frames, err) {
+        function processHalt(frames, err) {
+            if (err === "killed") {
+                // GDB was killed
+                return detach();
+            }
+            else if (err === "corrupt") {
+                showError("GDB has detected a corrupt execution environment and has shut down!");
+                return detach();
+            }
+
+            // no error, only frames
             stack = [];
 
             // process frames
@@ -171,36 +177,10 @@ define(function(require, exports, module) {
         }
 
         /*
-         * Issue a command to debugger via proxy. Messages append a sequence
-         * number to run pending callbacks when proxy replies to that id.
-         */
-        function _sendCommand(command, args, callback) {
-            // build message
-            if (typeof args === "undefined") {
-                args = {};
-            }
-            args.command = command;
-
-            // keep track of callback
-            args._id = ++sequence_id;
-            if (typeof callback !== "undefined") {
-                callbacks[sequence_id] = callback;
-            }
-
-            // send message
-            args = JSON.stringify(args);
-            var msg = ["Content-Length:", args.length, "\r\n\r\n", args];
-            msg = msg.join("");
-
-            commands[sequence_id] = msg;
-            socket.send(msg);
-        }
-
-        /*
          * A special case of sendCommand that demands a status update on reply.
          */
         function sendExecutionCommand(command, callback) {
-            sendCommand(command, {}, function(err, reply) {
+            proxy.sendCommand(command, {}, function(err, reply) {
                 if (err)
                     return callback && callback(err);
 
@@ -217,64 +197,6 @@ define(function(require, exports, module) {
             state = _state;
             emit("stateChange", {state: state});
         }
-
-        /*
-         * Process incoming messages from the proxy
-         */
-        function receiveMessage(message) {
-            var responseParts = message.split("\r\n\r\n");
-
-            try {
-                var content = JSON.parse(responseParts[1]);
-            }
-            catch (ex) {
-                console.log("Debugger can't parse JSON from GDB proxy");
-                return;
-            }
-
-            if (content === null || typeof content !== "object")
-                return;
-
-            if (content.err === "killed") {
-                showError("GDB was killed and the debug session must end!");
-                return detach();
-            }
-            else if (content.err === "corrupt") {
-                showError("GDB has detected a corrupt execution environment and has shut down!");
-                return detach();
-            }
-
-            // we've received a frame stack from GDB on break, segfault, pause
-            if ("frames" in content)
-                processBreak(content.frames, content.err);
-
-            // run pending callback if sequence number matches one we sent
-            if (typeof content._id == "undefined")
-                return;
-
-            // execute callback
-            var callback = null;
-            if (typeof callbacks[content._id] === "function")
-                callback = callbacks[content._id];
-
-            // generate an error if the command did not complete successfully
-            var err = null;
-            if (!content.hasOwnProperty("state") || content.state == "error") {
-                var str = "Command " + commands[content._id] + " failed";
-                if (content.hasOwnProperty("msg"))
-                    str += content.msg;
-
-                err = new Error(str);
-            }
-
-            // remove buffers
-            delete callbacks[content._id];
-            delete commands[content._id];
-
-            // run callback
-            callback && callback(err, content);
-        }
-
 
         /***** Methods *****/
 
@@ -300,6 +222,9 @@ define(function(require, exports, module) {
         }
 
         function attach(s, reconnect, callback) {
+            if (proxy)
+                proxy.detach();
+
             socket = s;
 
             socket.on("back", function() {
@@ -311,28 +236,9 @@ define(function(require, exports, module) {
                 emit("error", err);
             }, plugin);
 
-            // flush command queue when coming back
-            socket.on("beforeBack", function() {
-                for (var i = 0, j = commands.length; i < j; i++) {
-                    if (!commands[i]) continue;
-                    socket.send(commands[i]);
-                }
-            });
-
-            // notify all callbacks that debug session has ended
-            socket.on("end", function() {
-                for (var id in callbacks) {
-                    if (!callbacks.hasOwnProperty(id) || !callbacks[id])
-                        continue;
-                    callbacks[id](new Error("Debug session ended"));
-                }
-            });
-
-            var self = this;
-            reader = new MessageReader(socket, function(messageText) {
-                reader.destroy();
+            proxy = new GDBProxyService(socket, processHalt);
+            proxy.attach(function() {
                 emit("connect");
-                reader = new MessageReader(socket, receiveMessage.bind(self));
 
                 // if we're reconnecting, check GDB's state
                 if (reconnect)
@@ -340,9 +246,6 @@ define(function(require, exports, module) {
                 else
                     sync(true, callback);
             });
-
-            sendCommand = _sendCommand;
-            socket.connect();
 
             // show the debug panel immediately
             if (settings.getBool("user/debug/@autoshow"))
@@ -357,21 +260,15 @@ define(function(require, exports, module) {
         }
 
         function detach() {
-            if (!socket)
-                return;
+            if (proxy)
+                proxy.detach();
 
-            // notify gdb it should shut down
-            sendCommand("detach");
-
-            // clean up without waiting for gdb to shut down
-            if (reader)
-                reader.destroy();
-
-            sendCommand = function() {};
             emit("frameActivate", {frame: null});
             setState(null);
+
             socket = null;
             attached = false;
+            proxy = null;
 
             btnResume.$ext.style.display = "inline-block";
             btnSuspend.$ext.style.display = "none";
@@ -503,7 +400,7 @@ define(function(require, exports, module) {
         }
 
         function suspend(callback) {
-            sendCommand("suspend", {}, function(err) {
+            proxy.sendCommand("suspend", {}, function(err) {
                 if (err)
                     return callback && callback(err);
                 emit("suspend");
@@ -515,14 +412,14 @@ define(function(require, exports, module) {
             // If a program is executing when debugger reconnects, GDB must
             // be paused to fetch the state and then restarted or it will hang
             if (!callback) callback = function() {};
-            sendCommand("reconnect", {}, function(err, reply) {
+            proxy.sendCommand("reconnect", {}, function(err, reply) {
                 var restart = !err && reply.state == "running";
                 sync(restart, callback);
             });
         }
 
         function evaluate(expression, frame, global, disableBreak, callback) {
-            sendCommand("eval", { exp: expression }, function(err, reply) {
+            proxy.sendCommand("eval", { exp: expression }, function(err, reply) {
                 if (err)
                     return callback(new Error("No value"));
                 else if (typeof reply.status === "undefined")
@@ -542,7 +439,7 @@ define(function(require, exports, module) {
                 "name": variable.ref,
                 "val": value
             };
-            sendCommand('setvar', args, function(err, reply) {
+            proxy.sendCommand('setvar', args, function(err, reply) {
                 if (err)
                     return callback && callback(err);
 
@@ -551,7 +448,7 @@ define(function(require, exports, module) {
         }
 
         function setBreakpoint(bp, callback) {
-            sendCommand("bp-set", bp.data, function(err, reply) {
+            proxy.sendCommand("bp-set", bp.data, function(err, reply) {
                 if (err)
                     return callback && callback(err);
                 if (!reply.status || !reply.status.bkpt)
@@ -587,19 +484,19 @@ define(function(require, exports, module) {
 
 
         function changeBreakpoint(bp, callback) {
-            sendCommand("bp-change", bp.data, function(err) {
+            proxy.sendCommand("bp-change", bp.data, function(err) {
                 callback && callback(err, bp);
             });
         }
 
         function clearBreakpoint(bp, callback) {
-            sendCommand("bp-clear", bp.data, function(err) {
+            proxy.sendCommand("bp-clear", bp.data, function(err) {
                 callback && callback(err, bp);
             });
         }
 
         function listBreakpoints(callback) {
-            sendCommand("bp-list", {}, function(err, reply) {
+            proxy.sendCommand("bp-list", {}, function(err, reply) {
                 if (err)
                     return callback && callback(err);
 
@@ -642,7 +539,7 @@ define(function(require, exports, module) {
             socket = null;
             reader = null;
             stack = null;
-            sendCommand = null;
+            proxy = null;
             btnResume = btnSuspend = btnStepOver = btnStepInto = btnStepOut = null;
             loaded = false;
             attached = false;

@@ -86,7 +86,10 @@ function Client(c) {
             }
         });
 
-        this.connection.on("error", log);
+        this.connection.on("error", function (e) {
+            log(e);
+            process.exit(0);
+        });
 
         this.connection.on("end", function() {
             this.connection = null;
@@ -239,7 +242,7 @@ function GDB() {
 
         this.proc.on("end", function() {
             log("gdb proc ended");
-            server.close();
+            process.exit();
         });
 
         this.proc.on("close", function(code, signal) {
@@ -932,6 +935,7 @@ function GDB() {
                 break;
 
             case "detach":
+                client.cleanup();
                 this.issue("monitor", "exit", function() {
                     log("shutdown requested");
                     process.exit();
@@ -1018,7 +1022,7 @@ server.on("error", function(err) {
     else {
         console.log(err);
     }
-    process.exit(0);
+    process.exit();
 });
 
 // Start listening for browser clients
