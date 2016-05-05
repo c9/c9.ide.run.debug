@@ -639,14 +639,13 @@ function GDB() {
                     frame.locals.push(this.varcache[cache.locals[j]]);
             }
 
-            this._recurseVars();
+            this._fetchVars();
         }.bind(this));
     };
 
     // Stack State Step 6 (final): fetch information for all non-trivial vars
-    this._recurseVars = function() {
+    this._fetchVars = function() {
         var newvars = [];
-        var ptrcache = {};
 
         function __iterVars(vars, varstack, f) {
             if (!vars) return;
@@ -662,10 +661,6 @@ function GDB() {
                         // don't allow null pointers' children to be evaluated
                         vari.address = 0;
                         vari.value = "NULL";
-                        continue;
-                    }
-                    else if (ptrcache.hasOwnProperty(vari.address)) {
-                        // don't re-compute pointers that we've already seen
                         continue;
                     }
                 }
@@ -687,54 +682,23 @@ function GDB() {
             var item = obj.item;
             var frame = obj.frame;
 
-            // if this is a pointer, check if we have already created a varobj
-            if (item.address && ptrcache.hasOwnProperty(item.address)) {
-                frame.push(ptrcache[item.address]);
-                return __createVars.call(this, varstack);
-            }
-
-            // if this variable already has a corresponding varobj, get children
+            // if this variable already has a corresponding varobj, advance
             if (item.objname)
-                return __listChildren.call(this, item, varstack, frame);
+                return __createVars.call(this, varstack);
 
             // no corresponding varobj for this variable, create one
             var args = ["-", "*", item.name].join(" ");
             this.issue("-var-create", args, function(item, state) {
                 // allow the item to remember the varobj's ID
                 item.objname = state.status.name;
+                item.numchild = state.status.numchild;
 
                 // store this varobj in caches
                 this.varcache[item.objname] = item;
-                if (item.hasOwnProperty("address"))
-                    ptrcache[item.address] = item.objname;
 
                 // notify the frame of this variable
                 frame.push(item.objname);
 
-                // fetch this varobj's children, if it has any
-                if (parseInt(state.status.numchild, 10) > 0)
-                    __listChildren.call(this, item, varstack, frame);
-                else
-                    __createVars.call(this, varstack);
-            }.bind(this, item));
-        }
-
-        // created the variable, now request its children
-        function __listChildren(item, varstack) {
-            var args = ["--simple-values", item.objname].join(" ");
-            this.issue("-var-list-children", args, function(item, state) {
-                // if these children have children, add them to process queue
-                if (parseInt(state.status.numchild, 10) > 0) {
-                    item.children = state.status.children;
-                    for (var i = 0; i < item.children.length; i++) {
-                        var child = item.children[i];
-                        child.objname = child.name;
-                        this.varcache[child.name] = child;
-                    }
-                    __iterVars(item.children, varstack, []);
-                }
-
-                // process remaining variables in queue
                 __createVars.call(this, varstack);
             }.bind(this, item));
         }
@@ -865,8 +829,23 @@ function GDB() {
                 this.post(id, "-exec-" + command.command);
                 break;
 
-            case "setvar":
+            case "var-set":
                 this.post(id, "-var-assign", command.name + " " + command.val);
+                break;
+
+            case "var-children":
+                // if passed a single var name, we want to fetch its children
+                var largs = ["--simple-values", command.name].join(" ");
+                this.issue("-var-list-children", largs, function(state) {
+                    var children = [];
+                    if (parseInt(state.status.numchild, 10) > 0)
+                        state.status.children.forEach(function(child) {
+                            child.objname = child.name;
+                            this.varcache[child.name] = child;
+                            children.push(child);
+                        }.bind(this));
+                    client.send({ _id: id, children: children, state: "done" });
+                }.bind(this));
                 break;
 
             case "bp-change":
