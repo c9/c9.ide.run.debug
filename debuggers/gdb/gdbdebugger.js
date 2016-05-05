@@ -66,32 +66,26 @@ define(function(require, exports, module) {
         /***** Helper Functions *****/
 
         /*
+         * Build individual variable objects from GDB output
+         */
+        function buildVariable(variable, scope) {
+            if (variable == null) return;
+
+            return new Variable({
+               ref: (variable.objname) ? variable.objname : variable.name,
+               name: (variable.exp) ? variable.exp : variable.name,
+               value: variable.value,
+               type: variable.type,
+               children: (variable.numchild && variable.numchild > 0),
+               properties: null,
+               scope: scope
+            });
+        }
+
+        /*
          * Create a scope and variables from data received from GDB
          */
         function buildScopeVariables(frame_vars, scope_index, frame_index, vars) {
-            function buildVariable(variable, scope) {
-                var props = null;
-
-                if (variable == null) return;
-
-                if (variable.hasOwnProperty("children")) {
-                    props = [];
-                    variable.children.forEach(function(child) {
-                        props.push(buildVariable(child, scope));
-                    });
-                }
-
-                return new Variable({
-                   ref: (variable.objname) ? variable.objname : variable.name,
-                   name: (variable.exp) ? variable.exp : variable.name,
-                   value: variable.value,
-                   type: variable.type,
-                   children: !!props,
-                   properties: props,
-                   scope: scope
-                });
-            }
-
             var scope = new Scope({
                 index: scope_index,
                 type: SCOPES[scope_index],
@@ -377,8 +371,21 @@ define(function(require, exports, module) {
         }
 
         function getProperties(variable, callback) {
-            // does this load properties of an object? if so, not needed?
-            callback(null, [], variable);
+            // request children of a variable
+            var args = { name: variable.ref };
+            proxy.sendCommand("var-children", args, function(err, reply) {
+                if (err)
+                    return callback && callback(err);
+                else if (typeof reply.children === "undefined")
+                    return callback && callback(new Error("No children"));
+
+                var children = [];
+                reply.children.forEach(function (child) {
+                    children.push(buildVariable(child, variable.scope));
+                });
+                variable.properties = children;
+                callback && callback(null, children, variable);
+            });
         }
 
         function stepInto(callback) {
@@ -439,7 +446,7 @@ define(function(require, exports, module) {
                 "name": variable.ref,
                 "val": value
             };
-            proxy.sendCommand('setvar', args, function(err, reply) {
+            proxy.sendCommand("var-set", args, function(err, reply) {
                 if (err)
                     return callback && callback(err);
 
