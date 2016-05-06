@@ -40,7 +40,7 @@ var GDBProxyService = module.exports = function(socket, haltHandler) {
         });
 
         this.$socket.on("connect", function() {
-            this.$connected = true;
+            self.$connected = true;
         });
 
         this.$socket.on("beforeBack", function(){
