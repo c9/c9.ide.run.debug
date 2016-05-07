@@ -607,8 +607,10 @@ function GDB() {
                     continue;
                 }
 
-                if (this.varcache[obj.name])
-                    continue; // TODO why?
+                if (!this.varcache[obj.name]) {
+                    console.log("FATAL: varcache miss for varobj " + obj.name);
+                    process.exit(1);
+                }
 
                 this.varcache[obj.name].value = obj.value;
 
