@@ -896,7 +896,8 @@ function GDB() {
                     args.push('"' + command.condition + '"');
                 }
 
-                args.push(command.text + ":" + (command.line + 1));
+                var path = dirname + command.path;
+                args.push('"' + path + ':' + (command.line+1) + '"');
 
                 this.post(id, "-break-insert", args.join(" "));
                 break;
