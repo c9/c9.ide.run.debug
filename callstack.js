@@ -59,7 +59,7 @@ define(function(require, exports, module) {
                 width: "60%",
                 icon: "debugger/stckframe_obj.gif"
             }, {
-                caption: "Script",
+                caption: "File",
                 value: "path",
                 width: "40%"
             }, {
