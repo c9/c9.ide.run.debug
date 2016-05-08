@@ -60,7 +60,7 @@ define(function(require, exports, module) {
                 icon: "debugger/stckframe_obj.gif"
             }, {
                 caption: "File",
-                value: "path",
+                getText: function(node) { return node.path.substr(1); },
                 width: "40%"
             }, {
                 caption: "Ln",
