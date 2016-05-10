@@ -263,7 +263,10 @@ define(function(require, exports, module) {
                 }
                 else {
                     // variable = node;
-                    variable = findVariable(node.ref, parents);
+                    if (watches.indexOf(node) != -1)
+                        variable = node;
+                    else if (node.ref)
+                        variable = findVariable(node.ref, parents);
                     
                     if (column.value == "value") {
                         oldValue = variable.value;
@@ -288,9 +291,6 @@ define(function(require, exports, module) {
             });
             
             datagrid.on("beforeRename", function(e) {
-                if (!plugin.enabled)
-                    return e.preventDefault();
-                    
                 // Don't allow setting the value of new variables
                 if (e.column.caption == "Value" 
                   && (e.node.ref + "").substr(0,3) == "new") {
@@ -405,7 +405,7 @@ define(function(require, exports, module) {
             }
             
             emit("setWatch", {
-                name: name,
+                name: node.name,
                 value: value,
                 node: node,
                 isNew: isNew,
