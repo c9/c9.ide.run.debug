@@ -96,12 +96,13 @@ define(function(require, exports, module) {
                 function setFrames(frames, frame, force) {
                     // Load frames into the callstack and if the frames 
                     // are completely reloaded, set active frame
-                    if (loadFrames(frames, false, force) && (force 
-                      || !activeFrame || activeFrame == frame 
-                      || activeFrame == frames[0])) {
-                          
+                    var top = debug.findTopFrame(frames);
+                    if (loadFrames(frames, false, force) && (force
+                      || !activeFrame || activeFrame == frame
+                      || activeFrame == top)) {
+
                         // Set the active frame
-                        activeFrame = frames[0];
+                        activeFrame = top;
                         emit("frameActivate", { frame : activeFrame });
                         debug.activeFrame = activeFrame;
                         
@@ -121,8 +122,8 @@ define(function(require, exports, module) {
                 
                 // If we're most likely in the current frame, lets update
                 // The callstack and show it in the editor
-                var frame = frames[0];
-                if (frame && e.frame.path == frame.path 
+                var frame = debug.findTopFrame(frames);
+                if (frame && e.frame.path == frame.path
                   && e.frame.sourceId == frame.sourceId) {
                     frame.line = e.frame.line;
                     frame.column = e.frame.column;
@@ -471,7 +472,7 @@ define(function(require, exports, module) {
                 if (path == framePath || path == "/" + framePath)
                     addMarker(session, "stack", row);
 
-                var topFrame = frames[0];
+                var topFrame = debug.findTopFrame(frames);
                 if (path == topFrame.path)
                     addMarker(session, "step", topFrame.line);
             }

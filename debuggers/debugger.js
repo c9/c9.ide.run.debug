@@ -246,7 +246,7 @@ define(function(require, exports, module) {
                             if (!err && frames.length) {
                                 emit("framesLoad", {
                                     frames: frames,
-                                    frame: frames[0]
+                                    frame: findTopFrame(frames)
                                 });
                             }
                         });
@@ -340,7 +340,7 @@ define(function(require, exports, module) {
                     if (frames.length) {
                         startDebugging({
                             frames: frames,
-                            frame: frames[0]
+                            frame: findTopFrame(frames)
                         });
                     }
                 });
@@ -418,7 +418,14 @@ define(function(require, exports, module) {
             if (debuggers[type] == debug)
                 delete debuggers[type];
         }
-        
+
+        function findTopFrame(frames) {
+            var top = frames.find(function (frame) {
+                return frame.istop;
+            });
+            return (top) ? top : frames[0];
+        }
+
         function showDebugFrame(frame, callback) {
             openFile({
                 scriptId: frame.sourceId,
@@ -1088,7 +1095,13 @@ define(function(require, exports, module) {
              * the new process.
              */
             checkAttached: checkAttached,
-            
+
+            /**
+             * Returns the topmost frame from a set of frames
+             * @param {debugger.Frame[]} frames  The stack of frames
+             */
+            findTopFrame: findTopFrame,
+
             /**
              * Displays a frame in the ace editor.
              * @param {debugger.Frame} frame  The frame to display
