@@ -100,7 +100,7 @@ define(function(require, exports, module) {
         /*
          * Create a frame object, scope, and variables from a GDB frame
          */
-        function buildFrame(thread, frame, i) {
+        function buildFrame(thread, topIndex, frame, i) {
             var variables = [];
 
             // build scopes and variables for this frame
@@ -124,7 +124,7 @@ define(function(require, exports, module) {
                 path: "/" + frame.relative,
                 sourceId: file,
                 thread: thread,
-                istop: (i === 0),
+                istop: (i === topIndex),
                 variables: variables
             });
         }
@@ -143,21 +143,20 @@ define(function(require, exports, module) {
                 return detach();
             }
 
-            // no error, only frames
-            stack = [];
-
             // process frames
             var frames = content.frames;
-            for (var i = 0, j = frames.length; i < j; i++) {
-                stack.push(buildFrame(content.thread, frames[i], i));
-            }
+            var topIndex = Math.max(0, frames.findIndex(function (frame) {
+                return frame.exists;
+            }));
+            stack = frames.map(buildFrame.bind(this, content.thread, topIndex));
+            var topFrame = stack[topIndex];
 
             setState("stopped");
-            emit("frameActivate", { frame: stack[0] });
+            emit("frameActivate", { frame: topFrame });
 
             if (content.err === "segfault") {
                 showError("GDB has detected a segmentation fault and execution has stopped!");
-                emit("exception", stack[0], new Error("Segfault!"));
+                emit("exception", { frame: topFrame }, new Error("Segfault!"));
                 btnResume.$ext.style.display = "none";
                 btnSuspend.$ext.style.display = "inline-block";
                 btnSuspend.setAttribute("disabled", true);
@@ -166,7 +165,7 @@ define(function(require, exports, module) {
                 btnStepOver.setAttribute("disabled", true);
             }
             else {
-                emit("break", { frame: stack[0], frames: stack });
+                emit("break", { frame: topFrame, frames: stack });
                 if (stack.length == 1)
                     btnStepOut.setAttribute("disabled", true);
             }
