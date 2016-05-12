@@ -545,6 +545,7 @@ function GDB() {
 
                 // store relative path for IDE
                 this.state.frames[i].relative = this.memoized_files[file].relative;
+                this.state.frames[i].exists = this.memoized_files[file].exists;
             }
             this._updateStackArgs();
         }.bind(this));
