@@ -121,7 +121,7 @@ var GDBProxyService = module.exports = function(socket, haltHandler) {
 
         // we've received a frame stack from GDB on break, segfault, pause
         if ("frames" in content)
-            return this.$haltHandler(content.frames, content.err);
+            return this.$haltHandler(content);
 
         // run pending callback if sequence number matches one we sent
         if (typeof content._id == "undefined")
