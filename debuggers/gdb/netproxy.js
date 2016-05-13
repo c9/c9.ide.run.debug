@@ -886,9 +886,10 @@ function GDB() {
                 break;
 
             case "eval":
+                var args = ["--thread", command.t, "--frame", command.f];
                 // replace quotes with escaped quotes
-                var exp = '"' + command.exp.replace(/"/g, '\\"') + '"';
-                this.post(id, "-data-evaluate-expression", exp);
+                args.push('"' + command.exp.replace(/"/g, '\\"') + '"');
+                this.post(id, "-data-evaluate-expression", args.join(" "));
                 break;
 
             case "reconnect":

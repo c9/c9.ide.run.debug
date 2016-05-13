@@ -428,7 +428,12 @@ define(function(require, exports, module) {
         }
 
         function evaluate(expression, frame, global, disableBreak, callback) {
-            proxy.sendCommand("eval", { exp: expression }, function(err, reply) {
+            var args = {
+                "exp": expression,
+                "f": (frame.index == null) ? 0 : frame.index,
+                "t": (frame.thread == null) ? 1 : frame.thread,
+            };
+            proxy.sendCommand("eval", args, function(err, reply) {
                 if (err)
                     return callback(new Error("No value"));
                 else if (typeof reply.status === "undefined")
