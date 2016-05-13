@@ -41,6 +41,9 @@
  * @property {String} sourcemap.path  The path of the source file where this frame is set.
  */
 /**
+ * @property {String} thread  The ID representing the thread that contains this frame.
+ */
+/**
  * @property {debugger.Variable[]} variables  The local variables in this frame.
  */
 /**
@@ -75,7 +78,7 @@ define(function(require, exports, module) {
     Frame.prototype = new Data(
         [
             "id", "index", "name", "column", "ref", "line", 
-            "path", "sourceId", "sourcemap", "istop"
+            "path", "sourceId", "sourcemap", "thread", "istop"
         ], 
         ["variables", "scopes"]
     );
