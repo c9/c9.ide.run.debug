@@ -442,7 +442,7 @@ define(function(require, exports, module) {
                 callback(null, new Variable({
                     name: expression,
                     value: reply.status.value,
-                    type: "number", /* other types produce JS errors */
+                    type: undefined, /* type info is not provided by GDB */
                     children: false
                 }));
             });
