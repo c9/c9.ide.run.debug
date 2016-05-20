@@ -6,7 +6,6 @@
  */
 
 var net = require('net');
-var path = require('path');
 var fs = require('fs');
 var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
@@ -520,8 +519,8 @@ function GDB() {
                     !this.state.frames[i].hasOwnProperty("fullname"))
                 {
                     // go code often has "??" at the top of the stack, ignore that
-                    this.state.frames.length = i;
-                    break;
+                    this.state.frames[i].exists = false;
+                    continue;
                 }
 
                 var file = this.state.frames[i].fullname;
@@ -532,8 +531,7 @@ function GDB() {
                 // remember if we can view the source for this frame
                 if (!(file in this.memoized_files)) {
                     this.memoized_files[file] = {
-                        exists: fs.existsSync(file),
-                        relative: path.relative(dirname, file)
+                        exists: fs.existsSync(file)
                     };
                 }
                 // we must abort step if we cannot show source for this function
@@ -543,8 +541,7 @@ function GDB() {
                     return;
                 }
 
-                // store relative path for IDE
-                this.state.frames[i].relative = this.memoized_files[file].relative;
+                // notify IDE if file exists
                 this.state.frames[i].exists = this.memoized_files[file].exists;
             }
             this._updateStackArgs();

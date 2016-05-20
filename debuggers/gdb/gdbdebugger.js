@@ -24,6 +24,7 @@ define(function(require, exports, module) {
         var Variable = debug.Variable;
         var Scope = debug.Scope;
 
+        var Path = require("path");
         var GDBProxyService = require("./lib/GDBProxyService");
 
         /***** Initialization *****/
@@ -109,10 +110,19 @@ define(function(require, exports, module) {
                 buildScopeVariables(variables, 1, i, frame.locals);
             }
 
-            // parse file from path
-            var fullpath = frame.fullname;
-            var file = fullpath.substring(fullpath.lastIndexOf("/"));
-            var line = parseInt(frame.line, 10) - 1;
+            // get file path from GDB output
+            var fullpath = (frame.fullname)
+                ? frame.fullname
+                : ((frame.from) ? frame.from : c9.workspaceDir+"/?");
+
+            // get file name and relative path from full path
+            var file = Path.basename(fullpath);
+            var relative = "/" + ((fullpath.indexOf(c9.workspaceDir) == 0)
+                ? Path.relative(c9.workspaceDir, fullpath)
+                : fullpath);
+
+            var line = parseInt(frame.line, 10);
+            line = (isNaN(line)) ? 0 : line - 1;
 
             return new Frame({
                 index: i,
@@ -121,7 +131,7 @@ define(function(require, exports, module) {
                 id: file + ":" + frame.func + i + line,
                 line: line,
                 script: file,
-                path: "/" + frame.relative,
+                path: relative,
                 sourceId: file,
                 thread: thread,
                 istop: (i === topIndex),
