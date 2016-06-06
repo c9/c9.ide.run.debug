@@ -100,7 +100,7 @@ define(function(require, exports, module) {
         /*
          * Create a frame object, scope, and variables from a GDB frame
          */
-        function buildFrame(frame, i) {
+        function buildFrame(thread, frame, i) {
             var variables = [];
 
             // build scopes and variables for this frame
@@ -123,6 +123,7 @@ define(function(require, exports, module) {
                 script: file,
                 path: "/" + frame.relative,
                 sourceId: file,
+                thread: thread,
                 istop: (i === 0),
                 variables: variables
             });
@@ -132,12 +133,12 @@ define(function(require, exports, module) {
          * Process out-of-sequence information received from proxy,
          * like errors or frames on breakpoint hit.
          */
-        function processHalt(frames, err) {
-            if (err === "killed") {
+        function processHalt(content) {
+            if (content.err === "killed") {
                 // GDB was killed
                 return detach();
             }
-            else if (err === "corrupt") {
+            else if (content.err === "corrupt") {
                 showError("GDB has detected a corrupt execution environment and has shut down!");
                 return detach();
             }
@@ -146,14 +147,15 @@ define(function(require, exports, module) {
             stack = [];
 
             // process frames
+            var frames = content.frames;
             for (var i = 0, j = frames.length; i < j; i++) {
-                stack.push(buildFrame(frames[i], i));
+                stack.push(buildFrame(content.thread, frames[i], i));
             }
 
             setState("stopped");
             emit("frameActivate", { frame: stack[0] });
 
-            if (err === "segfault") {
+            if (content.err === "segfault") {
                 showError("GDB has detected a segmentation fault and execution has stopped!");
                 emit("exception", stack[0], new Error("Segfault!"));
                 btnResume.$ext.style.display = "none";
@@ -426,7 +428,12 @@ define(function(require, exports, module) {
         }
 
         function evaluate(expression, frame, global, disableBreak, callback) {
-            proxy.sendCommand("eval", { exp: expression }, function(err, reply) {
+            var args = {
+                "exp": expression,
+                "f": (frame.index == null) ? 0 : frame.index,
+                "t": (frame.thread == null) ? 1 : frame.thread,
+            };
+            proxy.sendCommand("eval", args, function(err, reply) {
                 if (err)
                     return callback(new Error("No value"));
                 else if (typeof reply.status === "undefined")
@@ -435,7 +442,7 @@ define(function(require, exports, module) {
                 callback(null, new Variable({
                     name: expression,
                     value: reply.status.value,
-                    type: "number", /* other types produce JS errors */
+                    type: undefined, /* type info is not provided by GDB */
                     children: false
                 }));
             });
