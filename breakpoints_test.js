@@ -52,7 +52,6 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
         "plugins/c9.ide.panels/panel",
         "plugins/c9.ide.panels/area",
         "plugins/c9.ide.run.debug/debugpanel",
-        "plugins/c9.ide.browsersupport/browsersupport",
         "plugins/c9.ide.ui/menus",
         {
             packagePath: "plugins/c9.ide.run.debug/debuggers/debugger",
