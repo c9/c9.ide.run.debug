@@ -5,15 +5,16 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "debugger", "c9", "panels", "settings", "dialog.error"
+        "Plugin", "c9", "debugger", "dialog.error", "fs", "panels", "settings"
     ];
     main.provides = ["gdbdebugger"];
     return main;
 
     function main(options, imports, register) {
         var Plugin = imports.Plugin;
-        var debug = imports["debugger"];
         var c9 = imports.c9;
+        var debug = imports["debugger"];
+        var fs = imports["fs"];
         var panels = imports.panels;
         var settings = imports.settings;
         var showError = imports["dialog.error"].show;
@@ -60,8 +61,15 @@ define(function(require, exports, module) {
                     ["autoshow", "true"]
                 ]);
             });
-
-            debug.registerDebugger(TYPE, plugin);
+            
+            var shim = require("text!./shim.js");
+            fs.writeFile("~/bin/c9gdbshim.js", shim, function(err) {
+                if (err)
+                    return console.error("Error writing gdb shim: " + err);
+                
+                // register the debugger only if shim is in place
+                debug.registerDebugger(TYPE, plugin);
+            });
         }
 
         /***** Helper Functions *****/
@@ -206,24 +214,9 @@ define(function(require, exports, module) {
         /***** Methods *****/
 
         function getProxySource(process){
-            var max_depth = (process.runner[0].maxdepth) ?
-                            process.runner[0].maxdepth : 50;
-
-            var bin;
-            try {
-                bin = process.insertVariables(process.runner[0].executable);
-            }
-            catch(e) {
-                bin = "!";
-            }
-
             return PROXY
                 .replace(/\/\/.*/g, "")
-                .replace(/[\n\r]/g, "")
-                .replace(/\{PATH\}/, c9.workspaceDir)
-                .replace(/\{MAX_DEPTH\}/, max_depth)
-                .replace(/\{BIN\}/, bin)
-                .replace(/\{PORT\}/, process.runner[0].debugport);
+                .replace(/[\n\r]/g, "");
         }
 
         function attach(s, reconnect, callback) {
@@ -471,6 +464,7 @@ define(function(require, exports, module) {
         }
 
         function setBreakpoint(bp, callback) {
+            bp.data.fullpath = Path.join(c9.workspaceDir, bp.data.path);
             proxy.sendCommand("bp-set", bp.data, function(err, reply) {
                 if (err)
                     return callback && callback(err);
