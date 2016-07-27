@@ -17,7 +17,7 @@ function printUsage() {
         "Usage: " + p + " [-d=depth] [-g=gdb] [-p=proxy] BIN [args]\n",
         "  depth: maximum stack depth computed (default 50)",
         "  gdb: port that GDB client and server communicate (default 15470)",
-        "  proxy: port or socket that this shim listens for connections (default 15471)",
+        "  proxy: port or socket that this shim listens for connections (default ~/.c9/gdbdebugger.socket)",
         "  BIN: the binary to debug with GDB",
         "  args: optional arguments for BIN\n"
     ];
@@ -29,17 +29,17 @@ var argc = process.argv.length;
 if (argc < 3) printUsage();
 
 // defaults
+var PROXY = { sock: "/home/ubuntu/.c9/gdbdebugger.socket" };
 var GDB_PORT = 15470;
-var PROXY_PORT = 15471;
 var MAX_STACK_DEPTH = 50;
 var DEBUG = false;
 var BIN = "";
 
 // parse middle arguments
-function intArg(str) {
+function parseArg(str, allowNonInt) {
     if (str == null || str === "") printUsage();
     var val = parseInt(str, 10);
-    if (isNaN(val)) printUsage();
+    if (!allowNonInt && isNaN(val)) printUsage();
     return val;
 }
 
@@ -54,16 +54,20 @@ for(i = 2; i < argc && BIN === ""; i++) {
     switch (key) {
         case "-d":
         case "--depth":
-            MAX_STACK_DEPTH = intArg(val);
+            MAX_STACK_DEPTH = parseArg(val);
             break;
         case "-g":
         case "--gdb":
-            GDB_PORT = intArg(val);
+            GDB_PORT = parseArg(val);
             break;
         case "-p":
         case "--proxy":
-            if (!val || val.length == 0) printUsage();
-            PROXY_PORT = val;
+            var portNum = parseArg(val, true);
+
+            if (isNaN(portNum))
+                PROXY = { sock: val };
+            else
+                PROXY = { host: "127.0.0.1", port: portNum };
             break;
         case "--debug":
             DEBUG = (val === "true");
@@ -1027,6 +1031,8 @@ process.on("exit", function() {
     if (gdb) gdb.cleanup();
     if (client) client.cleanup();
     if (executable) executable.cleanup();
+    if (server) server.close();
+    if (PROXY.sock) fs.unlinkSync(PROXY.sock);
     if (DEBUG) log_file.end();
 });
 
@@ -1079,10 +1085,12 @@ executable.spawn(function() {
         }
         
         // Finally ready: start listening for browser clients on port or sock
-        var portNum = parseInt(PROXY_PORT, 10);
-        if (isNaN(portNum))
-            server.listen(PROXY_PORT);
+        if (PROXY.sock) {
+            fs.unlink(PROXY.sock, function() {
+                server.listen(PROXY.sock);
+            });
+        }
         else
-            server.listen(portNum, "127.0.0.1");
+            server.listen(PROXY.port, PROXY.host);
     });
 });

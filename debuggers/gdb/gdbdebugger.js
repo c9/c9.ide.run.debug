@@ -36,9 +36,6 @@ define(function(require, exports, module) {
 
         var TYPE = "gdb";
 
-        // proxy location
-        var PROXY = require("text!./netproxy.js");
-
         var attached = false;
 
         var state,          // debugger state
@@ -214,9 +211,12 @@ define(function(require, exports, module) {
         /***** Methods *****/
 
         function getProxySource(process){
-            return PROXY
-                .replace(/\/\/.*/g, "")
-                .replace(/[\n\r]/g, "");
+            return {
+                source: null,
+                socketpath: "/home/ubuntu/.c9/gdbdebugger.socket",
+                retryInverval: 300,
+                retries: 1000
+            };
         }
 
         function attach(s, reconnect, callback) {
