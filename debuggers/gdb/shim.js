@@ -242,6 +242,11 @@ function Executable() {
         // wait for gdbserver to listen before executing callback
         function handleStderr(data) {
             var str = data.toString();
+            // handle cases of error (eg, failure to disable address space rand)
+            if (str.indexOf("Error") > -1) {
+                console.log(str);
+                process.exit(1);
+            }
             if (str.indexOf("Listening") > -1) {
                 // perform callback when gdbserver is ready
                 callback();
