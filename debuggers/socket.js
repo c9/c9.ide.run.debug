@@ -17,6 +17,7 @@ define(function(require, exports, module) {
         var CONNECTING = 2;
         
         var counter = 0;
+        var timer = null;
         
         function Socket(port, proxy, reconnect) {
             var socket = new Plugin();
@@ -94,6 +95,12 @@ define(function(require, exports, module) {
                             return emit("err", err);
                     });
                 }
+                else if (proxy.socketpath) {
+                    var retries = proxy.retries || 100;
+                    proxy.retryInterval = proxy.retryInterval || 300;
+
+                    connectToSocket(retries);
+                }
                 else if (proxy.detach) {
                     proc.spawn(nodeBin, {
                         args: ["-e", proxySource],
@@ -135,9 +142,26 @@ define(function(require, exports, module) {
                     });
                 }
             }
-            
+
+            function connectToSocket(retries) {
+                if (state !== "connecting")
+                    return;
+
+                connectToPort(function (err) {
+                    if (!err)
+                        return;
+
+                    if (retries <= 0 || (err.code !== "ENOENT" && err.code !== "ECONNREFUSED"))
+                        return emit("error", err);
+
+                    timer = setTimeout(function() {
+                        connectToSocket(--retries);
+                    }, proxy.retryInterval);
+                });
+            }
+
             function connectToPort(callback) {
-                net.connect(proxy.port || proxy.socketpath, {}, function(err, s) {
+                net.connect(proxy.socketpath || proxy.port, {}, function(err, s) {
                     if (err)
                         return callback ? callback(err) : emit("error", err);
                     
@@ -173,6 +197,7 @@ define(function(require, exports, module) {
         
             function close(err) {
                 stream && stream.end();
+                timer && clearTimeout(timer);
                 if (state) {
                     state = null;
                     connected = DISCONNECTED;
