@@ -232,9 +232,9 @@ function Executable() {
     this.spawn = function(callback) {
         var args = ["--once", ":"+GDB_PORT, BIN].concat(ARGS);
         this.proc = spawn("gdbserver", args, {
-            detached: false,
+            detached: true,
             cwd: process.cwd(),
-            stdio: [process.stdin, process.stdout, 'pipe']
+            stdio: ['pipe', process.stdout, 'pipe']
         });
 
         this.proc.on("exit", function(code, signal) {
@@ -263,6 +263,9 @@ function Executable() {
 
         }
         this.proc.stderr.on("data", handleStderr.bind(this));
+
+        // necessary to redirect stdin this way or child receives SIGTTIN
+        process.stdin.pipe(this.proc.stdin);
     };
     
     /**
@@ -1013,15 +1016,8 @@ executable = new Executable();
 
 // handle process events
 // pass along SIGINT to suspend gdb, only if program is running
-process.on('SIGINT', function() {
-    log("\b\bSIGINT");
-    if (gdb.running) {
-        log("SUSPENDING\n");
-        gdb.suspend();
-    }
-    else {
-        log("CANNOT SUSPEND (program not running)\n");
-    }
+process.on("SIGINT", function() {
+    log("SIGINT");
 });
 
 process.on("SIGHUP", function() {
