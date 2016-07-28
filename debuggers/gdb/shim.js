@@ -1,7 +1,7 @@
 /**
  * GDB Debugger plugin for Cloud9
  *
- * @author Dan Armendariz <danallan AT cs DOT harvard DOT edu>
+ * @author Dan Armendariz <danallan AT cs DOT berkeley DOT edu>
  * @author Rob Bowden <rob AT cs DOT harvard DOT edu>
  */
 
@@ -544,7 +544,7 @@ function GDB() {
         }
         this.state.thread = (thread)? thread : null;
 
-        if (signal === "SIGSEGV")
+        if (signal && signal.name === "SIGSEGV")
             // dump the varobj cache in segfault so var-updates don't crash GDB
             this._flushVarCache();
         else
@@ -818,8 +818,13 @@ function GDB() {
         var cause = state.status.reason;
         var thread = state.status['thread-id'];
 
-        if (cause == "signal-received")
-            this._updateState(state.status['signal-name'], thread);
+        if (cause == "signal-received") {
+            var signal = {
+                name: state.status['signal-name'],
+                text: state.status['signal-meaning']
+            };
+            this._updateState(signal, thread);
+        }
         else if (cause === "breakpoint-hit" || cause === "end-stepping-range" ||
                  cause === "function-finished")
             // update GUI state at breakpoint or after a step in/out

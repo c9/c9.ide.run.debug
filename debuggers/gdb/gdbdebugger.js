@@ -1,7 +1,7 @@
 /**
  * GDB Debugger plugin for Cloud9
  *
- * @author Dan Armendariz <danallan AT cs DOT harvard DOT edu>
+ * @author Dan Armendariz <danallan AT cs DOT berkeley DOT edu>
  */
 define(function(require, exports, module) {
     main.consumes = [
@@ -175,24 +175,18 @@ define(function(require, exports, module) {
 
             var frameObj = { frame: topFrame, frames: stack };
 
-            if (content.err === "signal" && content.signal !== "SIGINT") {
-                if (content.signal === "SIGSEGV")
-                    showError("Execution has stopped due to a segmentation fault!");
-                else
-                    showError("Process received signal " + content.signal + "!");
-                emit("exception", frameObj, new Error(content.signal));
-                btnResume.$ext.style.display = "none";
-                btnSuspend.$ext.style.display = "inline-block";
-                btnSuspend.setAttribute("disabled", true);
-                btnStepOut.setAttribute("disabled", true);
-                btnStepInto.setAttribute("disabled", true);
-                btnStepOver.setAttribute("disabled", true);
+            if (content.err === "signal" && content.signal.name !== "SIGINT") {
+                var e = "Process received " + content.signal.text.toLowerCase()
+                        + " (" + content.signal.name + ")!";
+                showError(e);
+                emit("exception", frameObj, new Error(content.signal.name));
             }
             else {
                 emit("break", frameObj);
-                if (stack.length == 1)
-                    btnStepOut.setAttribute("disabled", true);
             }
+
+            if (stack.length == 1)
+                btnStepOut.setAttribute("disabled", true);
         }
 
         /*
