@@ -102,7 +102,7 @@ define(function(require, exports, module) {
                     // Load frames into the callstack and if the frames 
                     // are completely reloaded, set active frame
                     var top = debug.findTopFrame(frames);
-                    if (loadFrames(frames, false, force) && (force
+                    if (loadFrames(frames, top, false, force) && (force
                       || !activeFrame || activeFrame == frame
                       || activeFrame == top)) {
 
@@ -558,14 +558,14 @@ define(function(require, exports, module) {
             });
         }
         
-        function loadFrames(input, noRecur, force) {
+        function loadFrames(input, top, noRecur, force) {
             frames = input;
             modelFrames.setRoot(frames);
             
             if (activeFrame && frames.indexOf(activeFrame) > -1)
                 setActiveFrame(activeFrame);
             else
-                setActiveFrame(frames[0]);
+                setActiveFrame(top);
 
             for (var i = 0, l = input.length; i < l; i++)
                 updateFrame(input[i], noRecur);
