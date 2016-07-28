@@ -169,9 +169,14 @@ define(function(require, exports, module) {
             setState("stopped");
             emit("frameActivate", { frame: topFrame });
 
-            if (content.err === "segfault") {
-                showError("GDB has detected a segmentation fault and execution has stopped!");
-                emit("exception", { frame: topFrame }, new Error("Segfault!"));
+            var frameObj = { frame: topFrame, frames: stack };
+
+            if (content.err === "signal") {
+                if (content.signal === "SIGSEGV")
+                    showError("Execution has stopped due to a segmentation fault!");
+                else
+                    showError("Process received signal " + content.signal + "!");
+                emit("exception", frameObj, new Error("Segfault!"));
                 btnResume.$ext.style.display = "none";
                 btnSuspend.$ext.style.display = "inline-block";
                 btnSuspend.setAttribute("disabled", true);
@@ -180,7 +185,7 @@ define(function(require, exports, module) {
                 btnStepOver.setAttribute("disabled", true);
             }
             else {
-                emit("break", { frame: topFrame, frames: stack });
+                emit("break", frameObj);
                 if (stack.length == 1)
                     btnStepOut.setAttribute("disabled", true);
             }

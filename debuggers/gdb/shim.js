@@ -531,14 +531,17 @@ function GDB() {
     };
 
     // Stack State Step 0; initiate request
-    this._updateState = function(segfault, thread) {
+    this._updateState = function(signal, thread) {
         // don't send state updates on reconnect, wait for plugin to request
         if (this.clientReconnect) return;
 
-        this.state.err = (segfault === true)? "segfault" : null;
+        if (signal) {
+            this.state.err = "signal";
+            this.state.signal = signal;
+        }
         this.state.thread = (thread)? thread : null;
 
-        if (segfault === true)
+        if (signal === "SIGSEGV")
             // dump the varobj cache in segfault so var-updates don't crash GDB
             this._flushVarCache();
         else
@@ -813,7 +816,7 @@ function GDB() {
         var thread = state.status['thread-id'];
 
         if (cause == "signal-received")
-            this._updateState((state.status['signal-name']=="SIGSEGV"), thread);
+            this._updateState(state.status['signal-name'], thread);
         else if (cause === "breakpoint-hit" || cause === "end-stepping-range" ||
                  cause === "function-finished")
             // update GUI state at breakpoint or after a step in/out
