@@ -176,8 +176,8 @@ define(function(require, exports, module) {
             var frameObj = { frame: topFrame, frames: stack };
 
             if (content.err === "signal" && content.signal.name !== "SIGINT") {
-                var e = "Process received " + content.signal.text.toLowerCase()
-                        + " (" + content.signal.name + ")!";
+                var e = "Process received " + content.signal.name + ": "
+                        + content.signal.text;
                 showError(e);
                 emit("exception", frameObj, new Error(content.signal.name));
             }
