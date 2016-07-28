@@ -59,6 +59,7 @@ define(function(require, exports, module) {
                 ]);
             });
             
+            // must register ASAP, or debugger won't be ready for reconnects
             debug.registerDebugger(TYPE, plugin);
 
             // writeFile root is workspace directory, unless given ~

@@ -1020,7 +1020,7 @@ gdb = new GDB();
 executable = new Executable(); 
 
 // handle process events
-// pass along SIGINT to suspend gdb, only if program is running
+// catch and ignore SIGINT, allow gdb to handle
 process.on("SIGINT", function() {
     log("SIGINT");
 });
