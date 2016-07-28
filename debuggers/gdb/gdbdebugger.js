@@ -176,7 +176,7 @@ define(function(require, exports, module) {
                     showError("Execution has stopped due to a segmentation fault!");
                 else
                     showError("Process received signal " + content.signal + "!");
-                emit("exception", frameObj, new Error("Segfault!"));
+                emit("exception", frameObj, new Error(content.signal));
                 btnResume.$ext.style.display = "none";
                 btnSuspend.$ext.style.display = "inline-block";
                 btnSuspend.setAttribute("disabled", true);
