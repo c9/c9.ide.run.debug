@@ -59,13 +59,17 @@ define(function(require, exports, module) {
                 ]);
             });
             
+            debug.registerDebugger(TYPE, plugin);
+
+            // writeFile root is workspace directory, unless given ~
+            var shimPath = "~/bin/c9gdbshim.js";
             var shim = require("text!./shim.js");
-            fs.writeFile("~/bin/c9gdbshim.js", shim, function(err) {
-                if (err)
-                    return console.error("Error writing gdb shim: " + err);
-                
-                // register the debugger only if shim is in place
-                debug.registerDebugger(TYPE, plugin);
+            fs.writeFile(shimPath, shim, "utf8", function(err) {
+                if (err) {
+                    // unregister the debugger on error
+                    debug.unregisterDebugger(TYPE, plugin);
+                    return console.log("Error writing gdb shim: " + err);
+                }
             });
         }
 
@@ -218,7 +222,7 @@ define(function(require, exports, module) {
         function getProxySource(process){
             return {
                 source: null,
-                socketpath: "/home/ubuntu/.c9/gdbdebugger.socket",
+                socketpath: Path.join(c9.home, "/.c9/gdbdebugger.socket"),
                 retryInverval: 300,
                 retries: 1000
             };
