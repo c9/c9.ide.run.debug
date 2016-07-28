@@ -14,7 +14,8 @@ function printUsage() {
     var p = [process.argv[0], process.argv[1]].join(" ");
     var msg = [
         "Cloud9 GDB Debugger shim",
-        "Usage: " + p + " [-d=depth] [-g=gdb] [-p=proxy] BIN [args]\n",
+        "Usage: " + p + " [-b=bp] [-d=depth] [-g=gdb] [-p=proxy] BIN [args]\n",
+        "  bp: warn when BPs are sent but none are set (default true)",
         "  depth: maximum stack depth computed (default 50)",
         "  gdb: port that GDB client and server communicate (default 15470)",
         "  proxy: port or socket that this shim listens for connections (default ~/.c9/gdbdebugger.socket)",
@@ -34,6 +35,7 @@ var GDB_PORT = 15470;
 var MAX_STACK_DEPTH = 50;
 var DEBUG = false;
 var BIN = "";
+var BP_WARN = true;
 
 // parse middle arguments
 function parseArg(str, allowNonInt) {
@@ -52,6 +54,10 @@ for(i = 2; i < argc && BIN === ""; i++) {
     var val = (a.length == 2) ? a[1] : null;
 
     switch (key) {
+        case "-b":
+        case "--bp":
+            BP_WARN = (val === "true");
+            break;
         case "-d":
         case "--depth":
             MAX_STACK_DEPTH = parseArg(val);
@@ -287,11 +293,13 @@ function Executable() {
 
 function GDB() {
     this.sequence_id = 0;
+    this.bp_set = null;
     this.callbacks = {};
     this.state = {};
     this.framecache = {};
     this.varcache = {};
     this.running = false;
+    this.started = false;
     this.clientReconnect = false;
     this.memoized_files = [];
     this.command_queue = [];
@@ -906,6 +914,19 @@ function GDB() {
             case 'step':
             case 'next':
             case 'finish':
+                if (this.started === false) {
+                    this.started = true;
+
+                    // provide a warning if BPs sent but not set
+                    if (this.bp_set === false && BP_WARN)
+                        console.error("\nWARNING: No breakpoints were successfully",
+                            "set, even though some were sent to\nthe debugger.",
+                            "If you are sure that you have set breakpoints in",
+                            "the source code\nfor this binary, your symbol table",
+                            "may be old (say, if you move the binary and\nsource",
+                            "to a different directory). If this is the case,",
+                            "force-recompile it to\nresolve this warning.\n");
+                }
                 this.clientReconnect = false;
                 this.running = true;
                 this.post(id, "-exec-" + command.command);
@@ -959,7 +980,13 @@ function GDB() {
 
                 args.push('"' + command.fullpath + ':' + (command.line+1) + '"');
 
-                this.post(id, "-break-insert", args.join(" "));
+                this.issue("-break-insert", args.join(" "), function(output) {
+                    // record whether we've successfully set any BPs
+                    this.bp_set = this.bp_set || (output.state === "done");
+
+                    output._id = id;
+                    client.send(output);
+                }.bind(this));
                 break;
 
             case "bp-list":
@@ -967,10 +994,10 @@ function GDB() {
                 break;
 
             case "eval":
-                var args = ["--thread", command.t, "--frame", command.f];
+                var eargs = ["--thread", command.t, "--frame", command.f];
                 // replace quotes with escaped quotes
-                args.push('"' + command.exp.replace(/"/g, '\\"') + '"');
-                this.post(id, "-data-evaluate-expression", args.join(" "));
+                eargs.push('"' + command.exp.replace(/"/g, '\\"') + '"');
+                this.post(id, "-data-evaluate-expression", eargs.join(" "));
                 break;
 
             case "reconnect":
