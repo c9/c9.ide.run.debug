@@ -171,7 +171,7 @@ define(function(require, exports, module) {
 
             var frameObj = { frame: topFrame, frames: stack };
 
-            if (content.err === "signal") {
+            if (content.err === "signal" && content.signal !== "SIGINT") {
                 if (content.signal === "SIGSEGV")
                     showError("Execution has stopped due to a segmentation fault!");
                 else
