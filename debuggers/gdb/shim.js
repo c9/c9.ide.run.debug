@@ -1047,9 +1047,11 @@ gdb = new GDB();
 executable = new Executable(); 
 
 // handle process events
-// catch and ignore SIGINT, allow gdb to handle
+// catch SIGINT, allowing GDB to pause if running, quit otherwise
 process.on("SIGINT", function() {
     log("SIGINT");
+    if (!gdb || !gdb.running)
+        process.exit();
 });
 
 process.on("SIGHUP", function() {
