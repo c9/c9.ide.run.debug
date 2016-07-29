@@ -215,11 +215,12 @@ define(function(require, exports, module) {
         /***** Methods *****/
 
         function getProxySource(process){
+            var socketpath = Path.join(c9.home, "/.c9/gdbdebugger.socket");
             return {
                 source: null,
-                socketpath: Path.join(c9.home, "/.c9/gdbdebugger.socket"),
-                retryInverval: 300,
-                retries: 1000
+                socketpath: process.runner[0].socketpath || socketpath,
+                retryInverval: process.runner[0].retryInterval || 300,
+                retries: process.runner[0].retryCount || 1000
             };
         }
 
