@@ -437,8 +437,8 @@ define(function(require, exports, module) {
         function evaluate(expression, frame, global, disableBreak, callback) {
             var args = {
                 "exp": expression,
-                "f": (frame.index == null) ? 0 : frame.index,
-                "t": (frame.thread == null) ? 1 : frame.thread,
+                "f": (!frame || frame.index == null) ? 0 : frame.index,
+                "t": (!frame || frame.thread == null) ? 1 : frame.thread,
             };
             proxy.sendCommand("eval", args, function(err, reply) {
                 if (err)
