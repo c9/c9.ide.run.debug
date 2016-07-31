@@ -93,6 +93,9 @@ var client = null;
 var gdb = null;
 var executable = null;
 
+// store abnormal exit state to relay to user
+var exit = null;
+
 var log = function() {};
 
 if (DEBUG) {
@@ -245,15 +248,13 @@ function Executable() {
         });
 
         var errqueue = [];
-        var quit = null;
         this.proc.on("exit", function(code, signal) {
             log("GDB server terminated with code " + code + " and signal " + signal);
             client && client.send({ err:"killed", code:code, signal:signal });
+            exit = { proc: "GDB server", code: code, signal: signal };
 
-            // if stderr is still buffering data, don't quit yet
-            if (errqueue !== null)
-                quit = code;
-            else
+            // only quit if stderr has finished buffering data
+            if (errqueue === null)
                 process.exit(code);
         }.bind(this));
 
@@ -265,8 +266,8 @@ function Executable() {
             }
 
             // quit now if gdbserver ended before stderr buffer flushed
-            if (quit !== null)
-                process.exit(quit);
+            if (exit !== null)
+                process.exit(exit.code);
         });
 
         // wait for gdbserver to listen before executing callback
@@ -377,6 +378,7 @@ function GDB() {
         this.proc.on("exit", function(code, signal) {
             log("GDB terminated with code " + code + " and signal " + signal);
             client && client.send({ err:"killed", code:code, signal:signal });
+            exit = { proc: "GDB", code: code, signal: signal };
             process.exit(code);
         });
     };
@@ -1082,6 +1084,14 @@ process.on("SIGHUP", function() {
 
 process.on("exit", function() {
     log("quitting!");
+    // provide context for exit if child process died
+    if (exit) {
+        if (exit.code !== null && exit.code > 0)
+           console.error(exit.proc, "terminated with code", exit.code);
+        else if (exit.signal !== null)
+            console.error(exit.proc, "killed with signal", exit.signal);
+    }
+    // cleanup
     if (gdb) gdb.cleanup();
     if (client) client.cleanup();
     if (executable) executable.cleanup();
@@ -1133,7 +1143,7 @@ server.on("error", function(err) {
     else {
         console.log(err);
     }
-    process.exit();
+    process.exit(1);
 });
 
 // begin debug process
