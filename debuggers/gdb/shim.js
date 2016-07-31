@@ -228,6 +228,7 @@ function Client(c) {
 
 function Executable() {
     this.proc = null;
+    this.running = false;
 
     /**
      * Spawn GDB server which will in turn run executable, sharing
@@ -243,30 +244,50 @@ function Executable() {
             stdio: ['pipe', process.stdout, 'pipe']
         });
 
+        var errqueue = [];
+        var quit = null;
         this.proc.on("exit", function(code, signal) {
             log("GDB server terminated with code " + code + " and signal " + signal);
             client && client.send({ err:"killed", code:code, signal:signal });
-            process.exit();
+
+            // if stderr is still buffering data, don't quit yet
+            if (errqueue !== null)
+                quit = code;
+            else
+                process.exit(code);
+        }.bind(this));
+
+        this.proc.stderr.on("end", function() {
+            // dump queued stderr data, if it exists
+            if (errqueue !== null) {
+                console.error(errqueue.join(""));
+                errqueue = null;
+            }
+
+            // quit now if gdbserver ended before stderr buffer flushed
+            if (quit !== null)
+                process.exit(quit);
         });
 
         // wait for gdbserver to listen before executing callback
         function handleStderr(data) {
+            // once listening, forward stderr to process
+            if (this.running)
+                return process.stderr.write(data);
+
+            // consume and store stderr until gdbserver is listening
             var str = data.toString();
-            // handle cases of error (eg, failure to disable address space rand)
-            if (str.indexOf("Error") > -1) {
-                console.log(str);
-                process.exit(1);
-            }
+            errqueue.push(str);
+
             if (str.indexOf("Listening") > -1) {
                 // perform callback when gdbserver is ready
                 callback();
             }
-            else if (str.indexOf("127.0.0.1") > -1) {
+            if (str.indexOf("127.0.0.1") > -1) {
                 // soak up final gdbserver message before sharing i/o stream
-                this.proc.stderr.removeListener("data", handleStderr);
-                this.proc.stderr.pipe(process.stderr, {end: false});
+                errqueue = null;
+                this.running = true;
             }
-
         }
         this.proc.stderr.on("data", handleStderr.bind(this));
 
@@ -356,7 +377,7 @@ function GDB() {
         this.proc.on("exit", function(code, signal) {
             log("GDB terminated with code " + code + " and signal " + signal);
             client && client.send({ err:"killed", code:code, signal:signal });
-            process.exit();
+            process.exit(code);
         });
     };
 
@@ -1064,7 +1085,7 @@ process.on("exit", function() {
     if (gdb) gdb.cleanup();
     if (client) client.cleanup();
     if (executable) executable.cleanup();
-    if (server) server.close();
+    if (server && server.listening) server.close();
     if (PROXY.sock) {
         try {
             fs.unlinkSync(PROXY.sock);
