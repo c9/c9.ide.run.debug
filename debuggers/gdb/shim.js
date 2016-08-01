@@ -1,56 +1,110 @@
 /**
  * GDB Debugger plugin for Cloud9
  *
- * @author Dan Armendariz <danallan AT cs DOT harvard DOT edu>
+ * @author Dan Armendariz <danallan AT cs DOT berkeley DOT edu>
  * @author Rob Bowden <rob AT cs DOT harvard DOT edu>
  */
 
 var net = require('net');
 var fs = require('fs');
 var spawn = require('child_process').spawn;
-var exec = require('child_process').exec;
 
-var executable = "{BIN}";
-var dirname = "{PATH}";
-var gdb_port = parseInt("{PORT}", 10);
-var proxy_port = gdb_port + 1;
+// process arguments
+function printUsage() {
+    var p = [process.argv[0], process.argv[1]].join(" ");
+    var msg = [
+        "Cloud9 GDB Debugger shim",
+        "Usage: " + p + " [-b=bp] [-d=depth] [-g=gdb] [-p=proxy] BIN [args]\n",
+        "  bp: warn when BPs are sent but none are set (default true)",
+        "  depth: maximum stack depth computed (default 50)",
+        "  gdb: port that GDB client and server communicate (default 15470)",
+        "  proxy: port or socket that this shim listens for connections (default ~/.c9/gdbdebugger.socket)",
+        "  BIN: the binary to debug with GDB",
+        "  args: optional arguments for BIN\n"
+    ];
+    console.error(msg.join("\n"));
+    process.exit(1);
+}
 
-var MAX_STACK_DEPTH = parseInt("{MAX_DEPTH}", 10);
+var argc = process.argv.length;
+if (argc < 3) printUsage();
+
+// defaults
+var PROXY = { sock: "/home/ubuntu/.c9/gdbdebugger.socket" };
+var GDB_PORT = 15470;
+var MAX_STACK_DEPTH = 50;
+var DEBUG = false;
+var BIN = "";
+var BP_WARN = true;
+
+// parse middle arguments
+function parseArg(str, allowNonInt) {
+    if (str == null || str === "") printUsage();
+    var val = parseInt(str, 10);
+    if (!allowNonInt && isNaN(val)) printUsage();
+    return val;
+}
+
+// attempt to parse shim arguments
+var i = 0;
+for(i = 2; i < argc && BIN === ""; i++) {
+    var arg = process.argv[i];
+    var a = arg.split("=");    
+    var key = a[0];
+    var val = (a.length == 2) ? a[1] : null;
+
+    switch (key) {
+        case "-b":
+        case "--bp":
+            BP_WARN = (val === "true");
+            break;
+        case "-d":
+        case "--depth":
+            MAX_STACK_DEPTH = parseArg(val);
+            break;
+        case "-g":
+        case "--gdb":
+            GDB_PORT = parseArg(val);
+            break;
+        case "-p":
+        case "--proxy":
+            var portNum = parseArg(val, true);
+
+            if (isNaN(portNum))
+                PROXY = { sock: val };
+            else
+                PROXY = { host: "127.0.0.1", port: portNum };
+            break;
+        case "--debug":
+            DEBUG = (val === "true");
+            break;
+        default:
+            BIN = arg;
+    }
+}
+
+// all executable's arguments exist after executable path
+var ARGS = process.argv.slice(i);
+
 var STACK_RANGE = "0 " + MAX_STACK_DEPTH;
 
-var MAX_RETRY = 300;
+// class instances
+var client = null;
+var gdb = null;
+var executable = null;
 
-var client = null, // Client class instance with connection to browser
-    gdb = null;    // GDB class instance with spawned gdb process
+// store abnormal exit state to relay to user
+var exit = null;
 
-var DEBUG = false;
-
-var old_console = console.log;
-var log_file = null;
 var log = function() {};
 
-console.warn = console.log = function() {
-    if (DEBUG) {
+if (DEBUG) {
+    var log_file = fs.createWriteStream("./.gdb_proxy.log");
+    log = function(str) {
         var args = Array.prototype.slice.call(arguments);
         log_file.write(args.join(" ") + "\n");
-    }
-    return console.error.apply(console, arguments);
-};
-function send() {
-    old_console.apply(console, arguments);
-}
-
-if (DEBUG) {
-    log_file = fs.createWriteStream("./.gdb_proxy.log");
-    log = function(str) {
         console.log(str);
     };
-}
-
-// problem!
-if (executable === "!") {
-    console.log("The debugger provided bad data. Please try again.");
-    process.exit(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,10 +121,6 @@ function Client(c) {
     };
 
     this.connect = function(callback) {
-        if (!gdb) {
-            callback(new Error("GDB not yet initialized"));
-        }
-
         var parser = this._parse();
 
         this.connection.on("data", function(data) {
@@ -177,15 +227,101 @@ function Client(c) {
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
-// GDB class; connecting, parsing, issuing commands
+// Process class; initiating gdbserver, which in turn begins the executable
+
+function Executable() {
+    this.proc = null;
+    this.running = false;
+
+    /**
+     * Spawn GDB server which will in turn run executable, sharing
+     * stdio with the shim.
+     * 
+     * @param {Function} callback  Called when gdbserver is listening
+     */
+    this.spawn = function(callback) {
+        var args = ["--once", ":"+GDB_PORT, BIN].concat(ARGS);
+        this.proc = spawn("gdbserver", args, {
+            detached: true,
+            cwd: process.cwd(),
+            stdio: ['pipe', process.stdout, 'pipe']
+        });
+
+        var errqueue = [];
+        this.proc.on("exit", function(code, signal) {
+            log("GDB server terminated with code " + code + " and signal " + signal);
+            client && client.send({ err:"killed", code:code, signal:signal });
+            exit = { proc: "GDB server", code: code, signal: signal };
+
+            // only quit if stderr has finished buffering data
+            if (errqueue === null)
+                process.exit(code);
+        }.bind(this));
+
+        this.proc.stderr.on("end", function() {
+            // dump queued stderr data, if it exists
+            if (errqueue !== null) {
+                console.error(errqueue.join(""));
+                errqueue = null;
+            }
+
+            // quit now if gdbserver ended before stderr buffer flushed
+            if (exit !== null)
+                process.exit(exit.code);
+        });
+
+        // wait for gdbserver to listen before executing callback
+        function handleStderr(data) {
+            // once listening, forward stderr to process
+            if (this.running)
+                return process.stderr.write(data);
+
+            // consume and store stderr until gdbserver is listening
+            var str = data.toString();
+            errqueue.push(str);
+
+            if (str.indexOf("Listening") > -1) {
+                // perform callback when gdbserver is ready
+                callback();
+            }
+            if (str.indexOf("127.0.0.1") > -1) {
+                // soak up final gdbserver message before sharing i/o stream
+                errqueue = null;
+                this.running = true;
+            }
+        }
+        this.proc.stderr.on("data", handleStderr.bind(this));
+
+        // necessary to redirect stdin this way or child receives SIGTTIN
+        process.stdin.pipe(this.proc.stdin);
+    };
+    
+    /**
+     * Dismantle the GDB server process.
+     */
+    this.cleanup = function() {
+        if (this.proc) {
+            this.proc.kill("SIGHUP");
+            this.proc = null;
+        }
+    };
+}
+
+// End of Client class
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// GDB class; connecting, parsing, issuing commands to the debugger
 
 function GDB() {
     this.sequence_id = 0;
+    this.bp_set = null;
     this.callbacks = {};
     this.state = {};
     this.framecache = {};
     this.varcache = {};
     this.running = false;
+    this.started = false;
     this.clientReconnect = false;
     this.memoized_files = [];
     this.command_queue = [];
@@ -218,9 +354,9 @@ function GDB() {
 
     // spawn the GDB client process
     this.spawn = function() {
-        this.proc = spawn('gdb', ['-q', '--interpreter=mi2', executable], {
-            detached: true,
-            cwd: dirname
+        this.proc = spawn('gdb', ['-q', '--interpreter=mi2', BIN], {
+            detached: false,
+            cwd: process.cwd()
         });
 
         var self = this;
@@ -239,52 +375,23 @@ function GDB() {
             });
         });
 
-        this.proc.on("end", function() {
-            log("gdb proc ended");
-            process.exit();
-        });
-
-        this.proc.on("close", function(code, signal) {
-            self.proc.stdin.end();
+        this.proc.on("exit", function(code, signal) {
             log("GDB terminated with code " + code + " and signal " + signal);
-            client.send({ err:"killed", code:code, signal:signal });
-            process.exit();
+            client && client.send({ err:"killed", code:code, signal:signal });
+            exit = { proc: "GDB", code: code, signal: signal };
+            process.exit(code);
         });
     };
 
     this.connect = function(callback) {
-        // ask GDB to retry connections to server with a given timeout
-        this.issue("set tcp connect-timeout", MAX_RETRY, function() {
-            // now connect
-            this.issue("-target-select", "remote localhost:"+gdb_port, function(reply) {
-                if (reply.state != "connected")
-                    return callback(reply, "Cannot connect to gdbserver");
+        this.issue("-target-select", "remote localhost:"+GDB_PORT, function(reply) {
+            if (reply.state != "connected")
+                return callback(reply, "Cannot connect to gdbserver");
 
-                // connected! set eval of conditional breakpoints on server
-                this.issue("set breakpoint", "condition-evaluation host", callback);
+            // connected! set eval of conditional breakpoints on server
+            this.issue("set breakpoint", "condition-evaluation host", callback);
 
-            }.bind(this));
         }.bind(this));
-    };
-
-    // spawn GDB client only after gdbserver is ready
-    this.waitConnect = function(callback) {
-        function wait(retries, callback) {
-            if (retries < 0)
-                return callback(null, "Waited for gdbserver beyond timeout");
-
-            // determine if gdbserver has opened the port yet
-            exec("lsof -i :"+gdb_port+" -sTCP:LISTEN|grep -q gdbserver", function(err) {
-                // if we get an error code back, gdbserver is not yet running
-                if (err !== null)
-                    return setTimeout(wait.bind(this, --retries, callback), 1000);
-
-                // success! load gdb and connect to server
-                this.spawn();
-                this.connect(callback);
-            }.bind(this));
-        }
-        wait.call(this, MAX_RETRY, callback);
     };
 
     // Suspend program operation by sending sigint and prepare for state update
@@ -458,14 +565,17 @@ function GDB() {
     };
 
     // Stack State Step 0; initiate request
-    this._updateState = function(segfault, thread) {
+    this._updateState = function(signal, thread) {
         // don't send state updates on reconnect, wait for plugin to request
         if (this.clientReconnect) return;
 
-        this.state.err = (segfault === true)? "segfault" : null;
+        if (signal) {
+            this.state.err = "signal";
+            this.state.signal = signal;
+        }
         this.state.thread = (thread)? thread : null;
 
-        if (segfault === true)
+        if (signal && signal.name === "SIGSEGV")
             // dump the varobj cache in segfault so var-updates don't crash GDB
             this._flushVarCache();
         else
@@ -739,8 +849,13 @@ function GDB() {
         var cause = state.status.reason;
         var thread = state.status['thread-id'];
 
-        if (cause == "signal-received")
-            this._updateState((state.status['signal-name']=="SIGSEGV"), thread);
+        if (cause == "signal-received") {
+            var signal = {
+                name: state.status['signal-name'],
+                text: state.status['signal-meaning']
+            };
+            this._updateState(signal, thread);
+        }
         else if (cause === "breakpoint-hit" || cause === "end-stepping-range" ||
                  cause === "function-finished")
             // update GUI state at breakpoint or after a step in/out
@@ -804,7 +919,7 @@ function GDB() {
         var command = this.command_queue.shift();
 
         if (typeof command.command === "undefined") {
-            console.log("ERROR: Received an empty request, ignoring.");
+            log("ERROR: Received an empty request, ignoring.");
         }
 
         if (typeof command._id !== "number")
@@ -822,6 +937,19 @@ function GDB() {
             case 'step':
             case 'next':
             case 'finish':
+                if (this.started === false) {
+                    this.started = true;
+
+                    // provide a warning if BPs sent but not set
+                    if (this.bp_set === false && BP_WARN)
+                        console.error("\nWARNING: No breakpoints were successfully",
+                            "set, even though some were sent to\nthe debugger.",
+                            "If you are sure that you have set breakpoints in",
+                            "the source code\nfor this binary, your symbol table",
+                            "may be old (say, if you move the binary and\nsource",
+                            "to a different directory). If this is the case,",
+                            "force-recompile it to\nresolve this warning.\n");
+                }
                 this.clientReconnect = false;
                 this.running = true;
                 this.post(id, "-exec-" + command.command);
@@ -873,10 +1001,15 @@ function GDB() {
                     args.push('"' + command.condition + '"');
                 }
 
-                var path = dirname + command.path;
-                args.push('"' + path + ':' + (command.line+1) + '"');
+                args.push('"' + command.fullpath + ':' + (command.line+1) + '"');
 
-                this.post(id, "-break-insert", args.join(" "));
+                this.issue("-break-insert", args.join(" "), function(output) {
+                    // record whether we've successfully set any BPs
+                    this.bp_set = this.bp_set || (output.state === "done");
+
+                    output._id = id;
+                    client.send(output);
+                }.bind(this));
                 break;
 
             case "bp-list":
@@ -884,10 +1017,10 @@ function GDB() {
                 break;
 
             case "eval":
-                var args = ["--thread", command.t, "--frame", command.f];
+                var eargs = ["--thread", command.t, "--frame", command.f];
                 // replace quotes with escaped quotes
-                args.push('"' + command.exp.replace(/"/g, '\\"') + '"');
-                this.post(id, "-data-evaluate-expression", args.join(" "));
+                eargs.push('"' + command.exp.replace(/"/g, '\\"') + '"');
+                this.post(id, "-data-evaluate-expression", eargs.join(" "));
                 break;
 
             case "reconnect":
@@ -933,6 +1066,53 @@ function GDB() {
 ////////////////////////////////////////////////////////////////////////////////
 // Proxy initialization
 
+gdb = new GDB();
+executable = new Executable(); 
+
+// handle process events
+// catch SIGINT, allowing GDB to pause if running, quit otherwise
+process.on("SIGINT", function() {
+    log("SIGINT");
+    if (!gdb || !gdb.running)
+        process.exit();
+});
+
+process.on("SIGHUP", function() {
+    log("Received SIGHUP");
+    process.exit();
+});
+
+process.on("exit", function() {
+    log("quitting!");
+    // provide context for exit if child process died
+    if (exit) {
+        if (exit.code !== null && exit.code > 0)
+           console.error(exit.proc, "terminated with code", exit.code);
+        else if (exit.signal !== null)
+            console.error(exit.proc, "killed with signal", exit.signal);
+    }
+    // cleanup
+    if (gdb) gdb.cleanup();
+    if (client) client.cleanup();
+    if (executable) executable.cleanup();
+    if (server && server.listening) server.close();
+    if (PROXY.sock) {
+        try {
+            fs.unlinkSync(PROXY.sock);
+        }
+        catch(e) {
+            log("Unable to delete socket: " + e.code);
+        }
+    }
+    if (DEBUG) log_file.end();
+});
+
+process.on("uncaughtException", function(e) {
+    log("uncaught exception (" + e + ")");
+    process.exit();
+});
+
+// create the proxy server
 var server = net.createServer(function(c) {
     if (client)
         client.reconnect(c);
@@ -954,46 +1134,6 @@ var server = net.createServer(function(c) {
 
 });
 
-gdb = new GDB();
-
-gdb.waitConnect(function(reply, err) {
-    if (err) {
-        log(err);
-        process.exit();
-    }
-    start();
-});
-
-// handle process events
-// pass along SIGINT to suspend gdb, only if program is running
-process.on('SIGINT', function() {
-    console.log("\b\bSIGINT: ");
-    if (gdb.running) {
-        console.log("SUSPENDING\n");
-        gdb.suspend();
-    }
-    else {
-        console.log("CANNOT SUSPEND (program not running)\n");
-    }
-});
-
-process.on("SIGHUP", function() {
-    log("Received SIGHUP");
-    process.exit();
-});
-
-process.on("exit", function() {
-    log("quitting!");
-    if (gdb) gdb.cleanup();
-    if (client) client.cleanup();
-    if (DEBUG) log_file.end();
-});
-
-process.on("uncaughtException", function(e) {
-    log("uncaught exception (" + e + ")");
-    process.exit();
-});
-
 // handle server events
 server.on("error", function(err) {
     if (err.errno == "EADDRINUSE") {
@@ -1003,17 +1143,25 @@ server.on("error", function(err) {
     else {
         console.log(err);
     }
-    process.exit();
+    process.exit(1);
 });
 
-// Start listening for browser clients
-var host = "127.0.0.1";
-server.listen(proxy_port, host, function() {
-    start();
+// begin debug process
+executable.spawn(function() {
+    gdb.spawn();
+    gdb.connect(function (reply, err) {
+        if (err) {
+            log(err);
+            process.exit();
+        }
+        
+        // Finally ready: start listening for browser clients on port or sock
+        if (PROXY.sock) {
+            fs.unlink(PROXY.sock, function() {
+                server.listen(PROXY.sock);
+            });
+        }
+        else
+            server.listen(PROXY.port, PROXY.host);
+    });
 });
-
-var I=0;
-function start() {
-    if (++I == 2)
-        send("ß");
-}

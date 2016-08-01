@@ -1,19 +1,20 @@
 /**
  * GDB Debugger plugin for Cloud9
  *
- * @author Dan Armendariz <danallan AT cs DOT harvard DOT edu>
+ * @author Dan Armendariz <danallan AT cs DOT berkeley DOT edu>
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "debugger", "c9", "panels", "settings", "dialog.error"
+        "Plugin", "c9", "debugger", "dialog.error", "fs", "panels", "settings"
     ];
     main.provides = ["gdbdebugger"];
     return main;
 
     function main(options, imports, register) {
         var Plugin = imports.Plugin;
-        var debug = imports["debugger"];
         var c9 = imports.c9;
+        var debug = imports["debugger"];
+        var fs = imports["fs"];
         var panels = imports.panels;
         var settings = imports.settings;
         var showError = imports["dialog.error"].show;
@@ -34,9 +35,6 @@ define(function(require, exports, module) {
         emit.setMaxListeners(1000);
 
         var TYPE = "gdb";
-
-        // proxy location
-        var PROXY = require("text!./netproxy.js");
 
         var attached = false;
 
@@ -60,8 +58,20 @@ define(function(require, exports, module) {
                     ["autoshow", "true"]
                 ]);
             });
-
+            
+            // must register ASAP, or debugger won't be ready for reconnects
             debug.registerDebugger(TYPE, plugin);
+
+            // writeFile root is workspace directory, unless given ~
+            var shimPath = "~/bin/c9gdbshim.js";
+            var shim = require("text!./shim.js");
+            fs.writeFile(shimPath, shim, "utf8", function(err) {
+                if (err) {
+                    // unregister the debugger on error
+                    debug.unregisterDebugger(TYPE, plugin);
+                    return console.log("Error writing gdb shim: " + err);
+                }
+            });
         }
 
         /***** Helper Functions *****/
@@ -164,21 +174,20 @@ define(function(require, exports, module) {
             setState("stopped");
             emit("frameActivate", { frame: topFrame });
 
-            if (content.err === "segfault") {
-                showError("GDB has detected a segmentation fault and execution has stopped!");
-                emit("exception", { frame: topFrame }, new Error("Segfault!"));
-                btnResume.$ext.style.display = "none";
-                btnSuspend.$ext.style.display = "inline-block";
-                btnSuspend.setAttribute("disabled", true);
-                btnStepOut.setAttribute("disabled", true);
-                btnStepInto.setAttribute("disabled", true);
-                btnStepOver.setAttribute("disabled", true);
+            var frameObj = { frame: topFrame, frames: stack };
+
+            if (content.err === "signal" && content.signal.name !== "SIGINT") {
+                var e = "Process received " + content.signal.name + ": "
+                        + content.signal.text;
+                showError(e);
+                emit("exception", frameObj, new Error(content.signal.name));
             }
             else {
-                emit("break", { frame: topFrame, frames: stack });
-                if (stack.length == 1)
-                    btnStepOut.setAttribute("disabled", true);
+                emit("break", frameObj);
             }
+
+            if (stack.length == 1)
+                btnStepOut.setAttribute("disabled", true);
         }
 
         /*
@@ -206,24 +215,13 @@ define(function(require, exports, module) {
         /***** Methods *****/
 
         function getProxySource(process){
-            var max_depth = (process.runner[0].maxdepth) ?
-                            process.runner[0].maxdepth : 50;
-
-            var bin;
-            try {
-                bin = process.insertVariables(process.runner[0].executable);
-            }
-            catch(e) {
-                bin = "!";
-            }
-
-            return PROXY
-                .replace(/\/\/.*/g, "")
-                .replace(/[\n\r]/g, "")
-                .replace(/\{PATH\}/, c9.workspaceDir)
-                .replace(/\{MAX_DEPTH\}/, max_depth)
-                .replace(/\{BIN\}/, bin)
-                .replace(/\{PORT\}/, process.runner[0].debugport);
+            var socketpath = Path.join(c9.home, "/.c9/gdbdebugger.socket");
+            return {
+                source: null,
+                socketpath: process.runner[0].socketpath || socketpath,
+                retryInverval: process.runner[0].retryInterval || 300,
+                retries: process.runner[0].retryCount || 1000
+            };
         }
 
         function attach(s, reconnect, callback) {
@@ -439,8 +437,8 @@ define(function(require, exports, module) {
         function evaluate(expression, frame, global, disableBreak, callback) {
             var args = {
                 "exp": expression,
-                "f": (frame.index == null) ? 0 : frame.index,
-                "t": (frame.thread == null) ? 1 : frame.thread,
+                "f": (!frame || frame.index == null) ? 0 : frame.index,
+                "t": (!frame || frame.thread == null) ? 1 : frame.thread,
             };
             proxy.sendCommand("eval", args, function(err, reply) {
                 if (err)
@@ -471,6 +469,7 @@ define(function(require, exports, module) {
         }
 
         function setBreakpoint(bp, callback) {
+            bp.data.fullpath = Path.join(c9.workspaceDir, bp.data.path);
             proxy.sendCommand("bp-set", bp.data, function(err, reply) {
                 if (err)
                     return callback && callback(err);

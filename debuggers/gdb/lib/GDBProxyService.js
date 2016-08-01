@@ -74,7 +74,7 @@ var GDBProxyService = module.exports = function(socket, haltHandler) {
     this.$send = function(args) {
         args = JSON.stringify(args);
         var msg = ["Content-Length:", args.length, "\r\n\r\n", args].join("");
-        this.$socket.send(msg);
+        this.$socket && this.$socket.send(msg);
     };
 
     /*
