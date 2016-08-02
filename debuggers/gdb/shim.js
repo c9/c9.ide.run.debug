@@ -30,7 +30,7 @@ var argc = process.argv.length;
 if (argc < 3) printUsage();
 
 // defaults
-var PROXY = { sock: "/home/ubuntu/.c9/gdbdebugger.socket" };
+var PROXY = { sock: process.env.HOME + "/.c9/gdbdebugger.socket" };
 var GDB_PORT = 15470;
 var MAX_STACK_DEPTH = 50;
 var DEBUG = false;
@@ -242,9 +242,9 @@ function Executable() {
     this.spawn = function(callback) {
         var args = ["--once", ":"+GDB_PORT, BIN].concat(ARGS);
         this.proc = spawn("gdbserver", args, {
-            detached: true,
             cwd: process.cwd(),
-            stdio: ['pipe', process.stdout, 'pipe']
+            // stdio: "inherit",
+            stdio: ['pipe', process.stdout, 'pipe'],
         });
 
         var errqueue = [];
@@ -257,7 +257,17 @@ function Executable() {
             if (errqueue === null)
                 process.exit(code);
         }.bind(this));
-
+        
+        this.proc.on("error", function(e) {
+            console.error("ERROR while launching the debugger:");
+            if (e.code == "ENOENT") {
+                console.log("\t\"gdbserver\" is not installed");
+            } else {
+                console.error(e);
+            }
+            process.exit(1);
+        });
+ 
         this.proc.stderr.on("end", function() {
             // dump queued stderr data, if it exists
             if (errqueue !== null) {
@@ -357,6 +367,15 @@ function GDB() {
         this.proc = spawn('gdb', ['-q', '--interpreter=mi2', BIN], {
             detached: false,
             cwd: process.cwd()
+        });
+        
+        this.proc.on("error", function(e) {
+            console.error("ERROR while launching the debugger:");
+            if (e.code == "ENOENT") {
+                console.log("\t\"gdbserver\" is not installed");
+            } else {
+                console.error(e);
+            }
         });
 
         var self = this;
@@ -490,6 +509,7 @@ function GDB() {
 
     this._parseStateArgs = function(args) {
         /* This is crazy but GDB almost provides a JSON output */
+        args = args.replace(/\\n\s*$/, "");
         args = args.replace(/=(?=["|{|\[])/g, '!:');
         args = args.replace(/([a-zA-Z0-9-_]*)!:/g, "\"$1\":");
 
@@ -1101,15 +1121,16 @@ process.on("exit", function() {
             fs.unlinkSync(PROXY.sock);
         }
         catch(e) {
-            log("Unable to delete socket: " + e.code);
+            if (e.code != "ENOENT")
+                log("Unable to delete socket: " + e.code);
         }
     }
     if (DEBUG) log_file.end();
 });
 
 process.on("uncaughtException", function(e) {
-    log("uncaught exception (" + e + ")");
-    process.exit();
+    log("uncaught exception (" + e + ")" + "\n" + e.stack);
+    process.exit(1);
 });
 
 // create the proxy server
@@ -1141,6 +1162,7 @@ server.on("error", function(err) {
         console.log("Try stopping the existing instance first.");
     }
     else {
+        console.log("server error");
         console.log(err);
     }
     process.exit(1);
@@ -1154,10 +1176,10 @@ executable.spawn(function() {
             log(err);
             process.exit();
         }
-        
         // Finally ready: start listening for browser clients on port or sock
         if (PROXY.sock) {
-            fs.unlink(PROXY.sock, function() {
+            fs.unlink(PROXY.sock, function(err) {
+                if (err && err.code != "ENOENT") console.error(err);
                 server.listen(PROXY.sock);
             });
         }
