@@ -1096,14 +1096,6 @@ process.on("exit", function() {
     if (client) client.cleanup();
     if (executable) executable.cleanup();
     if (server && server.listening) server.close();
-    if (PROXY.sock) {
-        try {
-            fs.unlinkSync(PROXY.sock);
-        }
-        catch(e) {
-            log("Unable to delete socket: " + e.code);
-        }
-    }
     if (DEBUG) log_file.end();
 });
 
