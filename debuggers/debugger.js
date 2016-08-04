@@ -684,7 +684,10 @@ define(function(require, exports, module) {
                 panels.deactivate("debugger");
         }
         
-        function checkAttached(callback) {
+        function checkAttached(callback, callbackCancel) {
+            if (callbackCancel == undefined)
+                callbackCancel = function() {};
+
             if (state != "disconnected") {
                 confirm("Debugger",
                     "The debugger is already connected to another process.",
@@ -694,9 +697,7 @@ define(function(require, exports, module) {
                             callback();
                         });
                     },
-                    function(){ // Cancel
-                        // Do Nothing
-                    },
+                    callbackCancel, // Cancel
                     { yes: "Stop current process", no: "Cancel" }
                 );
             }
