@@ -27,7 +27,7 @@ define(function(require, exports, module) {
 
         var Path = require("path");
         var GDBProxyService = require("./lib/GDBProxyService");
-
+        
         /***** Initialization *****/
 
         var plugin = new Plugin("CS50", main.consumes);
@@ -61,16 +61,19 @@ define(function(require, exports, module) {
             
             // must register ASAP, or debugger won't be ready for reconnects
             debug.registerDebugger(TYPE, plugin);
-
+            
             // writeFile root is workspace directory, unless given ~
-            var shimPath = "~/bin/c9gdbshim.js";
+            var shimPath = "~/.c9/bin/c9gdbshim.js";
             var shim = require("text!./shim.js");
-            fs.writeFile(shimPath, shim, "utf8", function(err) {
-                if (err) {
-                    // unregister the debugger on error
-                    debug.unregisterDebugger(TYPE, plugin);
-                    return console.log("Error writing gdb shim: " + err);
-                }
+            fs.exists(shimPath, function(exists) {
+                if (exists) return; // TODO use localfs extend when it is ready
+                fs.writeFile(shimPath, shim, "utf8", function(err) {
+                    if (err) {
+                        // unregister the debugger on error
+                        debug.unregisterDebugger(TYPE, plugin);
+                        return console.log("Error writing gdb shim: " + err);
+                    }
+                });
             });
         }
 
