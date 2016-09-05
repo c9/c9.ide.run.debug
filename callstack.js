@@ -62,19 +62,14 @@ define(function(require, exports, module) {
                 caption: "File",
                 getText: function(node) {
                     var path = node.path;
-                    return (typeof path === "string" && path.charAt(0) === "/")
-                        ? path.substr(1)
-                        : path;
+                    if (typeof path != "string")
+                        return "";
+                    
+                    if (path.charAt(0) === "/")
+                        path =  path.substr(1);
+                    return path + " :" + (node.line + 1) + ":" + (node.column + 1)
                 },
                 width: "40%"
-            }, {
-                caption: "Ln",
-                getText: function(node) { return node.line + 1; },
-                width: "30",
-            }, {
-                caption: "Col",
-                getText: function(node) { return node.column + 1; },
-                width: "30"
             }];
             
             // Set and clear the dbg variable
