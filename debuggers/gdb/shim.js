@@ -664,8 +664,9 @@ function GDB() {
                         exists: fs.existsSync(file)
                     };
                 }
-                // we must abort step if we cannot show source for this function
+                // we must abort step if we cannot show source for top function
                 if (!this.memoized_files[file] || !this.memoized_files[file].exists && !this.state.err) {
+                    if (i != 0) continue;
                     this.state = {};
                     this.issue("-exec-finish");
                     return;
