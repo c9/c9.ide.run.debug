@@ -271,7 +271,7 @@ function Executable() {
         this.proc.stderr.on("end", function() {
             // dump queued stderr data, if it exists
             if (errqueue !== null) {
-                console.error(errqueue.join(""));
+                log(errqueue.join(""));
                 errqueue = null;
             }
 
@@ -284,7 +284,7 @@ function Executable() {
         function handleStderr(data) {
             // once listening, forward stderr to process
             if (this.running)
-                return process.stderr.write(data);
+                return log(data.toString());
 
             // consume and store stderr until gdbserver is listening
             var str = data.toString();
