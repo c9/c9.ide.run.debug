@@ -963,13 +963,10 @@ function GDB() {
 
                     // provide a warning if BPs sent but not set
                     if (this.bp_set === false && BP_WARN)
-                        console.error("\nWARNING: No breakpoints were successfully",
-                            "set, even though some were sent to\nthe debugger.",
-                            "If you are sure that you have set breakpoints in",
-                            "the source code\nfor this binary, your symbol table",
-                            "may be old (say, if you move the binary and\nsource",
-                            "to a different directory). If this is the case,",
-                            "force-recompile it to\nresolve this warning.\n");
+                        console.error("\nWARNING: Could not set any",
+                            "breakpoints. Try deleting", BIN, "and",
+                            "re-compiling\nyour code. Be sure to compile with",
+                            "-ggdb3.\n");
                 }
                 this.clientReconnect = false;
                 this.running = true;
