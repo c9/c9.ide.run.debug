@@ -82,7 +82,7 @@ EventEmitter._dispatchEvent = function(eventName, e) {
     if (!listeners || !listeners.length)
         return;
 
-    var e = e || {};
+    e = e || {};
     e.type = eventName;
 
     for (var i = listeners.length - 1; i >= 0; i--)
@@ -95,7 +95,7 @@ EventEmitter.addEventListener = function(eventName, callback) {
 
     var listeners = this._eventRegistry[eventName];
     if (!listeners)
-        var listeners = this._eventRegistry[eventName] = [];
+        listeners = this._eventRegistry[eventName] = [];
 
     if (listeners.indexOf(callback) == -1)
         listeners.push(callback);
