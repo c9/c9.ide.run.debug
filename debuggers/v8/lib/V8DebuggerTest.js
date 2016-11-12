@@ -37,7 +37,7 @@ var V8Message = require("./V8Message");
 
 function assertJsonEquals(expected, actual) {
     return assert.equal(JSON.stringify(expected), JSON.stringify(actual));
-};
+}
 
 module.exports = {
 
@@ -47,7 +47,7 @@ module.exports = {
         this.$msgStream = new MsgStreamMock();
         this.$service = new V8DebuggerService(this.$msgStream);
         this.$debugger = new V8Debugger(2, this.$service);
-        next()
+        next();
     },
 
     sendMessage: function(content) {
@@ -744,6 +744,5 @@ module.exports = {
 };
 
 if (typeof module !== "undefined" && !module.parent)
-    require("asyncjs").test.testcase(module.exports).exec()
-
+    require("asyncjs").test.testcase(module.exports).exec();
 });

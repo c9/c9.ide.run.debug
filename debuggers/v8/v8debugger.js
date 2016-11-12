@@ -29,25 +29,25 @@ define(function(require, exports, module) {
     ];
     main.provides = ["v8debugger"];
     return main;
-    
+
     function main(options, imports, register) {
         var Plugin = imports.Plugin;
         var util = imports.util;
         var debug = imports["debugger"];
         var c9 = imports.c9;
         var async = require("async");
-        
+
         var Frame = debug.Frame;
         var Source = debug.Source;
         var Breakpoint = debug.Breakpoint;
         var Variable = debug.Variable;
         var Scope = debug.Scope;
-        
+
         var V8Debugger = require("./lib/V8Debugger");
         var V8DebuggerService = require("./lib/StandaloneV8DebuggerService");
 
         /***** Initialization *****/
-        
+
         var plugin = new Plugin("Ajax.org", main.consumes);
         var emit = plugin.getEmitter();
         emit.setMaxListeners(1000);
@@ -56,74 +56,76 @@ define(function(require, exports, module) {
         var breakOnExceptions = false;
         var breakOnUncaughtExceptions = false;
         var breakpointQueue = [];
-        
+
         var NODE_PREFIX = "(function (exports, require, module, __filename, __dirname) { ";
         var NODE_POSTFIX = "\n});";
-        
+
         var RE_NODE_PREFIX = new RegExp("^" + util.escapeRegExp(NODE_PREFIX));
         var RE_NODE_POSTFIX = new RegExp(util.escapeRegExp(NODE_POSTFIX) + "$");
-        
+
         var TYPE = "v8";
-        
+
         var attached = false;
         var v8dbg, v8ds, state, activeFrame, sources, socket, pathMap;
-        
+
         var scopeTypes = {
-            "0" : "global",
-            "1" : "local",
-            "2" : "with",
-            "3" : "function",
-            "4" : "catch"
+            "0": "global",
+            "1": "local",
+            "2": "with",
+            "3": "function",
+            "4": "catch"
         };
-        
+
         var hasChildren = {
-            "regexp"   : 32,
-            "error"    : 16,
-            "object"   : 8,
-            "function" : 4
+            "regexp": 32,
+            "error": 16,
+            "object": 8,
+            "function": 4
         };
-        
+
         /***** Helper Functions *****/
-        
+
         /**
          * Syncs the debug state to the client
          */
         function sync(breakpoints, reconnect, callback) {
             if (!v8dbg)
                 return console.error("Sync called without v8dbg");
-                
+
             getSources(function(err, sources) {
                 if (err) return callback(err);
-                
+
                 getFrames(function(err, frames) {
                     if (err) return callback(err);
-                    
+
                     updateBreakpoints(breakpoints, reconnect, function(err, breakpoints) {
                         if (err) return callback(err);
-                        
+
                         handleDebugBreak(breakpoints, reconnect, frames[0], function(canAttach) {
-                            attached = canAttach;
-                            emit("attach", { breakpoints: breakpoints });
-                        }, 
-                        function(isResumed) {
-                            // This check is for when the process is not 
-                            // started with debug-brk
-                            if (activeFrame) {
-                                onChangeFrame(activeFrame);
-                                emit("break", {
-                                    frame: activeFrame,
-                                    frames: frames
+                                attached = canAttach;
+                                emit("attach", {
+                                    breakpoints: breakpoints
                                 });
-                            }
-                            
-                            onChangeRunning(null, isResumed);
-                            callback();
-                        });
+                            },
+                            function(isResumed) {
+                                // This check is for when the process is not 
+                                // started with debug-brk
+                                if (activeFrame) {
+                                    onChangeFrame(activeFrame);
+                                    emit("break", {
+                                        frame: activeFrame,
+                                        frames: frames
+                                    });
+                                }
+
+                                onChangeRunning(null, isResumed);
+                                callback();
+                            });
                     });
                 }, true); // The sync backtrace should be silent
             });
         }
-        
+
         function updateBreakpoints(breakpoints, reconnect, callback) {
             function find(bp) {
                 for (var i = 0, l = breakpoints.length; i < l; i++) {
@@ -131,24 +133,24 @@ define(function(require, exports, module) {
                         return breakpoints[i];
                 }
             }
-            
+
             var list = breakpoints.slice(0);
             var retries = 0;
-            
+
             listBreakpoints(function handleBps(err, remoteBreakpoints) {
                 if (err) return callback(err);
-                
+
                 // We should always have at least 1 breakpoint
                 if (!reconnect && !remoteBreakpoints.length && ++retries < 10) {
-                    setTimeout(function(){
+                    setTimeout(function() {
                         if (v8dbg) listBreakpoints(handleBps);
                     }, 100);
                     return;
                 }
-                
+
                 var found = [];
                 var notfound = [];
-                
+
                 remoteBreakpoints.forEach(function(rbp) {
                     var bp;
                     if ((bp = find(rbp))) {
@@ -158,32 +160,32 @@ define(function(require, exports, module) {
                     else
                         notfound.push(rbp);
                 });
-                
+
                 async.each(list, function(bp, next) {
                     if (found.indexOf(bp) == -1)
                         setBreakpoint(bp, next);
                     else
                         next();
                 }, done);
-                
-                function done(){
-                    notfound.forEach(function(bp) { 
+
+                function done() {
+                    notfound.forEach(function(bp) {
                         bp.serverOnly = true;
                         list.push(bp);
                     });
-                    
+
                     list.sort(function(a, b) {
                         if (!a.id && !b.id) return 0;
                         if (!a.id && b.id) return 1;
                         if (a.id && !b.id) return -1;
                         return a.id - b.id;
                     });
-                    
+
                     callback(null, list);
                 }
             });
         }
-        
+
         /**
          * Detects a break on a frame or a known breakpoint, otherwise resumes
          */
@@ -193,13 +195,13 @@ define(function(require, exports, module) {
                 attach();
                 return callback();
             }
-            
+
             var bp = breakpoints[0];
-            
+
             // If there's no breakpoint set
             if (!bp) {
                 attach(reconnect || 0);
-                
+
                 // If we reconnect to a break then don't resume.
                 if (reconnect) {
                     onChangeFrame(frame);
@@ -207,10 +209,10 @@ define(function(require, exports, module) {
                 }
                 else
                     resume(callback.bind(this, true));
-                    
+
                 return;
             }
-            
+
             // Check for a serverOnly breakpoint on line 0
             // this bp, is automatically created by v8 to stop on break
             if (bp.id === 1 && bp.serverOnly) {
@@ -223,7 +225,8 @@ define(function(require, exports, module) {
                 wait();
                 reconnect = true;
             }
-            function wait(){
+
+            function wait() {
                 // Check if there is a real breakpoint here, so we don't resume
                 function checkEval(err, variable) {
                     if (err || isTruthy(variable)) {
@@ -237,16 +240,19 @@ define(function(require, exports, module) {
                         callback(false);
                     }
                 }
-                
+
                 // @todo this is probably a timing issue - probably solved now
                 if (frame) {
-                    var test = { path: frame.path, line: frame.line };
+                    var test = {
+                        path: frame.path,
+                        line: frame.line
+                    };
                     for (var bpi, i = 0, l = breakpoints.length; i < l; i++) {
                         if ((bpi = breakpoints[i]).equals(test)) {
                             // If it's not enabled let's continue
                             if (!bpi.enabled)
                                 break;
-                              
+
                             // Check a condition if it has it
                             if (bpi.condition) {
                                 evaluate(bpi.condition, frame, false, true, checkEval);
@@ -260,7 +266,7 @@ define(function(require, exports, module) {
                         }
                     }
                 }
-                
+
                 // Resume the process
                 if (reconnect) {
                     onChangeFrame(frame);
@@ -274,7 +280,7 @@ define(function(require, exports, module) {
                 }
             }
         }
-        
+
         /**
          * Removes the path prefix from a string
          */
@@ -282,57 +288,59 @@ define(function(require, exports, module) {
             if (!str) return "";
             str = c9.toInternalPath(str);
             str = applyPathMap(str, "toInternal");
-            return str && str.lastIndexOf(stripPrefix, 0) === 0
-                ? util.normalizePath(str.slice(stripPrefix.length))
-                : util.normalizePath(str || "");
+            return str && str.lastIndexOf(stripPrefix, 0) === 0 ?
+                util.normalizePath(str.slice(stripPrefix.length)) :
+                util.normalizePath(str || "");
         }
-    
+
         /**
          * Returns the unique id of a frame
          */
         function getFrameId(frame) {
-            return frame.func.name + ":" + frame.func.inferredName 
-                + ":" + frame.func.scriptId + ":" 
-                + (frame.received && frame.received.ref || "")
-                + frame.arguments.map(function(a){return a.value.ref}).join("-");
-                
+            return frame.func.name + ":" + frame.func.inferredName +
+                ":" + frame.func.scriptId + ":" +
+                (frame.received && frame.received.ref || "") +
+                frame.arguments.map(function(a) {
+                    return a.value.ref
+                }).join("-");
+
             //return (frame.func.name || frame.func.inferredName || (frame.line + frame.position));
         }
-    
+
         function formatType(value) {
             switch (value.type) {
                 case "undefined":
                 case "null":
                     return value.type;
-                
+
                 case "error":
                     return value.value || "[Error]";
-                    
+
                 case "regexp":
                     return value.text;
-    
+
                 case "boolean":
                 case "number":
                     return value.value + "";
-                    
+
                 case "string":
                     return JSON.stringify(value.value);
-    
+
                 case "object":
                     // text: "#<Student>"
-                    var name = value.className || (value.text 
-                        ? value.text.replace(/#<(.*)>/, "$1") 
-                        : "Object");
+                    var name = value.className || (value.text ?
+                        value.text.replace(/#<(.*)>/, "$1") :
+                        "Object");
                     return "[" + name + "]";
-    
+
                 case "function":
                     return "function " + value.inferredName + "()";
-    
+
                 default:
                     return value.type;
             }
         }
-        
+
         function isTruthy(variable) {
             if ("undefined|null".indexOf(variable.type) > -1)
                 return false;
@@ -340,12 +348,12 @@ define(function(require, exports, module) {
                 return false;
             return true;
         }
-        
+
         function frameToString(frame) {
             var str = [];
             var args = frame.arguments;
             var argsStr = [];
-    
+
             str.push(frame.func.name || frame.func.inferredName || "anonymous", "(");
             for (var i = 0, l = args.length; i < l; i++) {
                 var arg = args[i];
@@ -356,14 +364,14 @@ define(function(require, exports, module) {
             str.push(argsStr.join(", "), ")");
             return str.join("");
         }
-        
+
         function getPathFromScriptId(scriptId) {
             for (var i = 0; i < sources.length; i++) {
                 if (sources[i].id == scriptId)
                     return sources[i].path;
             }
         }
-        
+
         function getScriptIdFromPath(path) {
             for (var i = 0; i < sources.length; i++) {
                 if (sources[i].path == path)
@@ -377,7 +385,7 @@ define(function(require, exports, module) {
             scriptName = strip(scriptName);
             return scriptName;
         }
-        
+
         function createFrame(options, script) {
             var frame = new Frame({
                 index: options.index,
@@ -389,37 +397,37 @@ define(function(require, exports, module) {
                 path: getLocalScriptPath(script),
                 sourceId: options.func.scriptId
             });
-            
+
             var vars = [];
-            
+
             // Arguments
             options.arguments.forEach(function(arg) {
                 vars.push(createVariable(arg, null, "arguments"));
             });
-            
+
             // Local variables
             options.locals.forEach(function(local) {
                 if (local.name !== ".arguments")
                     vars.push(createVariable(local, null, "locals"));
             });
-            
+
             // Adding the local object as this
             vars.push(createVariable({
                 name: "this",
                 value: options.receiver,
                 kind: "this"
             }));
-            
+
             frame.variables = vars;
-            
-             /*
-             0: Global
-             1: Local
-             2: With
-             3: Closure
-             4: Catch >,
-                if (scope.type > 1) {*/
-            
+
+            /*
+            0: Global
+            1: Local
+            2: With
+            3: Closure
+            4: Catch >,
+               if (scope.type > 1) {*/
+
             frame.scopes = options.scopes.filter(function(scope) {
                 return scope.type != 1;
             }).reverse().map(function(scope) {
@@ -429,13 +437,13 @@ define(function(require, exports, module) {
                     frameIndex: frame.index
                 });
             });
-            
+
             return frame;
         }
-        
+
         function createVariable(options, name, scope, variable) {
             var value = options.value || options;
-            
+
             if (variable) {
                 variable.value = formatType(options);
                 variable.type = options.type;
@@ -446,42 +454,42 @@ define(function(require, exports, module) {
                     scope: scope,
                     value: formatType(value),
                     type: value.type,
-                    ref: typeof value.ref == "number" 
-                        ? value.ref 
-                        : value.handle,
-                    children: options.children === false 
-                        ? false : (hasChildren[value.type] ? true : false)
+                    ref: typeof value.ref == "number" ?
+                        value.ref :
+                        value.handle,
+                    children: options.children === false ?
+                        false : (hasChildren[value.type] ? true : false)
                 });
             }
-            
+
             if (value.prototypeObject)
                 variable.prototype = new Variable({
                     tagName: "prototype",
-                    name: "prototype", 
+                    name: "prototype",
                     type: "object",
                     ref: value.prototypeObject.ref
                 });
             if (value.protoObject)
-                variable.proto = new Variable({ 
+                variable.proto = new Variable({
                     tagName: "proto",
-                    name: "proto", 
+                    name: "proto",
                     type: "object",
                     ref: value.protoObject.ref
                 });
             if (value.constructorFunction)
-                variable.constructorFunction = new Variable({ 
-                    tagName: "constructor", 
-                    name: "constructor", 
+                variable.constructorFunction = new Variable({
+                    tagName: "constructor",
+                    name: "constructor",
                     type: "function",
                     ref: value.constructorFunction.ref
                 });
             return variable;
         }
-        
+
         function updateVariable(variable, body) {
             return createVariable(body, null, null, variable);
         }
-        
+
         function createSource(options) {
             var path = getLocalScriptPath(options);
             return new Source({
@@ -494,7 +502,7 @@ define(function(require, exports, module) {
                 customSyntax: "javascript"
             });
         }
-        
+
         function createBreakpoint(options, serverOnly) {
             return new Breakpoint({
                 id: options.number,
@@ -507,22 +515,25 @@ define(function(require, exports, module) {
                 serverOnly: serverOnly || false
             });
         }
-        
+
         /***** Event Handler *****/
-    
+
         function onChangeRunning(e, isResumed) {
             if (!v8dbg) {
                 state = null;
-            } else {
+            }
+            else {
                 state = v8dbg.isRunning() || isResumed ? "running" : "stopped";
             }
-    
-            emit("stateChange", {state: state});
-    
+
+            emit("stateChange", {
+                state: state
+            });
+
             if (state != "stopped")
                 onChangeFrame(null);
         }
-        
+
         function createFrameFromBreak(data) {
             // Create a frame from the even information
             return new Frame({
@@ -537,124 +548,128 @@ define(function(require, exports, module) {
                 istop: true
             });
         }
-    
+
         function onBreak(e) {
             if (!attached) {
-                if (attached === 0) 
+                if (attached === 0)
                     attached = true;
                 return;
             }
-            
+
             // @todo update breakpoint text?
-            
+
             var frame = createFrameFromBreak(e.data);
             onChangeFrame(frame);
             emit("break", {
                 frame: frame
             });
         }
-    
+
         function onException(e) {
             var frame = createFrameFromBreak(e.data);
-            
+
             var options = e.data.exception;
             options.text.match(/^(\w+):(.*)$/);
             var name = RegExp.$1 || options.className;
             var value = RegExp.$2 || options.text;
-            
+
             options.name = name;
-            options.value = { 
-                value: value, 
-                type: "error", 
+            options.value = {
+                value: value,
+                type: "error",
                 handle: options.handle
             };
             options.children = true;
-            
+
             var variable = createVariable(options);
             variable.error = true;
-            
+
             lookup(options.properties, false, function(err, properties) {
                 variable.properties = properties;
-                
+
                 emit("exception", {
-                    frame: frame, 
+                    frame: frame,
                     exception: variable
                 });
             });
         }
-    
+
         function onAfterCompile(e) {
             var queue = breakpointQueue;
             breakpointQueue = [];
             queue.forEach(function(i) {
                 setBreakpoint(i[0]);
             });
-            
-            emit("sourcesCompile", {source: createSource(e.data.script)});
+
+            emit("sourcesCompile", {
+                source: createSource(e.data.script)
+            });
         }
-    
+
         function onChangeFrame(frame, silent) {
             activeFrame = frame;
             if (!silent)
-                emit("frameActivate", { frame: frame });
+                emit("frameActivate", {
+                    frame: frame
+                });
         }
-    
+
         /***** Methods *****/
-        
-        function getProxySource(process){
+
+        function getProxySource(process) {
             return debug.proxySource
                 .replace(/\/\/.*/g, "")
                 .replace(/[\n\r]/g, "")
                 .replace(/\{PORT\}/, (process.runner[0] || process.runner).debugport);
         }
-        
+
         function attach(s, reconnect, callback) {
             if (v8ds)
                 v8ds.detach();
-            
+
             socket = s;
-            
+
             socket.on("back", function(err) {
                 sync(emit("getBreakpoints"), true, callback);
             }, plugin);
             socket.on("error", function(err) {
                 emit("error", err);
             }, plugin);
-            
+
             v8ds = new V8DebuggerService(socket);
             v8ds.attach(0, function(err, msg) {
                 if (err) return callback(err);
 
                 v8dbg = new V8Debugger(0, v8ds);
-                
+
                 // register event listeners
                 v8dbg.addEventListener("changeRunning", onChangeRunning);
                 v8dbg.addEventListener("break", onBreak);
                 v8dbg.addEventListener("exception", onException);
                 v8dbg.addEventListener("afterCompile", onAfterCompile);
-                
+
                 onChangeFrame(null);
-                
+
                 if (msg && msg.type == "connect")
                     reconnect = false;
                 // This fixes reconnecting. I dont understand why, but without
                 // this timeout during reconnect the getSources() call never
                 // returns
-                setTimeout(function(){
+                setTimeout(function() {
                     sync(emit("getBreakpoints"), reconnect, callback);
                 });
             });
         }
-    
+
         function detach() {
             if (!v8ds)
                 return;
-            
+
             v8ds.detach();
-            
+
             onChangeFrame(null);
             onChangeRunning();
-            
+
             if (v8dbg) {
                 // on detach remove all event listeners
                 v8dbg.removeEventListener("changeRunning", onChangeRunning);
@@ -662,15 +677,15 @@ define(function(require, exports, module) {
                 v8dbg.removeEventListener("exception", onException);
                 v8dbg.removeEventListener("afterCompile", onAfterCompile);
             }
-            
+
             socket = null;
             v8ds = null;
             v8dbg = null;
             attached = false;
-            
+
             emit("detach");
         }
-        
+
         function getSources(callback) {
             v8dbg.scripts(4, null, false, function(scripts) {
                 sources = [];
@@ -681,16 +696,18 @@ define(function(require, exports, module) {
                     sources.push(createSource(script));
                 }
                 callback(null, sources);
-                
-                emit("sources", {sources: sources})
+
+                emit("sources", {
+                    sources: sources
+                })
             });
         }
-        
+
         function getSource(source, callback) {
             v8dbg.scripts(4, [source.id], true, function(scripts) {
                 if (!scripts.length)
                     return callback(new Error("File not found : " + source.path));
-                    
+
                 var source = scripts[0].source
                     .replace(RE_NODE_PREFIX, "")
                     .replace(RE_NODE_POSTFIX, "");
@@ -698,7 +715,7 @@ define(function(require, exports, module) {
                 callback(null, source);
             });
         }
-        
+
         function getFrames(callback, silent) {
             v8dbg.backtrace(0, 1000, null, true, function(body, refs) {
                 function ref(id) {
@@ -709,7 +726,7 @@ define(function(require, exports, module) {
                     }
                     return {};
                 }
-    
+
                 var frames = [];
                 if (body && body.totalFrames > 0) {
                     body && body.frames.map(function(frame) {
@@ -717,112 +734,120 @@ define(function(require, exports, module) {
                         if (script.name && !/^native /.test(script.name))
                             frames.push(createFrame(frame, script));
                     });
-        
+
                     var topFrame = frames[0];
                     if (topFrame)
                         topFrame.istop = true;
                 }
-                
-                emit("getFrames", { frames: frames });
+
+                emit("getFrames", {
+                    frames: frames
+                });
                 callback(null, frames);
             });
         }
-        
+
         function getScope(frame, scope, callback) {
             v8dbg.scope(scope.index, frame.index, true, function(body, refs, error) {
                 if (error)
                     return callback(error);
-                
+
                 var variables = body.object.properties.map(function(prop) {
                     return createVariable(prop);
                 });
-                
+
                 scope.variables = variables;
-                
+
                 callback(null, variables, scope, frame);
             });
         }
-        
+
         function getProperties(variable, callback) {
             v8dbg.lookup([variable.ref], false, function(body, refs, err) {
                 if (err) return callback(err);
-                
+
                 var data = body[variable.ref];
                 data && updateVariable(variable, data);
-                
+
                 var props = data.properties || [];
-                
+
                 if (props.length > 5000) {
                     props = [createVariable({
                         name: "Too many properties",
-                        value: { type: "error", value: "Found more than 5000 properties" },
+                        value: {
+                            type: "error",
+                            value: "Found more than 5000 properties"
+                        },
                         children: false
                     })];
-                    
+
                     variable.properties = props;
                     callback(null, props, variable);
                     return;
                 }
-                
+
                 lookup(props, false, function(err, properties) {
                     variable.properties = properties;
                     callback(err, properties, variable);
                 });
             });
         }
-        
+
         function stepInto(callback) {
             v8dbg.continueScript("in", null, callback);
         }
-        
+
         function stepOver(callback) {
             v8dbg.continueScript("next", null, callback);
         }
-        
+
         function stepOut(callback) {
             v8dbg.continueScript("out", null, callback);
         }
-    
+
         function resume(callback) {
             v8dbg.continueScript(null, null, callback);
         }
-    
+
         function suspend(callback) {
-            v8dbg.suspend(function(){
+            v8dbg.suspend(function() {
                 emit("suspend");
                 callback && callback();
             });
         }
-    
+
         function lookup(props, includeSource, callback) {
             // can happen for numbers. E.g when debugger stops on throw 1
             if (!props || !props.length)
                 return callback(null, []);
-            v8dbg.lookup(props.map(function(p){ return p.ref }), 
-              includeSource, function(body) {
-                if (!body)
-                    return callback(new Error("No body received"));
-                  
-                var properties = props.map(function(prop) { 
-                    prop.value = body[prop.ref];
-                    return createVariable(prop);
+            v8dbg.lookup(props.map(function(p) {
+                    return p.ref
+                }),
+                includeSource,
+                function(body) {
+                    if (!body)
+                        return callback(new Error("No body received"));
+
+                    var properties = props.map(function(prop) {
+                        prop.value = body[prop.ref];
+                        return createVariable(prop);
+                    });
+
+                    callback(null, properties);
                 });
-                
-                callback(null, properties);
-            });
         }
-        
+
         function setScriptSource(script, newSource, previewOnly, callback) {
             newSource = NODE_PREFIX + newSource + NODE_POSTFIX;
-            
+
             v8dbg.changelive(script.id, newSource, previewOnly, function(e) {
                 var data = e;
-                
-                function cb(){
+
+                function cb() {
                     emit("setScriptSource", data);
                     callback(null, data);
                 }
-                
+
                 if (!e)
                     callback(new Error("Debugger could not update source of saved file."));
                 else if (e.stepin_recommended)
@@ -843,7 +868,7 @@ define(function(require, exports, module) {
                     cb();
             });
         };
-        
+
         function restartFrame(frame, callback) {
             var frameIndex = frame && typeof frame == "object" ? frame.index : frame;
             v8dbg.restartframe(frameIndex, function(body) {
@@ -855,112 +880,118 @@ define(function(require, exports, module) {
                 }
             });
         }
-        
+
         function evaluate(expression, frame, global, disableBreak, callback) {
             var frameIndex = frame && typeof frame == "object" ? frame.index : frame;
-            
-            v8dbg.evaluate(expression, frameIndex, global, 
-              disableBreak, function(body, refs, error) {
-                var name = expression.trim();
-                if (error) {
-                    var err = new Error(error.message);
-                    err.name = name;
-                    err.stack = error.stack;
-                    return callback(err);
-                }
-                
-                var variable = createVariable({
-                    name: name,
-                    value: body
-                });
-                
-                if (variable.children) {
-                    lookup(body.properties, false, function(err, properties) {
-                        variable.properties = properties;
-                        callback(null, variable);
+
+            v8dbg.evaluate(expression, frameIndex, global,
+                disableBreak,
+                function(body, refs, error) {
+                    var name = expression.trim();
+                    if (error) {
+                        var err = new Error(error.message);
+                        err.name = name;
+                        err.stack = error.stack;
+                        return callback(err);
+                    }
+
+                    var variable = createVariable({
+                        name: name,
+                        value: body
                     });
-                }
-                else {
-                    callback(null, variable);
-                }
-            });
+
+                    if (variable.children) {
+                        lookup(body.properties, false, function(err, properties) {
+                            variable.properties = properties;
+                            callback(null, variable);
+                        });
+                    }
+                    else {
+                        callback(null, variable);
+                    }
+                });
         }
-        
+
         function setBreakpoint(bp, callback) {
             var sm = bp.sourcemap || {};
             var path = sm.source || bp.path;
             var line = sm.line || bp.line;
             var column = sm.column || bp.column;
-            
+
             if (!path) {
                 // TODO find out why this happens
                 callback && callback(new Error("Ignoring breakpoint with invalid path."));
                 return false;
             }
-            
+
             path = applyPathMap(path, "toExternal");
-            
+
             if (path[0] == "/")
                 path = stripPrefix + path;
             else if (path[0] == "~")
                 path = c9.home + path.substr(1);
-            
+
             path = c9.toExternalPath(path);
 
-            v8dbg.setbreakpoint("script", path, line, column, bp.enabled, 
-                bp.condition, bp.ignoreCount, function(info) {
+            v8dbg.setbreakpoint("script", path, line, column, bp.enabled,
+                bp.condition, bp.ignoreCount,
+                function(info) {
                     if (!info)
                         return callback && callback(new Error());
-                    
+
                     bp.id = info.breakpoint;
                     if (info.actual_locations) {
                         bp.actual = info.actual_locations[0];
-                        emit("breakpointUpdate", {breakpoint: bp});
+                        emit("breakpointUpdate", {
+                            breakpoint: bp
+                        });
                     }
                     callback && callback(null, bp, info);
                 });
-            
+
             return true;
         }
-        
+
         function changeBreakpoint(bp, callback) {
             if (breakpointQueue.some(function(i) {
-                return i[0] === bp;
-            })) return;
-            
-            v8dbg.changebreakpoint(bp.id, bp.enabled, 
-                bp.condition, bp.ignoreCount, function(info) {
+                    return i[0] === bp;
+                })) return;
+
+            v8dbg.changebreakpoint(bp.id, bp.enabled,
+                bp.condition, bp.ignoreCount,
+                function(info) {
                     callback && callback(null, bp, info);
                 });
         }
-        
+
         function clearBreakpoint(bp, callback) {
             if (breakpointQueue.some(function(i, index) {
-                if (i[0] === bp) {
-                    breakpointQueue.splice(index, 1);
-                    return true;
-                }
-            })) return;
-            
+                    if (i[0] === bp) {
+                        breakpointQueue.splice(index, 1);
+                        return true;
+                    }
+                })) return;
+
             v8dbg.clearbreakpoint(bp.id, callback)
         }
-        
+
         function listBreakpoints(callback) {
             v8dbg.listbreakpoints(function(data) {
                 if (!data) return callback(new Error("Not Connected"));
-                
+
                 breakOnExceptions = data.breakOnExceptions;
                 breakOnUncaughtExceptions = data.breakOnUncaughtExceptions;
-                
+
                 callback(null, data.breakpoints.map(function(bp) {
                     return createBreakpoint(bp);
                 }));
             });
         }
-        
+
         function setVariable(variable, parents, value, frame, callback) {
             // Get variable name
-            var names = [], scopeNumber, frameIndex = frame.index;
+            var names = [],
+                scopeNumber, frameIndex = frame.index;
             parents.reverse().forEach(function(p) {
                 // Assuming scopes are accessible
                 if (p.tagName == "variable")
@@ -969,23 +1000,23 @@ define(function(require, exports, module) {
                     scopeNumber = p.index;
             });
             names.push(variable.name);
-            
+
             function handler(err, body) {
                 if (err)
                     return callback(err);
-                
+
                 variable.value = formatType(body);
                 variable.type = body.type;
                 variable.ref = body.handle;
                 variable.properties = body.properties || [];
                 variable.children = (body.properties || "").length ? true : false;
-                    
-//              @todo - and make this consistent with getProperties
-//                if (body.constructorFunction)
-//                    value.contructor = body.constructorFunction.ref;
-//                if (body.prototypeObject)
-//                    value.prototype = body.prototypeObject.ref;
-                
+
+                //              @todo - and make this consistent with getProperties
+                //                if (body.constructorFunction)
+                //                    value.contructor = body.constructorFunction.ref;
+                //                if (body.prototypeObject)
+                //                    value.prototype = body.prototypeObject.ref;
+
                 if (variable.children) {
                     lookup(body.properties, false, function(err, properties) {
                         variable.properties = properties;
@@ -996,7 +1027,7 @@ define(function(require, exports, module) {
                     callback(null, variable);
                 }
             }
-            
+
             // If it's a local variable set it directly
             if (parents.length == (typeof scopeNumber == "number" ? 1 : 0))
                 setLocalVariable(variable, value, scopeNumber || 0, frameIndex, handler);
@@ -1004,7 +1035,7 @@ define(function(require, exports, module) {
             else
                 setAnyVariable(variable, parents[0], value, handler);
         }
-        
+
         function setLocalVariable(variable, value, scopeNumber, frameIndex, callback) {
             v8dbg.simpleevaluate(value, null, true, [], function(body, refs, error) {
                 if (error) {
@@ -1013,31 +1044,31 @@ define(function(require, exports, module) {
                     err.stack = error.stack;
                     return callback(err);
                 }
-                
-                v8dbg.setvariablevalue(variable.name, body, scopeNumber, frameIndex, 
-                  function(body, refs, error) {
-                    // lookup([variable.ref], false, function(err, properties) {
-                    //     variable.properties = properties;
-                    //     callback(null, variable);
-                    // });
-                    
-                    if (error) {
-                        var err = new Error(error.message);
-                        err.name = error.name;
-                        err.stack = error.stack;
-                        return callback(err);
-                    }
-                    
-                    callback(null, body.newValue);
-                });
+
+                v8dbg.setvariablevalue(variable.name, body, scopeNumber, frameIndex,
+                    function(body, refs, error) {
+                        // lookup([variable.ref], false, function(err, properties) {
+                        //     variable.properties = properties;
+                        //     callback(null, variable);
+                        // });
+
+                        if (error) {
+                            var err = new Error(error.message);
+                            err.name = error.name;
+                            err.stack = error.stack;
+                            return callback(err);
+                        }
+
+                        callback(null, body.newValue);
+                    });
             })
         }
-        
+
         function setAnyVariable(variable, parent, value, callback) {
-            var expression = "(function(a, b) { this[a] = b; })"
-                + ".call(__cloud9_debugger_self__, \""
-                + variable.name + "\", " + value + ")";
-            
+            var expression = "(function(a, b) { this[a] = b; })" +
+                ".call(__cloud9_debugger_self__, \"" +
+                variable.name + "\", " + value + ")";
+
             v8dbg.simpleevaluate(expression, null, true, [{
                 name: "__cloud9_debugger_self__",
                 handle: parent.ref
@@ -1048,15 +1079,15 @@ define(function(require, exports, module) {
                     err.stack = error.stack;
                     return callback(err);
                 }
-                
+
                 callback(null, body);
             })
         }
-        
+
         function serializeVariable(variable, callback) {
-            var expr = "(function(fn){ return fn.toString() })"
-                + "(__cloud9_debugger_self__)";
-                
+            var expr = "(function(fn){ return fn.toString() })" +
+                "(__cloud9_debugger_self__)";
+
             v8dbg.simpleevaluate(expr, null, true, [{
                 name: "__cloud9_debugger_self__",
                 handle: variable.ref
@@ -1064,14 +1095,14 @@ define(function(require, exports, module) {
                 callback(body.value);
             });
         }
-        
+
         function setBreakBehavior(type, enabled, callback) {
             breakOnExceptions = enabled ? type == "all" : false;
             breakOnUncaughtExceptions = enabled ? type == "uncaught" : false;
-            
+
             v8dbg.setexceptionbreak(enabled ? type : "all", enabled, callback);
         }
-        
+
         function setPathMap(v) {
             if (!Array.isArray(v)) v = null;
             pathMap = v && v.map(function(x) {
@@ -1089,7 +1120,7 @@ define(function(require, exports, module) {
                 return map;
             }).filter(Boolean);
         }
-        
+
         function applyPathMap(path, dir) {
             if (!pathMap)
                 return path;
@@ -1099,15 +1130,15 @@ define(function(require, exports, module) {
             });
             return path;
         }
-    
+
         /***** Lifecycle *****/
-        
-        plugin.on("load", function(){
+
+        plugin.on("load", function() {
             debug.registerDebugger(TYPE, plugin);
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             debug.unregisterDebugger(TYPE, plugin);
-            
+
             breakOnExceptions = null;
             breakOnUncaughtExceptions = null;
             breakpointQueue = null;
@@ -1120,9 +1151,9 @@ define(function(require, exports, module) {
             socket = null;
             pathMap = null;
         });
-        
+
         /***** Register and define API *****/
-        
+
         /**
          * Debugger implementation for Cloud9. When you are implementing a 
          * custom debugger, implement this API. If you are looking for the
@@ -1174,26 +1205,34 @@ define(function(require, exports, module) {
              * </table>
              * @readonly
              */
-            get state(){ return state; },
+            get state() {
+                return state;
+            },
             /**
              * 
              */
-            get attached(){ return attached; },
+            get attached() {
+                return attached;
+            },
             /**
              * Whether the debugger will break when it encounters any exception.
              * This includes exceptions in try/catch blocks.
              * @property {Boolean} breakOnExceptions
              * @readonly
              */
-            get breakOnExceptions(){ return breakOnExceptions; },
+            get breakOnExceptions() {
+                return breakOnExceptions;
+            },
             /**
              * Whether the debugger will break when it encounters an uncaught 
              * exception.
              * @property {Boolean} breakOnUncaughtExceptions
              * @readonly
              */
-            get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
-            
+            get breakOnUncaughtExceptions() {
+                return breakOnUncaughtExceptions;
+            },
+
             _events: [
                 /**
                  * Fires when the debugger is attached.
@@ -1293,19 +1332,19 @@ define(function(require, exports, module) {
                  **/
                 "sourcesCompile"
             ],
-            
+
             /**
              * Attaches the debugger to the started process.
              * @param {Object}                runner        A runner as specified by {@link run#run}.
              * @param {debugger.Breakpoint[]} breakpoints   The set of breakpoints that should be set from the start
              */
             attach: attach,
-            
+
             /**
              * Detaches the debugger from the started process.
              */
             detach: detach,
-            
+
             /**
              * Loads all the active sources from the process
              * 
@@ -1315,7 +1354,7 @@ define(function(require, exports, module) {
              * @fires sources
              */
             getSources: getSources,
-            
+
             /**
              * Retrieves the contents of a source file
              * @param {debugger.Source} source             The source to retrieve the contents for
@@ -1324,7 +1363,7 @@ define(function(require, exports, module) {
              * @param {String}          callback.contents  The contents of the source file
              */
             getSource: getSource,
-            
+
             /**
              * Retrieves the current stack of frames (aka "the call stack") 
              * from the debugger.
@@ -1334,7 +1373,7 @@ define(function(require, exports, module) {
              * @fires getFrames
              */
             getFrames: getFrames,
-            
+
             /**
              * Retrieves the variables from a scope.
              * @param {debugger.Frame}      frame               The frame to which the scope is related.
@@ -1346,7 +1385,7 @@ define(function(require, exports, module) {
              * @param {debugger.Frame}      callback.frame      The frame related to the scope.
              */
             getScope: getScope,
-            
+
             /**
              * Retrieves and sets the properties of a variable.
              * @param {debugger.Variable}   variable             The variable for which to retrieve the properties.
@@ -1356,32 +1395,32 @@ define(function(require, exports, module) {
              * @param {debugger.Variable}   callback.variable    The variable to which the properties belong.
              */
             getProperties: getProperties,
-            
+
             /**
              * Step into the next statement.
              */
             stepInto: stepInto,
-            
+
             /**
              * Step over the next statement.
              */
             stepOver: stepOver,
-            
+
             /**
              * Step out of the current statement.
              */
             stepOut: stepOut,
-            
+
             /**
              * Continues execution of a process after it has hit a breakpoint.
              */
             resume: resume,
-            
+
             /**
              * Pauses the execution of a process at the next statement.
              */
             suspend: suspend,
-            
+
             /**
              * Evaluates an expression in a frame or in global space.
              * @param {String}            expression         The expression.
@@ -1393,7 +1432,7 @@ define(function(require, exports, module) {
              * @param {debugger.Variable} callback.variable  The result of the expression.
              */
             evaluate: evaluate,
-            
+
             /**
              * Change a live running source to the latest code state
              * @param {debugger.Source} source        The source file to update.
@@ -1403,7 +1442,7 @@ define(function(require, exports, module) {
              * @param {Error}           callback.err  The error if any error occured.
              */
             setScriptSource: setScriptSource,
-            
+
             /**
              * Adds a breakpoint to a line in a source file.
              * @param {debugger.Breakpoint} breakpoint           The breakpoint to add.
@@ -1413,7 +1452,7 @@ define(function(require, exports, module) {
              * @param {Object}              callback.data        Additional debugger specific information.
              */
             setBreakpoint: setBreakpoint,
-            
+
             /**
              * Updates properties of a breakpoint
              * @param {debugger.Breakpoint} breakpoint  The breakpoint to update.
@@ -1422,7 +1461,7 @@ define(function(require, exports, module) {
              * @param {debugger.Breakpoint} callback.breakpoint  The updated breakpoint
              */
             changeBreakpoint: changeBreakpoint,
-            
+
             /**
              * Removes a breakpoint from a line in a source file.
              * @param {debugger.Breakpoint} breakpoint  The breakpoint to remove.
@@ -1431,7 +1470,7 @@ define(function(require, exports, module) {
              * @param {debugger.Breakpoint} callback.breakpoint  The removed breakpoint
              */
             clearBreakpoint: clearBreakpoint,
-            
+
             /**
              * Retrieves a list of all the breakpoints that are set in the 
              * debugger.
@@ -1440,7 +1479,7 @@ define(function(require, exports, module) {
              * @param {debugger.Breakpoint[]} callback.breakpoints  A list of breakpoints
              */
             listBreakpoints: listBreakpoints,
-            
+
             /**
              * Sets the value of a variable.
              * @param {debugger.Variable}   variable       The variable to set the value of.
@@ -1453,7 +1492,7 @@ define(function(require, exports, module) {
              * @param {Object}              callback.data  Additional debugger specific information.
              */
             setVariable: setVariable,
-            
+
             /**
              * Starts a frame (usually a function) from the first expression in that frame.
              * @param {debugger.Frame}   frame          The frame to restart.
@@ -1461,7 +1500,7 @@ define(function(require, exports, module) {
              * @param {Function}         callback       Called when the frame is restarted.
              */
             restartFrame: restartFrame,
-            
+
             /**
              * Retrieve the value of a variable
              * @param {debugger.Variable} variable       The variable for which to retrieve the value
@@ -1470,7 +1509,7 @@ define(function(require, exports, module) {
              * @param {String}            callback.value The value of the variable
              */
             serializeVariable: serializeVariable,
-            
+
             /**
              * Defines how the debugger deals with exceptions.
              * @param {"all"/"uncaught"} type          Specifies which errors to break on.
@@ -1479,21 +1518,21 @@ define(function(require, exports, module) {
              * @param {Error}            callback.err  The error if any error occured.
              */
             setBreakBehavior: setBreakBehavior,
-            
+
             /**
              * Returns the source of the proxy
              */
             getProxySource: getProxySource,
-            
+
             /**
              * @ignore
              * Experimental method for meteor runner
              */
             setPathMap: setPathMap
         });
-        
+
         register(null, {
-            v8debugger : plugin
+            v8debugger: plugin
         });
     }
 });

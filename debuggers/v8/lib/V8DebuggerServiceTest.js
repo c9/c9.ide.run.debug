@@ -40,7 +40,7 @@ module.exports = {
     setUp: function(next) {
         this.$msgStream = new MsgStreamMock();
         this.$service = new V8DebuggerService(this.$msgStream);
-        next()
+        next();
     },
 
     sendMessage: function(destination, content) {
@@ -72,7 +72,6 @@ module.exports = {
     },
 
     "test: debugger command" : function() {
-        var called = false;
         var data = '{"seq":1,"type":"request","command":"version"}';
         this.$service.debuggerCommand(2, data);
         this.sendMessage(2, '{"command":"debugger_command","result":0,"data":{"seq":1,"request_seq":1,"type":"response","command":"version","success":true,"body":{"V8Version":"2.1.10.5"},"refs":[],"running":true}}');
@@ -86,6 +85,5 @@ module.exports = {
 };
 
 if (typeof module !== "undefined" && !module.parent)
-    require("asyncjs").test.testcase(module.exports).exec()
-
+    require("asyncjs").test.testcase(module.exports).exec();
 });
