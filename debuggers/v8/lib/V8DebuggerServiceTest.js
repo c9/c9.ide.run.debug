@@ -40,7 +40,7 @@ module.exports = {
     setUp: function(next) {
         this.$msgStream = new MsgStreamMock();
         this.$service = new V8DebuggerService(this.$msgStream);
-        next()
+        next();
     },
 
     sendMessage: function(destination, content) {
@@ -86,6 +86,6 @@ module.exports = {
 };
 
 if (typeof module !== "undefined" && !module.parent)
-    require("asyncjs").test.testcase(module.exports).exec()
+    require("asyncjs").test.testcase(module.exports).exec();
 
 });
