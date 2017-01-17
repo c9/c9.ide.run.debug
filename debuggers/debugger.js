@@ -79,7 +79,7 @@ define(function(require, exports, module) {
                 name: "resume",
                 group: "Run & Debug",
                 hint: "resume the current paused process",
-                bindKey: {mac: "F8", win: "F8"},
+                bindKey: {mac: "F8|Command-\\", win: "F8"},
                 exec: function(){
                     dbg && dbg.resume();
                 }
@@ -97,7 +97,7 @@ define(function(require, exports, module) {
                 name: "stepinto",
                 group: "Run & Debug",
                 hint: "step into the function that is next on the execution stack",
-                bindKey: {mac: "F11", win: "F11"},
+                bindKey: {mac: "F11|Command-;", win: "F11"},
                 exec: function(){
                     dbg && dbg.stepInto();
                 }
@@ -106,7 +106,7 @@ define(function(require, exports, module) {
                 name: "stepover",
                 group: "Run & Debug",
                 hint: "step over the current expression on the execution stack",
-                bindKey: {mac: "F10", win: "F10"},
+                bindKey: {mac: "F10|Command-'", win: "F10"},
                 exec: function(){
                     dbg && dbg.stepOver();
                 }
@@ -115,7 +115,7 @@ define(function(require, exports, module) {
                 name: "stepout",
                 group: "Run & Debug",
                 hint: "step out of the current function scope",
-                bindKey: {mac: "Shift-F11", win: "Shift-F11"},
+                bindKey: {mac: "Shift-F11|Command-Shift-'", win: "Shift-F11"},
                 exec: function(){
                     dbg && dbg.stepOut();
                 }
