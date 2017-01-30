@@ -44,7 +44,7 @@ define(function(require, exports, module) {
         if (typeof callback === 'function')
             notifier.on('connect', callback);
 
-        setTimeout(function(){
+        setTimeout(function() {
             // the default listener just disconnects from Chrome, this can be used
             // to simply check the connection
             if (notifier.listeners('connect').length === 0) {
@@ -73,7 +73,7 @@ define(function(require, exports, module) {
             callback = params;
             params = undefined;
         }
-        var message = {'id': id, 'method': method, 'params': params};
+        var message = { 'id': id, 'method': method, 'params': params };
         self.ws.send(JSON.stringify(message));
         // register command response callback
         if (typeof callback === 'function') {
@@ -108,7 +108,7 @@ define(function(require, exports, module) {
     
     function connectToChrome(host, port, chooseTab) {
         var self = this;
-        var options = {'host': host, 'port': port, 'path': '/json'};
+        var options = { 'host': host, 'port': port, 'path': '/json' };
         var request = http.get(options, function (response) {
             var data = '';
             response.on('data', function (chunk) {

@@ -45,7 +45,7 @@ var WSV8DebuggerService = module.exports = function(socket) {
 
         this.$onAttach.push(callback);
         if (this.$state == "initialized") {
-            this.$socket.send(JSON.stringify({command: "DebugAttachNode", runner: "node"}));
+            this.$socket.send(JSON.stringify({ command: "DebugAttachNode", runner: "node" }));
             this.$onMessageHandler = this.$onMessage.bind(this);
             this.$socket.on("message", this.$onMessageHandler);
             this.$state = "connecting";
@@ -69,7 +69,7 @@ var WSV8DebuggerService = module.exports = function(socket) {
             this.$onAttach = [];
         }
         else if (message.type == "node-debug") {
-            this.emit("debugger_command_0", {data: message.body});
+            this.emit("debugger_command_0", { data: message.body });
         }
     };
 

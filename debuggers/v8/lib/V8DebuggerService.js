@@ -52,7 +52,7 @@ var V8DebuggerService = module.exports = function(msgStream) {
         if (tabId)
             event += "_" + tabId;
 
-        self.emit(event, {data: content.data});
+        self.emit(event, { data: content.data });
     });
 };
 

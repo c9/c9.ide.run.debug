@@ -54,7 +54,7 @@ server.listen(port + 1, host, function() {
 });
 
 // Handle errors
-server.on("error", function(){ process.exit(0); });
+server.on("error", function() { process.exit(0); });
 
 function tryConnect(retries, callback) {
     if (!retries)
@@ -116,7 +116,7 @@ tryConnect(MAX_RETRIES, function(err, connection) {
 });
 
 
-var I=0;
+var I = 0;
 function start() {
     if (++I == 2)
         send("ß");

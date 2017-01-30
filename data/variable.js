@@ -77,7 +77,7 @@ define(function(require, exports, module) {
         }
         
         return false;
-    }
+    };
         
     Variable.prototype.equals = function(variable) {
         if (!variable) return false;

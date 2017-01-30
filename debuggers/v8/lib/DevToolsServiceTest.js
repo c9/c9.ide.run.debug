@@ -46,7 +46,7 @@ module.exports = {
         this.$msgStream.$send(null, content);
     },
 
-    "test: ping" : function() {
+    "test: ping": function() {
         var called = false;
         this.$service.ping(function() {
             called = true;
@@ -56,7 +56,7 @@ module.exports = {
         assert.ok(called);
     },
 
-    "test: getVersion" : function() {
+    "test: getVersion": function() {
         var called = false;
         this.$service.getVersion(function(version) {
             called = true;
@@ -67,7 +67,7 @@ module.exports = {
         assert.ok(called);
     },
 
-    "test: listTabs" : function() {
+    "test: listTabs": function() {
         var called = false;
         this.$service.listTabs(function(tabs) {
             called = true;
@@ -83,6 +83,6 @@ module.exports = {
 };
 
 if (typeof module !== "undefined" && !module.parent)
-    require("asyncjs").test.testcase(module.exports).exec()
+    require("asyncjs").test.testcase(module.exports).exec();
 
 });

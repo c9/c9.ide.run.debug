@@ -105,7 +105,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
                     htmlNode: document.body
                 });
                 
-                breakpoints.draw({container: bar});
+                breakpoints.draw({ container: bar });
                 list = breakpoints.getElement("list");
                 
                 bar.$ext.style.background = "rgba(220, 220, 220, 0.93)";
@@ -186,7 +186,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
                     expect(e.row).to.equal(1);
                     expect(e.column).to.equal(1);
                     done();
-                })
+                });
                 
                 breakpoints.gotoBreakpoint("/file.txt", 1, 1);
             });
@@ -211,7 +211,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             
             it('should find all breakpoints in a file', function(done) {
                 var result = breakpoints.findBreakpoints("/file.txt");
-                expect(result).length(2)
+                expect(result).length(2);
                 expect(result[1].path).to.equal("/file.txt");
                 
                 done();
@@ -219,13 +219,13 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             
             it('should get all breakpoints', function(done) {
                 var result = breakpoints.getAllBreakpoints("/file.txt");
-                expect(result).length(3)
+                expect(result).length(3);
                 expect(result[2].path).to.equal("/file2.txt");
                 
                 done();
             });
             
-            describe("unload()", function(){
+            describe("unload()", function() {
                 it('should destroy all ui elements when it is unloaded', function(done) {
                     breakpoints.unload();
                     expect(list.$amlDestroyed).to.equal(true);

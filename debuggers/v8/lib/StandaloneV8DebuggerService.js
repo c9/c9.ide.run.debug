@@ -54,7 +54,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         });
         this.$socket.connect();
         
-        this.$socket.on("end", function(){
+        this.$socket.on("end", function() {
             self.$pending.forEach(function(item) {
                 self.emit("debugger_command_0", { data: {
                     request_seq: item[1].seq,
@@ -64,7 +64,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
             });
         });
             
-        this.$socket.on("beforeBack", function(){
+        this.$socket.on("beforeBack", function() {
             if (self.$pending.length) {
                 self.$pending.forEach(function(item) {
                     self.debuggerCommand(item[0], item[1], true);
@@ -88,7 +88,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
         var contentText = response.getContent();
         if (!contentText) {
             if (response.$headers.Type == "connect" || !this.$connected) {
-                this.emit("connect", {type: response.$headers.Type});
+                this.emit("connect", { type: response.$headers.Type });
                 this.$connected = true;
             }
             return;
@@ -113,7 +113,7 @@ var StandaloneV8DebuggerService = module.exports = function(socket) {
             }
         }
         
-        this.emit("debugger_command_0", {data: content});
+        this.emit("debugger_command_0", { data: content });
     };
 
     this.debuggerCommand = function(tabId, v8Command, noPending) {

@@ -30,15 +30,15 @@ require([
         });
         describe('with custom parameters', function () {
             it('should succeed with "connect" callback passed as an argument', function (done) {
-                Chrome({'host': 'localhost', 'port': 9222}, function(chrome) {
+                Chrome({ 'host': 'localhost', 'port': 9222 }, function(chrome) {
                     chrome.close();
                     done();
                 }).on('error', function () {
                     assert(false);
-                });;
+                });
             });
             it('should succeed with "connect" callback registered later', function (done) {
-                Chrome({'host': 'localhost', 'port': 9222}).on('connect', function(chrome) {
+                Chrome({ 'host': 'localhost', 'port': 9222 }).on('connect', function(chrome) {
                     chrome.close();
                     done();
                 }).on('error', function () {
@@ -48,7 +48,7 @@ require([
         });
         describe('with custom (wrong) parameters', function () {
             it('should fail (wrong port)', function (done) {
-                Chrome({'port': 1}, function () {
+                Chrome({ 'port': 1 }, function () {
                     assert(false);
                 }).on('error', function (error) {
                     assert(error instanceof Error);
@@ -56,7 +56,7 @@ require([
                 });
             });
             it('should fail (wrong host)', function (done) {
-                Chrome({'host': '255.255.255.255'}, function () {
+                Chrome({ 'host': '255.255.255.255' }, function () {
                     assert(false);
                 }).on('error', function (error) {
                     assert(error instanceof Error);
@@ -64,7 +64,7 @@ require([
                 });
             });
             it('should fail (wrong tab)', function (done) {
-                Chrome({'chooseTab': function () { return -1; }}, function () {
+                Chrome({ 'chooseTab': function () { return -1; } }, function () {
                     assert(false);
                 }).on('error', function (error) {
                     assert(error instanceof Error);
@@ -161,7 +161,7 @@ require([
         describe('checking the result and specifyng parameters', function () {
             it('should succeed', function (done) {
                 Chrome(function(chrome) {
-                    chrome.send('Network.setCacheDisabled', {'cacheDisabled': true}, function (error, response) {
+                    chrome.send('Network.setCacheDisabled', { 'cacheDisabled': true }, function (error, response) {
                         chrome.close();
                         assert(!error);
                         done();
@@ -195,7 +195,7 @@ require([
         describe('checking the result and specifyng parameters (shorthand)', function () {
             it('should succeed', function (done) {
                 Chrome(function(chrome) {
-                    chrome.Network.setCacheDisabled({'cacheDisabled': true}, function (error, response) {
+                    chrome.Network.setCacheDisabled({ 'cacheDisabled': true }, function (error, response) {
                         chrome.close();
                         assert(!error);
                         done();

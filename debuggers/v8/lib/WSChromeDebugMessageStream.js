@@ -60,7 +60,7 @@ var WSChromeDebugMessageStream = module.exports = function(socket) {
             }
             else {
                 var response = new DevToolsMessage.fromString(e.body);
-                self._dispatchEvent("message", {data: response});
+                self._dispatchEvent("message", { data: response });
             }
         });
     };

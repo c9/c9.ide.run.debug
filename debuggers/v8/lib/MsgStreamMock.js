@@ -41,7 +41,7 @@ var MsgStreamMock = module.exports = function() {
 
     this.$send = function(headers, content) {
         var msg = new DevToolsMessage(headers, content);
-        this.emit("message", {data: msg});
+        this.emit("message", { data: msg });
     };
 };
 

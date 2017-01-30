@@ -84,7 +84,7 @@ var ChromeDebugMessageStream = module.exports = function(socket) {
         setTimeout(function() {
             //console.log("> Received from Chrome:\n", messageText);
             var response = new DevToolsMessage.fromString(messageText);
-            self.emit("message", {data: response});
+            self.emit("message", { data: response });
         }, 0);
     };
 

@@ -18,7 +18,7 @@ define(function(require, module, exports) {
             var index = options.index || 100;
             var amlFrame;
             
-            plugin.on("load", function(){
+            plugin.on("load", function() {
                 // Draw panel when debugger is drawn
                 debug.once("drawPanels", draw, plugin);
             });
@@ -38,12 +38,12 @@ define(function(require, module, exports) {
             
             /***** Methods *****/
             
-            function show(){
+            function show() {
                 draw();
                 amlFrame.show();
             }
             
-            function hide(){
+            function hide() {
                 amlFrame.hide();
             }
             
@@ -108,7 +108,7 @@ define(function(require, module, exports) {
                  * @private
                  * @readonly
                  */
-                get aml(){ return amlFrame; },
+                get aml() { return amlFrame; },
                 
                 _events: [
                     /**
@@ -139,6 +139,6 @@ define(function(require, module, exports) {
         
         register(null, {
             DebugPanel: DebugPanel
-        })
+        });
     }
 });

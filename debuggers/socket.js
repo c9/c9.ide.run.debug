@@ -31,22 +31,22 @@ define(function(require, exports, module) {
                 proxy.port = port + 1;
             
             var proxySource = proxy.source;
-            socket.__defineGetter__("state", function(){ return state; });
+            socket.__defineGetter__("state", function() { return state; });
             
-            c9.on("connect", function(){
+            c9.on("connect", function() {
                 if (away) {
                     reconnect = true;
                     connect();
                 }
             }, socket);
-            c9.on("away", function(){
+            c9.on("away", function() {
                 if (!away) {
                     away = true;
                     state = "away";
                     emit("away");
                 }
             }, socket);
-            c9.on("back", function(){
+            c9.on("back", function() {
                 if (away) {
                     connectToPort(function(err) {
                         if (err) {
@@ -62,7 +62,7 @@ define(function(require, exports, module) {
                     });
                 }
             }, socket);
-            c9.on("disconnect", function(){
+            c9.on("disconnect", function() {
                 if (!away) {
                     away = true;
                     state = "away";
@@ -70,7 +70,7 @@ define(function(require, exports, module) {
                 }
             }, socket);
             
-            socket.on("unload", function(){
+            socket.on("unload", function() {
                 close();
             });
             
@@ -130,11 +130,11 @@ define(function(require, exports, module) {
                                 console.log("[netproxy] unexpected data", data);
                         });
 
-                        process.on("exit", function(code){
+                        process.on("exit", function(code) {
                             connected = DISCONNECTED;
                             state = "disconnected";
                             // debugger will call connect again if process is still running 
-                            emit("error", {code: code});
+                            emit("error", { code: code });
                         });
                         
                         // Make sure the process keeps running
@@ -209,7 +209,7 @@ define(function(require, exports, module) {
                 stream && stream.write(msg, "utf8");
             }
             
-            function enable(){
+            function enable() {
                 away = false;
                 state = "connected";
                 emit("back");
@@ -232,12 +232,12 @@ define(function(require, exports, module) {
                 /**
                  * 
                  */
-                get connected(){ return connected; },
+                get connected() { return connected; },
                 
                 // Backward compatibility
                 addEventListener: socket.on,
                 removeListener: socket.off,
-                setMinReceiveSize: function(){},
+                setMinReceiveSize: function() {},
                 
                 /**
                  * 

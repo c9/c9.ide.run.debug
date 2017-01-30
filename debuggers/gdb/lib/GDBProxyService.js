@@ -31,7 +31,7 @@ var GDBProxyService = module.exports = function(socket, haltHandler) {
             callback();
         });
 
-        this.$socket.on("end", function(){
+        this.$socket.on("end", function() {
             for (var id in self.$callbacks) {
                 if (!self.$callbacks.hasOwnProperty(id) || !self.$callbacks[id])
                     continue;
@@ -43,7 +43,7 @@ var GDBProxyService = module.exports = function(socket, haltHandler) {
             self.$connected = true;
         });
 
-        this.$socket.on("beforeBack", function(){
+        this.$socket.on("beforeBack", function() {
             if (self.$commands.length) {
                 self.$commands.forEach(function (cmd) {
                     self.$send(cmd);

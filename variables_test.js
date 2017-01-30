@@ -67,7 +67,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
             if (node.$ext) return node.$ext;
 
             return apf.xmldb.getHtmlNode(node, datagrid);
-        })
+        });
         
         describe('breakpoints', function() {
             before(function(done) {
@@ -98,7 +98,7 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root"],
                 done();
             });
             
-           describe("unload()", function(){
+           describe("unload()", function() {
                it('should destroy all ui elements when it is unloaded', function(done) {
                    variables.unload();
                    expect(datagrid.$amlDestroyed).to.equal(true);

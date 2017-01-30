@@ -42,7 +42,7 @@ define(function(require, exports, module) {
         var dbg, model, datagrid, errorWatch;
         
         var loaded = false;
-        function load(){
+        function load() {
             if (loaded) return false;
             loaded = true;
             
@@ -174,10 +174,10 @@ define(function(require, exports, module) {
         
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
-            datagrid.setTheme({cssClass: "blackdg"});
+            datagrid.setTheme({ cssClass: "blackdg" });
             datagrid.setOption("maxLines", 200);
             
-            layout.on("eachTheme", function(e){
+            layout.on("eachTheme", function(e) {
                 var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
                 // model.rowHeightInner = height - 1;
                 model.rowHeight = height;
@@ -293,7 +293,7 @@ define(function(require, exports, module) {
             datagrid.on("beforeRename", function(e) {
                 // Don't allow setting the value of new variables
                 if (e.column.caption == "Value" 
-                  && (e.node.ref + "").substr(0,3) == "new") {
+                  && (e.node.ref + "").substr(0, 3) == "new") {
                     datagrid.edit.startRename(null, 0);
                     return e.preventDefault();
                 }
@@ -312,7 +312,7 @@ define(function(require, exports, module) {
             
             datagrid.on("rename", function(e) {
                 justEdited = true;
-                setTimeout(function(){ justEdited = false }, 500);
+                setTimeout(function() { justEdited = false; }, 500);
             });
             
             datagrid.textInput.getElement().addEventListener("keydown", function(e) {
@@ -414,7 +414,7 @@ define(function(require, exports, module) {
             });
         }
         
-        function updateAll(){
+        function updateAll() {
             watches.forEach(function(variable) {
                 setWatch(variable, undefined, true, null, variable, []);
             });
@@ -458,17 +458,17 @@ define(function(require, exports, module) {
         
         /***** Lifecycle *****/
         
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             load();
             plugin.once("draw", draw);
         });
-        plugin.on("enable", function(){
+        plugin.on("enable", function() {
             
         });
-        plugin.on("disable", function(){
+        plugin.on("disable", function() {
             
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             loaded = false;
             drawn = false;
         });
@@ -491,7 +491,7 @@ define(function(require, exports, module) {
              * A list of variables that are watched.
              * @param {debugger.Variable[]} watches  The list of variables watched.
              */
-            get watches(){ return watches; },
+            get watches() { return watches; },
             
             /**
              * Re-evaluate all watch expressions.

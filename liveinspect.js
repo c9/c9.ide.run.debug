@@ -115,7 +115,7 @@ define(function(require, exports, module) {
             });
             
             // when hovering over the inspector window we should ignore all further listeners
-            windowHtml.addEventListener("mousemove", function(){
+            windowHtml.addEventListener("mousemove", function() {
                 if (activeTimeout) {
                     clearTimeout(activeTimeout);
                     activeTimeout = null;
@@ -179,7 +179,7 @@ define(function(require, exports, module) {
                         return hide();
                 }
 
-                worker.emit("inspect", { data: { row: pos.row, column: pos.column } });
+                worker.emit("inspect", { data: { row: pos.row, column: pos.column }});
 
                 // hide it, and set left / top so it gets positioned right when showing again
                 if (!marker || !marker.range.contains(pos.row, pos.column))
@@ -264,7 +264,7 @@ define(function(require, exports, module) {
             
             // show spinner while evaluating
             windowHtml.firstChild.innerHTML = '<div class="session_btn running" style="margin:0">'
-                +'<strong style="left:18px"></strong></div>';
+                + '<strong style="left:18px"></strong></div>';
             done();
             
             if (!marker)
@@ -282,9 +282,9 @@ define(function(require, exports, module) {
                     windowHtml.firstChild.innerHTML = "";
                     windowHtml.firstChild.appendChild(state.el);
                 },
-                session: { repl: { onWidgetChanged : function(){
+                session: { repl: { onWidgetChanged: function() {
                     
-                }}},
+                } }},
                 setError: function(err) {
                     windowHtml.firstChild.innerHTML = '<span class="error"><span>';
                     windowHtml.querySelector(".error").textContent =
@@ -294,12 +294,12 @@ define(function(require, exports, module) {
                     if (!show)
                         done();
                 }
-            }, function(){
+            }, function() {
                 if (marker && evalId === evalCounter)
                     done();
             });
             
-            function done(){
+            function done() {
                 // store it
                 currentExpression = expr;
     

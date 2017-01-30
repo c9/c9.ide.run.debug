@@ -53,7 +53,7 @@ require([
                         }
                     }
                 ]
-            } } }
+            }}}
         },
         {
             packagePath: "plugins/c9.ide.ui/ui",
@@ -91,8 +91,8 @@ require([
             testing: true,
             base: baseProc,
             runners: {
-                "node" : {
-                    "caption" : "Node.js (current)",
+                "node": {
+                    "caption": "Node.js (current)",
                     "cmd": ["node", "${debug?--debug-brk=15454}", "$file"],
                     "debugger": "v8",
                     "debugport": 15454,
@@ -101,8 +101,8 @@ require([
                     "info": "Your code is running at \\033[01;34m$hostname\\033[00m.\n"
                         + "\\033[01;31mImportant:\\033[00m use \\033[01;32mprocess.env.PORT\\033[00m as the port and \\033[01;32mprocess.env.IP\\033[00m as the host in your scripts!\n"
                 },
-                "pythoni" : {
-                    "caption" : "Python in interactive mode",
+                "pythoni": {
+                    "caption": "Python in interactive mode",
                     "cmd": ["python", "-i"],
                     "selector": "source.python",
                     "info": "Hit \\033[01;34mCtrl-D\\033[00m to exit.\n"
@@ -170,7 +170,7 @@ require([
                 done();
             });
             
-            describe("debug()", function(){
+            describe("debug()", function() {
                 this.timeout(10000);
                 
                 /*it('should debug a file with a runner', function(done) {
@@ -319,7 +319,7 @@ require([
                 it('should debug a file that has a source map with a runner and set a breakpoint', function(done) {
                     var count = 0;
                     
-                    function c2(){ count++; }
+                    function c2() { count++; }
                     debug.on("attach", c2);
                     debug.on("detach", c2);
                     debug.on("break", c2);
@@ -345,7 +345,7 @@ require([
                                         expect(parseInt(pid, 10)).to.ok.to.gt(0);
                                         //expect(run.running).to.equal(run.STARTED);
                                         
-                                        debug.on("break", function(){
+                                        debug.on("break", function() {
         
         //                                    debug.resume();
         //                                    
@@ -396,7 +396,7 @@ require([
                                             c2();
                                         });
                                         
-                                        run.on("stopped", function c1(){
+                                        run.on("stopped", function c1() {
                                             //expect(run.running).is.equal(run.STOPPED);
                                             
                                             debug.off("attach", c2);
@@ -405,9 +405,9 @@ require([
                                             
                                             // @todo test if markers are removed
                                             
-                                           fs.rmfile("/test.js", function(){
-                                               fs.rmfile("/test.js.map", function(){
-                                                   fs.rmfile("/test.ts", function(){
+                                           fs.rmfile("/test.js", function() {
+                                               fs.rmfile("/test.js.map", function() {
+                                                   fs.rmfile("/test.ts", function() {
                                                        countEvents(count, 3, done);
                                                    });
                                                });

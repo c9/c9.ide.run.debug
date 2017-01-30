@@ -57,29 +57,29 @@ define(function(require, exports, module) {
         var v8dbg, v8ds, state, activeFrame, sources, socket;
         
         var scopeTypes = {
-            "0" : "global",
-            "1" : "local",
-            "2" : "with",
-            "3" : "function",
-            "4" : "catch"
-        }
+            "0": "global",
+            "1": "local",
+            "2": "with",
+            "3": "function",
+            "4": "catch"
+        };
         
         var hasChildren = {
-            "regexp"   : 32,
-            "error"    : 16,
-            "object"   : 8,
-            "function" : 4
-        }
+            "regexp": 32,
+            "error": 16,
+            "object": 8,
+            "function": 4
+        };
         
         var loaded = false;
-        function load(){
+        function load() {
             if (loaded) return false;
             loaded = true;
             
             debug.registerDebugger(TYPE, plugin);
         }
         
-        function unload(){
+        function unload() {
             debug.unregisterDebugger(TYPE, plugin);
             loaded = false;
         }
@@ -141,7 +141,7 @@ define(function(require, exports, module) {
                 
                 // We should always have at least 1 breakpoint
                 if (!reconnect && !remoteBreakpoints.length && ++retries < 10) {
-                    setTimeout(function(){
+                    setTimeout(function() {
                         if (v8dbg) listBreakpoints(handleBps);
                     }, 100);
                     return;
@@ -161,7 +161,7 @@ define(function(require, exports, module) {
                 });
                 
                 var i = 0;
-                function next(){
+                function next() {
                     var bp = list[i++];
                     if (!bp)
                         done();
@@ -173,7 +173,7 @@ define(function(require, exports, module) {
                 
                 next();
                 
-                function done(){
+                function done() {
                     notfound.forEach(function(bp) { 
                         bp.serverOnly = true;
                         list.push(bp);
@@ -188,7 +188,7 @@ define(function(require, exports, module) {
                     
                     callback(null, list);
                 }
-            })
+            });
         }
         
         /**
@@ -227,7 +227,7 @@ define(function(require, exports, module) {
             }
             else wait();
             
-            function wait(){
+            function wait() {
                 // Check if there is a real breakpoint here, so we don't resume
                 function checkEval(err, variable) {
                     if (err || isTruthy(variable)) {
@@ -295,7 +295,7 @@ define(function(require, exports, module) {
             return frame.func.name + ":" + frame.func.inferredName 
                 + ":" + frame.func.scriptId + ":" 
                 + (frame.received && frame.received.ref || "")
-                + frame.arguments.map(function(a){return a.value.ref}).join("-");
+                + frame.arguments.map(function(a) {return a.value.ref;}).join("-");
                 
             //return (frame.func.name || frame.func.inferredName || (frame.line + frame.position));
         }
@@ -363,7 +363,7 @@ define(function(require, exports, module) {
                 if (sources[i].id == scriptId)
                     return sources[i].path;
             }
-        };
+        }
         
         function getScriptIdFromPath(path) {
             for (var i = 0; i < sources.length; i++) {
@@ -375,7 +375,7 @@ define(function(require, exports, module) {
         function getLocalScriptPath(script) {
             var scriptName = script.name || ("-anonymous-" + script.id);
             if (stripPrefix == "/") {
-                if (c9.platform == "win32" &&  scriptName[1] == ":")
+                if (c9.platform == "win32" && scriptName[1] == ":")
                     scriptName = "/" + scriptName;
             } else if (scriptName.substring(0, stripPrefix.length) == stripPrefix)
                 scriptName = scriptName.substr(stripPrefix.length);
@@ -523,7 +523,7 @@ define(function(require, exports, module) {
                 state = v8dbg.isRunning() || isResumed ? "running" : "stopped";
             }
     
-            emit("stateChange", {state: state});
+            emit("stateChange", { state: state });
     
             if (state != "stopped")
                 onChangeFrame(null);
@@ -596,7 +596,7 @@ define(function(require, exports, module) {
                 setBreakpoint(i[0]);
             });
             
-            emit("sourcesCompile", {source: createSource(e.data.script)});
+            emit("sourcesCompile", { source: createSource(e.data.script) });
         }
     
         function onChangeFrame(frame, silent) {
@@ -637,7 +637,7 @@ define(function(require, exports, module) {
                 // This fixes reconnecting. I dont understand why, but without
                 // this timeout during reconnect the getSources() call never
                 // returns
-                setTimeout(function(){
+                setTimeout(function() {
                     sync(emit("getBreakpoints"), reconnect, callback);
                 });
             });
@@ -681,7 +681,7 @@ define(function(require, exports, module) {
                 }
                 callback(null, sources);
                 
-                emit("sources", {sources: sources})
+                emit("sources", { sources: sources });
             });
         }
         
@@ -787,7 +787,7 @@ define(function(require, exports, module) {
         }
     
         function suspend(callback) {
-            v8dbg.suspend(function(){
+            v8dbg.suspend(function() {
                 emit("suspend");
                 callback && callback();
             });
@@ -797,7 +797,7 @@ define(function(require, exports, module) {
             // can happen for numbers. E.g when debugger stops on throw 1
             if (!props || !props.length)
                 return callback(null, []);
-            v8dbg.lookup(props.map(function(p){ return p.ref }), 
+            v8dbg.lookup(props.map(function(p) { return p.ref; }), 
               includeSource, function(body) {
                 if (!body)
                     return callback(new Error("No body received"));
@@ -817,7 +817,7 @@ define(function(require, exports, module) {
             v8dbg.changelive(script.id, newSource, previewOnly, function(e) {
                 var data = e;
                 
-                function cb(){
+                function cb() {
                     emit("setScriptSource", data);
                     callback(null, data);
                 }
@@ -841,7 +841,7 @@ define(function(require, exports, module) {
                 else
                     cb();
             });
-        };
+        }
         
         function restartFrame(frame, callback) {
             var frameIndex = frame && typeof frame == "object" ? frame.index : frame;
@@ -907,7 +907,7 @@ define(function(require, exports, module) {
                     bp.id = info.breakpoint;
                     if (info.actual_locations) {
                         bp.actual = info.actual_locations[0];
-                        emit("breakpointUpdate", {breakpoint: bp});
+                        emit("breakpointUpdate", { breakpoint: bp });
                     }
                     callback && callback(null, bp, info);
                 });
@@ -934,7 +934,7 @@ define(function(require, exports, module) {
                 }
             })) return;
             
-            v8dbg.clearbreakpoint(bp.id, callback)
+            v8dbg.clearbreakpoint(bp.id, callback);
         }
         
         function listBreakpoints(callback) {
@@ -1022,7 +1022,7 @@ define(function(require, exports, module) {
                     
                     callback(null, body.newValue);
                 });
-            })
+            });
         }
         
         function setAnyVariable(variable, parent, value, callback) {
@@ -1042,7 +1042,7 @@ define(function(require, exports, module) {
                 }
                 
                 callback(null, body);
-            })
+            });
         }
         
         function serializeVariable(variable, callback) {
@@ -1066,16 +1066,16 @@ define(function(require, exports, module) {
     
         /***** Lifecycle *****/
         
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             load();
         });
-        plugin.on("enable", function(){
+        plugin.on("enable", function() {
             
         });
-        plugin.on("disable", function(){
+        plugin.on("disable", function() {
             
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             unload();
         });
         
@@ -1112,25 +1112,25 @@ define(function(require, exports, module) {
              * </table>
              * @readonly
              */
-            get state(){ return state; },
+            get state() { return state; },
             /**
              * 
              */
-            get attached(){ return attached; },
+            get attached() { return attached; },
             /**
              * Whether the debugger will break when it encounters any exception.
              * This includes exceptions in try/catch blocks.
              * @property {Boolean} breakOnExceptions
              * @readonly
              */
-            get breakOnExceptions(){ return breakOnExceptions; },
+            get breakOnExceptions() { return breakOnExceptions; },
             /**
              * Whether the debugger will break when it encounters an uncaught 
              * exception.
              * @property {Boolean} breakOnUncaughtExceptions
              * @readonly
              */
-            get breakOnUncaughtExceptions(){ return breakOnUncaughtExceptions; },
+            get breakOnUncaughtExceptions() { return breakOnUncaughtExceptions; },
             
             _events: [
                 /**
@@ -1370,7 +1370,7 @@ define(function(require, exports, module) {
         });
         
         register(null, {
-            chromedebugger : plugin
+            chromedebugger: plugin
         });
     }
 });

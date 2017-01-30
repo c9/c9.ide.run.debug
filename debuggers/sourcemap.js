@@ -61,23 +61,23 @@ define(function(require, exports, module) {
         var fetching = 0;
         
         var loaded = false;
-        function load(){
+        function load() {
             if (loaded) return false;
             loaded = true;
             
             // - Add "Sourcemaps: Enable/Disable/Auto" in settings 
             //     - (Default:auto) detects based on filename
             prefs.add({
-               "Project" : {
-                   "Run & Debug" : {
-                       "Source Maps" : {
+               "Project": {
+                   "Run & Debug": {
+                       "Source Maps": {
                            type: "dropdown",
                            path: "project/debug/@sourcemaps",
                            width: 300,
                            items: [
-                               { caption : "Auto (check based on extension - .ts and .coffee)", value : "auto" },
-                               { caption : "Enabled (always check)", value : "true" },
-                               { caption : "Disabled (never check)", value : "false" }
+                               { caption: "Auto (check based on extension - .ts and .coffee)", value: "auto" },
+                               { caption: "Enabled (always check)", value: "true" },
+                               { caption: "Disabled (never check)", value: "false" }
                            ],
                            position: 50
                         }
@@ -85,7 +85,7 @@ define(function(require, exports, module) {
                }
             }, plugin);
             
-            settings.on("read", function(){
+            settings.on("read", function() {
                 settings.setDefaults("project/debug", [["sourcemaps", "auto"]]);
             }, plugin);
             
@@ -150,7 +150,7 @@ define(function(require, exports, module) {
             debug.on("beforeAttach", function(e) {
                 // Wait until all breakpoints have been checked
                 if (fetching) {
-                    plugin.once("fetchingDone", function(){
+                    plugin.once("fetchingDone", function() {
                         debug.debug(e.runner, e.callback);
                     });
                     return false;
@@ -178,7 +178,7 @@ define(function(require, exports, module) {
                     
                     if (map) {
                         if (!jump)
-                            jump = {row: 0, column: 0};
+                            jump = { row: 0, column: 0 };
                         
                         var mapping = map.originalPositionFor({
                             line: jump.row + 1,
@@ -219,7 +219,7 @@ define(function(require, exports, module) {
                             
                             done();
                             e.callback(null, tab);
-                        })
+                        });
                     });
                 });
                 
@@ -374,22 +374,22 @@ define(function(require, exports, module) {
         }
         
         //@todo
-        function updateFrames(){
+        function updateFrames() {
             
         }
         
         /***** Lifecycle *****/
         
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             load();
         });
-        plugin.on("enable", function(){
+        plugin.on("enable", function() {
             
         });
-        plugin.on("disable", function(){
+        plugin.on("disable", function() {
             
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             loaded = false;
         });
         

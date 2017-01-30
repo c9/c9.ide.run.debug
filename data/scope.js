@@ -64,7 +64,7 @@ define(function(require, exports, module) {
         }
         
         return false;
-    }
+    };
         
     Scope.prototype.equals = function(scope) {
         if (!scope) return false;

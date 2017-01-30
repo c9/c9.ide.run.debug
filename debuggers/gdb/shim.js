@@ -47,7 +47,7 @@ function parseArg(str, allowNonInt) {
 
 // attempt to parse shim arguments
 var i = 0;
-for(i = 2; i < argc && BIN === ""; i++) {
+for (i = 2; i < argc && BIN === ""; i++) {
     var arg = process.argv[i];
     var a = arg.split("=");    
     var key = a[0];
@@ -184,7 +184,7 @@ function Client(c) {
                 }
 
                 data_length = parseInt(data.substr(15, idx), 10);
-                data = data.slice(idx+4);
+                data = data.slice(idx + 4);
             }
 
             // haven't gotten the full JSON object yet
@@ -240,7 +240,7 @@ function Executable() {
      * @param {Function} callback  Called when gdbserver is listening
      */
     this.spawn = function(callback) {
-        var args = ["--once", ":"+GDB_PORT, BIN].concat(ARGS);
+        var args = ["--once", ":" + GDB_PORT, BIN].concat(ARGS);
         this.proc = spawn("gdbserver", args, {
             cwd: process.cwd(),
             // stdio: "inherit",
@@ -250,7 +250,7 @@ function Executable() {
         var errqueue = [];
         this.proc.on("exit", function(code, signal) {
             log("GDB server terminated with code " + code + " and signal " + signal);
-            client && client.send({ err:"killed", code:code, signal:signal });
+            client && client.send({ err: "killed", code: code, signal: signal });
             exit = { proc: "GDB server", code: code, signal: signal };
 
             // only quit if stderr has finished buffering data
@@ -396,14 +396,14 @@ function GDB() {
 
         this.proc.on("exit", function(code, signal) {
             log("GDB terminated with code " + code + " and signal " + signal);
-            client && client.send({ err:"killed", code:code, signal:signal });
+            client && client.send({ err: "killed", code: code, signal: signal });
             exit = { proc: "GDB", code: code, signal: signal };
             process.exit(code);
         });
     };
 
     this.connect = function(callback) {
-        this.issue("-target-select", "remote localhost:"+GDB_PORT, function(reply) {
+        this.issue("-target-select", "remote localhost:" + GDB_PORT, function(reply) {
             if (reply.state != "connected")
                 return callback(reply, "Cannot connect to gdbserver");
 
@@ -485,7 +485,7 @@ function GDB() {
             /* If we encounter ',"' inside an array delete until '":' or '"=' */
             if (in_array
                 && (args[i] == "," || args[i] == "[")
-                && args[i+1] == "\"") {
+                && args[i + 1] == "\"") {
                 var k = i;
 
                 /* Walk the label */
@@ -498,8 +498,8 @@ function GDB() {
 
                 /* if we end on a label end (= or :) then clear it up */
                 if (args[k] == ":" || args[k] == "=") {
-                    for (var l = (i+1); l <= k; l++) {
-                        args = args.setCharAt(l,' ');
+                    for (var l = (i + 1); l <= k; l++) {
+                        args = args.setCharAt(l, ' ');
                     }
                 }
             }
@@ -524,7 +524,7 @@ function GDB() {
         try {
             ret = JSON.parse(args);
         }
-        catch(e) {
+        catch (e) {
             /* We lamentably failed =( */
             log("JSON ERROR: " + e + "\nJSON: " + args);
         }
@@ -593,7 +593,7 @@ function GDB() {
             this.state.err = "signal";
             this.state.signal = signal;
         }
-        this.state.thread = (thread)? thread : null;
+        this.state.thread = (thread) ? thread : null;
 
         if (signal && signal.name === "SIGSEGV")
             // dump the varobj cache in segfault so var-updates don't crash GDB
@@ -839,7 +839,7 @@ function GDB() {
             // skip the frame if it's already cached
             if (this._cachedFrame(frame, i) !== false) continue;
 
-            var cache = this._cachedFrame(frame, i, { args: [], locals: [] });
+            var cache = this._cachedFrame(frame, i, { args: [], locals: []});
             __iterVars(frame.args, newvars, cache.args);
             __iterVars(frame.locals, newvars, cache.locals);
         }
@@ -1019,7 +1019,7 @@ function GDB() {
                     args.push('"' + command.condition + '"');
                 }
 
-                args.push('"' + command.fullpath + ':' + (command.line+1) + '"');
+                args.push('"' + command.fullpath + ':' + (command.line + 1) + '"');
 
                 this.issue("-break-insert", args.join(" "), function(output) {
                     // record whether we've successfully set any BPs

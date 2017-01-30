@@ -31,7 +31,7 @@ fs.readdirSync(__dirname).forEach(function(filename) {
 
     if (m && !m[2]) {
         var name = m[1];
-        exports.__defineGetter__(name, function(){
+        exports.__defineGetter__(name, function() {
             return require("./" + name);
         });
   }

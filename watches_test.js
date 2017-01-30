@@ -125,8 +125,8 @@ require(["lib/architect/architect", "lib/chai/chai", "/vfs-root", "events"],
             });
 
             it('should add a frame', function(done) {
-                debug.debug({running: true, STARTED: true, meta: {$debugger: true}, runner: {"debugger": "test"}}, function () {});
-                testDebugger.emit("break", { frame: {} });
+                debug.debug({ running: true, STARTED: true, meta: { $debugger: true }, runner: { "debugger": "test" }}, function () {});
+                testDebugger.emit("break", { frame: {}});
                 
                 // TODO actual watches
                 // expect.html(datagrid, "Missing caption").text("/file.txt");

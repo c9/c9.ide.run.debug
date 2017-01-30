@@ -52,11 +52,11 @@ define(function(require, exports, module) {
             btnSuspend, btnPause, btnOutput, btnImmediate, btnSnapshots; // ui elements
         
         var loaded = false;
-        function load(){
+        function load() {
             if (loaded) return false;
             loaded = true;
             
-            settings.on("read", function(){
+            settings.on("read", function() {
                 settings.setDefaults("user/debug", [
                     ["pause", "0"],
                     ["autoshow", "true"]
@@ -79,8 +79,8 @@ define(function(require, exports, module) {
                 name: "resume",
                 group: "Run & Debug",
                 hint: "resume the current paused process",
-                bindKey: {mac: "F8|Command-\\", win: "F8"},
-                exec: function(){
+                bindKey: { mac: "F8|Command-\\", win: "F8" },
+                exec: function() {
                     dbg && dbg.resume();
                 }
             }, plugin);
@@ -89,7 +89,7 @@ define(function(require, exports, module) {
                 group: "Run & Debug",
                 hint: "suspend the current running process",
                 // bindKey : {mac: "F8", win: "F8"},
-                exec: function(){
+                exec: function() {
                     dbg && dbg.suspend();
                 }
             }, plugin);
@@ -97,8 +97,8 @@ define(function(require, exports, module) {
                 name: "stepinto",
                 group: "Run & Debug",
                 hint: "step into the function that is next on the execution stack",
-                bindKey: {mac: "F11|Command-;", win: "F11"},
-                exec: function(){
+                bindKey: { mac: "F11|Command-;", win: "F11" },
+                exec: function() {
                     dbg && dbg.stepInto();
                 }
             }, plugin);
@@ -106,8 +106,8 @@ define(function(require, exports, module) {
                 name: "stepover",
                 group: "Run & Debug",
                 hint: "step over the current expression on the execution stack",
-                bindKey: {mac: "F10|Command-'", win: "F10"},
-                exec: function(){
+                bindKey: { mac: "F10|Command-'", win: "F10" },
+                exec: function() {
                     dbg && dbg.stepOver();
                 }
             }, plugin);
@@ -115,8 +115,8 @@ define(function(require, exports, module) {
                 name: "stepout",
                 group: "Run & Debug",
                 hint: "step out of the current function scope",
-                bindKey: {mac: "Shift-F11|Command-Shift-'", win: "Shift-F11"},
-                exec: function(){
+                bindKey: { mac: "Shift-F11|Command-Shift-'", win: "Shift-F11" },
+                exec: function() {
                     dbg && dbg.stepOut();
                 }
             }, plugin);
@@ -134,8 +134,8 @@ define(function(require, exports, module) {
             ui.insertSkin({
                 name: "debugger",
                 data: require("text!./skin.xml"),
-                "media-path" : options.staticPrefix + "/images/",
-                "icon-path"  : options.staticPrefix + "/icons/"
+                "media-path": options.staticPrefix + "/images/",
+                "icon-path": options.staticPrefix + "/icons/"
             }, plugin);
             
             // Create UI elements
@@ -166,17 +166,17 @@ define(function(require, exports, module) {
             
             togglePause(pauseOnBreaks);
             
-            btnPause.on("click", function(){
+            btnPause.on("click", function() {
                 togglePause();
             });
             
-            btnOutput.on("click", function(){
+            btnOutput.on("click", function() {
                 commands.exec("showoutput", null, {
                     id: name
                 });
             });
             
-            btnImmediate.on("click", function(){
+            btnImmediate.on("click", function() {
                 commands.exec("showimmediate", null, {
                     evaluator: "debugger"
                 });
@@ -207,11 +207,11 @@ define(function(require, exports, module) {
             btnSuspend.$ext.style.display = notConnected 
                 || state != "stopped" ? "inline-block" : "none";
                 
-            btnSuspend.setAttribute("disabled",  notConnected);
+            btnSuspend.setAttribute("disabled", notConnected);
             btnStepOver.setAttribute("disabled", notConnected || state != "stopped");
             btnStepInto.setAttribute("disabled", notConnected || state != "stopped");
-            btnStepOut.setAttribute("disabled",  notConnected || state != "stopped");
-            btnOutput.setAttribute("disabled",  notConnected);
+            btnStepOut.setAttribute("disabled", notConnected || state != "stopped");
+            btnOutput.setAttribute("disabled", notConnected);
             
             if (!dbg) return;
             // can't use visible true since it changes display to block
@@ -236,7 +236,7 @@ define(function(require, exports, module) {
         
         function updateSnapshotList(snapshots) {
             if (!btnSnapshots) {
-                btnSnapshots = ui.dropdown({skin: "black_dropdown", "empty-message": "Waiting for snapshot..."});
+                btnSnapshots = ui.dropdown({ skin: "black_dropdown", "empty-message": "Waiting for snapshot..." });
                 btnResume.parentNode.insertBefore(btnSnapshots, btnResume.parentNode.firstChild);
                 plugin.addElement(btnSnapshots);
                 btnSnapshots.on("afterchange", function(e) {
@@ -257,14 +257,14 @@ define(function(require, exports, module) {
                 while (btnSnapshots.lastChild)
                     btnSnapshots.removeChild(btnSnapshots.lastChild);
                 snapshots.forEach(function(x) {
-                    var item = ui.item({caption: x.caption, value: x});
+                    var item = ui.item({ caption: x.caption, value: x });
                     btnSnapshots.appendChild(item);
                 });
                 btnSnapshots.select(btnSnapshots.firstChild);
             }
         }
         
-        function initializeDebugger(){
+        function initializeDebugger() {
             // State Change
             var stateTimer;
             dbg.on("stateChange", function(e) {
@@ -273,7 +273,7 @@ define(function(require, exports, module) {
                 // Wait for 500ms in case we are step debugging
                 clearTimeout(stateTimer);
                 if (action == "disable")
-                    stateTimer = setTimeout(function(){
+                    stateTimer = setTimeout(function() {
                         updatePanels(action, e.state);
                     }, 500);
                 else {
@@ -314,7 +314,7 @@ define(function(require, exports, module) {
                 });
             });
             
-            dbg.on("getBreakpoints", function(){
+            dbg.on("getBreakpoints", function() {
                 return emit("getBreakpoints");
             });
             
@@ -335,7 +335,7 @@ define(function(require, exports, module) {
             }
             dbg.on("break", startDebugging, plugin);
             dbg.on("exception", startDebugging, plugin);
-            dbg.on("suspend", function(){
+            dbg.on("suspend", function() {
                 dbg.getFrames(function(err, frames) {
                     if (frames.length) {
                         startDebugging({
@@ -469,7 +469,7 @@ define(function(require, exports, module) {
             });
             
             if (!source)
-                source = { id : scriptId };
+                source = { id: scriptId };
             
             var state = {
                 path: path,
@@ -498,7 +498,7 @@ define(function(require, exports, module) {
                 source: source,
                 state: state,
                 generated: options.generated,
-                callback: callback || function(){}
+                callback: callback || function() {}
             }) === false)
                 return;
 
@@ -530,7 +530,7 @@ define(function(require, exports, module) {
             });
         }
         
-        function switchDebugger(runner){
+        function switchDebugger(runner) {
             var debuggerId = runner["debugger"];
             
             // Only update debugger implementation if switching or not yet set
@@ -569,7 +569,7 @@ define(function(require, exports, module) {
             
             options.deferred = true;
             
-            var process = run.run(runner, options, name, function(err, pid){
+            var process = run.run(runner, options, name, function(err, pid) {
                 if (err) return callback(err);
                 
                 if (!process || process.running < process.STARTING)
@@ -578,7 +578,7 @@ define(function(require, exports, module) {
                 var hasListeningDebugger = options.debug && (dbg && dbg.features.listeningDebugger);
                 
                 if (hasListeningDebugger) {
-                    dbg.once("connect", function(){
+                    dbg.once("connect", function() {
                         process.run(callback);
                     }, plugin);
                 }
@@ -622,22 +622,22 @@ define(function(require, exports, module) {
             if (process.running == process.STARTED)
                 running = process.STARTED;
             else {
-                process.on("started", function(){
+                process.on("started", function() {
                     running = run.STARTED;
                 }, plugin);
             }
             
             if (!process.meta.$debugger) {
-                process.on("away", function(){
+                process.on("away", function() {
                     updatePanels("disable", "away");
                 });
                 
-                process.on("back", function(){
+                process.on("back", function() {
                     updatePanels("enable", dbg.state);
                     // debug(process, true, function(){});
                 });
                 
-                process.on("stopped", function(){
+                process.on("stopped", function() {
                     stop();
                 }, plugin);
                 
@@ -667,7 +667,7 @@ define(function(require, exports, module) {
             dbg.attach(socket, reconnect, callback);
         }
         
-        function stop(){
+        function stop() {
             if (!dbg) return;
             
             running = run.STOPPED;
@@ -692,8 +692,8 @@ define(function(require, exports, module) {
                 confirm("Debugger",
                     "The debugger is already connected to another process.",
                     "Would you like to stop the current debugger process?",
-                    function(){ // Confirm
-                        process.stop(function(){
+                    function() { // Confirm
+                        process.stop(function() {
                             callback();
                         });
                     },
@@ -708,19 +708,19 @@ define(function(require, exports, module) {
         
         /***** Lifecycle *****/
         
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             load();
         });
         plugin.on("draw", function(e) {
             draw(e);
         });
-        plugin.on("enable", function(){
+        plugin.on("enable", function() {
             
         });
-        plugin.on("disable", function(){
+        plugin.on("disable", function() {
             
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             loaded = false;
             drawn = false;
             
@@ -824,7 +824,7 @@ define(function(require, exports, module) {
              * frame represents the scope at which the debugger is stopped.
              * @property {debugger.Frame} activeFrame
              */
-            get activeFrame(){ return activeFrame; },
+            get activeFrame() { return activeFrame; },
             set activeFrame(frame) { 
                 activeFrame = frame; 
                 emit("frameActivate", { frame: frame });
@@ -832,13 +832,13 @@ define(function(require, exports, module) {
             /**
              * 
              */
-            get disabledFeatures(){ return disabledFeatures || {}; },
+            get disabledFeatures() { return disabledFeatures || {}; },
             /**
              * The state of the debugger
              * @property {"running"|"stopped"|"disconnected"} sources
              * @readonly
              */
-            get state(){ return state; },
+            get state() { return state; },
             /**
              * A list of sources that are available from the debugger. These
              * can be files that are loaded in the runtime as well as code that
@@ -846,19 +846,19 @@ define(function(require, exports, module) {
              * @property {debugger.Source[]} sources
              * @readonly
              */
-            get sources(){ return sources; },
+            get sources() { return sources; },
             /**
              * Retrieves if the debugger will break on exceptions
              * @property {Boolean} breakOnExceptions
              * @readonly
              */
-            get breakOnExceptions(){ return dbg.breakOnExceptions; },
+            get breakOnExceptions() { return dbg.breakOnExceptions; },
             /**
              * Retrieves whether the debugger will break on uncaught exceptions
              * @property {Boolean} breakOnUncaughtExceptions
              * @readonly
              */
-            get breakOnUncaughtExceptions(){ return dbg.breakOnUncaughtExceptions; },
+            get breakOnUncaughtExceptions() { return dbg.breakOnUncaughtExceptions; },
             
             _events: [
                 /**
@@ -1028,27 +1028,27 @@ define(function(require, exports, module) {
             /**
              * Continues execution of a process after it has hit a breakpoint.
              */
-            resume: function(){ dbg.resume() },
+            resume: function() { dbg.resume(); },
             
             /**
              * Pauses the execution of a process at the next statement.
              */
-            suspend: function(){ dbg.suspend() },
+            suspend: function() { dbg.suspend(); },
             
             /**
              * Step into the next statement.
              */
-            stepInto: function(){ dbg.stepInto() },
+            stepInto: function() { dbg.stepInto(); },
             
             /**
              * Step out of the current statement.
              */
-            stepOut: function(){ dbg.stepOut() },
+            stepOut: function() { dbg.stepOut(); },
             
             /**
              * Step over the next statement.
              */
-            stepOver: function(){ dbg.stepOver() },
+            stepOver: function() { dbg.stepOver(); },
             
             /**
              * Retrieves the contents of a source file from the debugger (not 

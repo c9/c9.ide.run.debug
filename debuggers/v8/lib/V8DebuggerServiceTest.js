@@ -51,7 +51,7 @@ module.exports = {
         this.$msgStream.$send(headers, content);
     },
 
-    "test: attach" : function() {
+    "test: attach": function() {
         var called = false;
         this.$service.attach(2, function() {
             called = true;
@@ -61,7 +61,7 @@ module.exports = {
         assert.ok(called);
     },
 
-    "test: detach" : function() {
+    "test: detach": function() {
         var called = false;
         this.$service.detach(2, function() {
             called = true;
@@ -71,7 +71,7 @@ module.exports = {
         assert.ok(called);
     },
 
-    "test: debugger command" : function() {
+    "test: debugger command": function() {
         var called = false;
         var data = '{"seq":1,"type":"request","command":"version"}';
         this.$service.debuggerCommand(2, data);
@@ -79,7 +79,7 @@ module.exports = {
         assert.equal('{"command":"debugger_command","data":{"seq":1,"type":"request","command":"version"}}', this.$msgStream.requests[0].getContent());
     },
 
-    "test: evaluate javascript" : function() {
+    "test: evaluate javascript": function() {
         this.$service.evaluateJavaScript(2, "javascript:void(0);");
         assert.equal('{"command":"evaluate_javascript","data":"javascript:void(0);"}', this.$msgStream.requests[0].getContent());
     }

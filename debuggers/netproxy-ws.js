@@ -1,5 +1,5 @@
 var net = require("net");
-var WebSocketServer = require('ws').Server
+var WebSocketServer = require('ws').Server;
 var port = parseInt("{PORT}", 10);
 
 var buffer = [];
@@ -49,7 +49,7 @@ server.listen(port + 1, host, function() {
 });
 
 // Handle errors
-server.on("error", function(){ process.exit(0); });
+server.on("error", function() { process.exit(0); });
 
 function tryConnect(retries, callback) {
     if (!retries)
@@ -106,7 +106,7 @@ tryConnect(MAX_RETRIES, function(err, ws) {
 });
 
 
-var I=0;
+var I = 0;
 function start() {
     if (++I == 2)
         send("ß");

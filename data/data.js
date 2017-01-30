@@ -29,7 +29,7 @@ define(function(require, exports, module) {
         
         var _self = this;
         this.$props.concat(this.$sets).concat(this.$single).forEach(function(prop) {
-            _self.__defineGetter__(prop, function(){ 
+            _self.__defineGetter__(prop, function() { 
                 return this.data[prop];
             });
             _self.__defineSetter__(prop, function(v) { 
@@ -38,13 +38,13 @@ define(function(require, exports, module) {
         });
     }
     Data.prototype = {
-        get json(){
+        get json() {
             return this.data;
         },
         set json(v) {
             this.data = v;
         },
-        toString: function(){
+        toString: function() {
             return this.xml;
         }
     };

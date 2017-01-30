@@ -49,11 +49,11 @@ define(function(require, exports, module) {
         var SCOPES = ["Arguments", "Locals"];
 
         var loaded = false;
-        function load(){
+        function load() {
             if (loaded) return false;
             loaded = true;
 
-            settings.on("read", function(){
+            settings.on("read", function() {
                 settings.setDefaults("user/debug", [
                     ["autoshow", "true"]
                 ]);
@@ -126,7 +126,7 @@ define(function(require, exports, module) {
             // get file path from GDB output
             var fullpath = (frame.fullname)
                 ? frame.fullname
-                : ((frame.from) ? frame.from : c9.workspaceDir+"/?");
+                : ((frame.from) ? frame.from : c9.workspaceDir + "/?");
 
             // get file name and relative path from full path
             var file = Path.basename(fullpath);
@@ -212,12 +212,12 @@ define(function(require, exports, module) {
         function setState(_state) {
             if (state === _state) return;
             state = _state;
-            emit("stateChange", {state: state});
+            emit("stateChange", { state: state });
         }
 
         /***** Methods *****/
 
-        function getProxySource(process){
+        function getProxySource(process) {
             var socketpath = Path.join(c9.home, "/.c9/gdbdebugger.socket");
             return {
                 source: null,
@@ -269,7 +269,7 @@ define(function(require, exports, module) {
             if (proxy)
                 proxy.detach();
 
-            emit("frameActivate", {frame: null});
+            emit("frameActivate", { frame: null });
             setState(null);
 
             socket = null;
@@ -363,7 +363,7 @@ define(function(require, exports, module) {
         function getSources(callback) {
             var sources = [new Source()];
             callback(null, sources);
-            emit("sources", {sources: sources});
+            emit("sources", { sources: sources });
         }
 
         /*
@@ -499,7 +499,7 @@ define(function(require, exports, module) {
                     }
                     else {
                         breakpoints[i].id = bp.id;
-                        _setBPs(breakpoints, failed, callback, i+1);
+                        _setBPs(breakpoints, failed, callback, i + 1);
                     }
                 });
             }
@@ -529,7 +529,7 @@ define(function(require, exports, module) {
                     return new Breakpoint({
                         id: bp.number,
                         path: bp.fullname,
-                        line: parseInt(bp.line, 10)-1,
+                        line: parseInt(bp.line, 10) - 1,
                         ignoreCount: (bp.hasOwnProperty("ignore")) ?
                                       bp.ignore : undefined,
                         condition: (bp.hasOwnProperty("cond")) ?
@@ -548,16 +548,16 @@ define(function(require, exports, module) {
 
         /***** Lifecycle *****/
 
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             load();
         });
-        plugin.on("enable", function(){
+        plugin.on("enable", function() {
 
         });
-        plugin.on("disable", function(){
+        plugin.on("disable", function() {
 
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             debug.unregisterDebugger(TYPE, plugin);
 
             state = null;
@@ -623,25 +623,25 @@ define(function(require, exports, module) {
              * </table>
              * @readonly
              */
-            get state(){ return state; },
+            get state() { return state; },
             /**
              *
              */
-            get attached(){ return attached; },
+            get attached() { return attached; },
             /**
              * Whether the debugger will break when it encounters any exception.
              * This includes exceptions in try/catch blocks.
              * @property {Boolean} breakOnExceptions
              * @readonly
              */
-            get breakOnExceptions(){ return false; },
+            get breakOnExceptions() { return false; },
             /**
              * Whether the debugger will break when it encounters an uncaught
              * exception.
              * @property {Boolean} breakOnUncaughtExceptions
              * @readonly
              */
-            get breakOnUncaughtExceptions(){ return false; },
+            get breakOnUncaughtExceptions() { return false; },
 
             _events: [
                 /**

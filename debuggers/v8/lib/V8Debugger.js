@@ -46,11 +46,11 @@ var V8Debugger = module.exports = function(tabId, v8service) {
         var requestSeq = response.request_seq;
         if (pending[requestSeq]) {
             pending[requestSeq](response.body, response.refs || null,
-                !response.success && {message: response.message} || null);
+                !response.success && { message: response.message } || null);
             delete pending[requestSeq];
         }
         else if (response.event) {
-            self.emit(response.event, {data: response.body});
+            self.emit(response.event, { data: response.body });
         }
 
         self.$updateRunning(response);
@@ -80,7 +80,7 @@ var V8Debugger = module.exports = function(tabId, v8service) {
 
         if (running !== this.$running) {
             this.$running = running;
-            this.emit("changeRunning", {data: running});
+            this.emit("changeRunning", { data: running });
         }
     };
 
@@ -168,7 +168,7 @@ var V8Debugger = module.exports = function(tabId, v8service) {
     this.evaluate = function(expression, frame, global, disableBreak, callback) {
         var msg = new V8Message("request");
         msg.command = "evaluate";
-        msg.arguments = { expression : expression };
+        msg.arguments = { expression: expression };
         
         if (typeof frame == "number")
             msg.arguments.frame = frame;
@@ -185,7 +185,7 @@ var V8Debugger = module.exports = function(tabId, v8service) {
     this.simpleevaluate = function(expression, frame, global, additionalContext, callback) {
         var msg = new V8Message("request");
         msg.command = "evaluate";
-        msg.arguments = { expression : expression };
+        msg.arguments = { expression: expression };
         
         if (typeof frame == "number")
             msg.arguments.frame = frame;

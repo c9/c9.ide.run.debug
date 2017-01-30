@@ -41,7 +41,7 @@ define(function(require, exports, module) {
         var activeFrame, dbg, menu, button, lastException;
         
         var loaded = false;
-        function load(){
+        function load() {
             if (loaded) return false;
             loaded = true;
             
@@ -66,8 +66,8 @@ define(function(require, exports, module) {
                         return "";
                     
                     if (path.charAt(0) === "/")
-                        path =  path.substr(1);
-                    return path + " :" + (node.line + 1) + ":" + (node.column + 1)
+                        path = path.substr(1);
+                    return path + " :" + (node.line + 1) + ":" + (node.column + 1);
                 },
                 width: "40%"
             }];
@@ -103,7 +103,7 @@ define(function(require, exports, module) {
 
                         // Set the active frame
                         activeFrame = top;
-                        emit("frameActivate", { frame : activeFrame });
+                        emit("frameActivate", { frame: activeFrame });
                         debug.activeFrame = activeFrame;
                         
                         e.frame = activeFrame;
@@ -202,7 +202,7 @@ define(function(require, exports, module) {
             
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
-            datagrid.renderer.setTheme({cssClass: "blackdg"});
+            datagrid.renderer.setTheme({ cssClass: "blackdg" });
             datagrid.setOption("maxLines", 200);
             
             datagrid.setDataProvider(modelFrames);
@@ -234,7 +234,7 @@ define(function(require, exports, module) {
             }, plugin);
             contextMenu.on("itemclick", function(e) {
                 if (e.value == "restart")
-                    dbg.restartFrame(activeFrame, function(){});
+                    dbg.restartFrame(activeFrame, function() {});
             });
             contextMenu.on("show", function(e) {
                 var selected = datagrid.selection.getCursor();
@@ -280,7 +280,7 @@ define(function(require, exports, module) {
             menu.resize = function() {
                 if (!menu.visible) return;
                 
-                list.renderer.setOption("maxLines", Math.floor(window.innerHeight/28 * 3 / 4));
+                list.renderer.setOption("maxLines", Math.floor(window.innerHeight / 28 * 3 / 4));
                 setTimeout(function() {
                     if (menu.opener) {
                         menu.reopen = true;
@@ -296,7 +296,7 @@ define(function(require, exports, module) {
             var list = new Tree();
             menu.$ext.appendChild(list.container);
             list.setDataProvider(modelSources);
-            list.renderer.setTheme({cssClass: "blackdg"});
+            list.renderer.setTheme({ cssClass: "blackdg" });
             list.on("click", function(e) {
                 var selected = list.selection.getCursor();
                 debug.openFile({
@@ -312,7 +312,7 @@ define(function(require, exports, module) {
             // Set context menu to the button
             button.setAttribute("submenu", menu);
 
-            layout.on("eachTheme", function(e){
+            layout.on("eachTheme", function(e) {
                 var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
                 // modelFrames.rowHeightInner = height - 1;
                 modelFrames.rowHeight = height;
@@ -340,12 +340,12 @@ define(function(require, exports, module) {
             
             // Highlight frame in Ace and Open the file
             if (frame) {
-                debug.showDebugFrame(frame, function(){
+                debug.showDebugFrame(frame, function() {
                     updateMarker(frame);
                 });
             }
                 
-            emit("frameActivate", { frame : activeFrame });
+            emit("frameActivate", { frame: activeFrame });
             debug.activeFrame = activeFrame;
         }
         
@@ -354,7 +354,7 @@ define(function(require, exports, module) {
         function addMarker(session, type, row) {
             var marker = session.addMarker(new Range(row, 0, row, 1), "ace_" + type, "fullLine");
             session.addGutterDecoration(row, type);
-            session["$" + type + "Marker"] = {lineMarker: marker, row: row};
+            session["$" + type + "Marker"] = { lineMarker: marker, row: row };
         }
 
         function removeMarker(session, type) {
@@ -395,7 +395,7 @@ define(function(require, exports, module) {
             arrow.className = "error_widget_arrow ace_error";
             
             var left = editor.renderer.$cursorLayer
-                .getPixelPosition({row: row, column: column}).left;
+                .getPixelPosition({ row: row, column: column }).left;
             arrow.style.left = left + editor.renderer.gutterWidth - 5 + "px";
             
             w.el.className = "error_widget_wrapper";
@@ -419,7 +419,7 @@ define(function(require, exports, module) {
             
             // TODO add buttons to: close, disable break on exception, not break on current line
             
-            editor.renderer.scrollCursorIntoView(null, 0.5, {bottom: w.el.offsetHeight});
+            editor.renderer.scrollCursorIntoView(null, 0.5, { bottom: w.el.offsetHeight });
         }
 
         function updateMarker(frame, scrollToLine) {
@@ -514,7 +514,7 @@ define(function(require, exports, module) {
         }
         
         function frameId(frame) {
-            return [frame.path, frame.line,frame.column, frame.sourceId].join(":");
+            return [frame.path, frame.line, frame.column, frame.sourceId].join(":");
         }
         /**
          * Assumptions:
@@ -573,7 +573,7 @@ define(function(require, exports, module) {
             modelSources.setRoot(sources);
         }
         
-        function clearFrames(){
+        function clearFrames() {
             setActiveFrame(null);
         }
         
@@ -582,31 +582,31 @@ define(function(require, exports, module) {
             modelSources.setRoot(sources);
         }
         
-        function updateAll(){
+        function updateAll() {
             modelFrames.setRoot(frames);
         }
         
         /***** Lifecycle *****/
         
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             load();
             plugin.once("draw", draw);
         });
-        plugin.on("enable", function(){
+        plugin.on("enable", function() {
             if (drawn) {
                 menu.enable();
                 button.setAttribute("disabled", dbg && !dbg.features.scripts);
                 datagrid.enable();
             }
         });
-        plugin.on("disable", function(){
+        plugin.on("disable", function() {
             if (drawn) {
                 menu.disable();
                 button.disable();
                 datagrid.disable();
             }
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             loaded = false;
             drawn = false;
         });
@@ -629,8 +629,8 @@ define(function(require, exports, module) {
              * frame represents the scope at which the debugger is stopped.
              * @property {debugger.Frame} activeFrame
              */
-            get activeFrame(){ return activeFrame; },
-            set activeFrame(frame){ setActiveFrame(frame); },
+            get activeFrame() { return activeFrame; },
+            set activeFrame(frame) { setActiveFrame(frame); },
             /**
              * A list of sources that are available from the debugger. These
              * can be files that are loaded in the runtime as well as code that
@@ -638,7 +638,7 @@ define(function(require, exports, module) {
              * @property {debugger.Source[]} sources
              * @readonly
              */
-            get sources(){ return sources; },
+            get sources() { return sources; },
             /**
              * A list (or stack) of frames that make up the call stack. The
              * frames are in order and the index 0 contains the frame where
@@ -646,7 +646,7 @@ define(function(require, exports, module) {
              * @property {debugger.Frame[]} frames
              * @readonly
              */
-            get frames(){ return frames; },
+            get frames() { return frames; },
             
             /**
              * Updates all frames in the call stack UI.

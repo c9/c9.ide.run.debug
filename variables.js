@@ -31,7 +31,7 @@ define(function(require, exports, module) {
         var model, datagrid; // UI Elements
         
         var loaded = false;
-        function load(){
+        function load() {
             if (loaded) return false;
             loaded = true;
             
@@ -129,10 +129,10 @@ define(function(require, exports, module) {
         
             var datagridEl = plugin.getElement("datagrid");
             datagrid = new Tree(datagridEl.$ext);
-            datagrid.setTheme({cssClass: "blackdg"});
+            datagrid.setTheme({ cssClass: "blackdg" });
             datagrid.setOption("maxLines", 200);
             
-            layout.on("eachTheme", function(e){
+            layout.on("eachTheme", function(e) {
                 var height = parseInt(ui.getStyleRule(".blackdg .row", "height"), 10) || 24;
                 // model.rowHeightInner = height - 1;
                 model.rowHeight = height;
@@ -147,7 +147,7 @@ define(function(require, exports, module) {
                     datagrid && datagrid.resize();
             });
             
-            datagridEl.on("contextmenu", function(){
+            datagridEl.on("contextmenu", function() {
                 return false;
             });
             
@@ -161,7 +161,7 @@ define(function(require, exports, module) {
                 
                 model.setAttribute(variable, "value", value);
                 
-                function undo(){
+                function undo() {
                     model.setAttribute(variable, "value", oldValue);
                 }
                 
@@ -244,23 +244,23 @@ define(function(require, exports, module) {
             updateNode(variable);
         }
         
-        function clearCache(){
+        function clearCache() {
             cached = {};
         }
         
         /***** Lifecycle *****/
         
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             load();
             plugin.once("draw", draw);
         });
-        plugin.on("enable", function(){
+        plugin.on("enable", function() {
             drawn && datagrid.enable();
         });
-        plugin.on("disable", function(){
+        plugin.on("disable", function() {
             drawn && datagrid.disable();
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
             loaded = false;
             drawn = false;
         });
@@ -282,7 +282,7 @@ define(function(require, exports, module) {
             /**
              * @ignore
              */
-            get model() { return model },
+            get model() { return model; },
             /**
              * Sets the frame that the variables and scopes are displayed for.
              * @param {debugger.Frame} frame  The frame to display the variables and scopes from.

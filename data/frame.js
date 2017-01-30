@@ -94,7 +94,7 @@ define(function(require, exports, module) {
         }
         
         return false;
-    }
+    };
         
     Frame.prototype.findVariable = function(ref, name, parents) {
         var result = Scope.prototype.findVariable.apply(this, arguments);
@@ -112,7 +112,7 @@ define(function(require, exports, module) {
             }
         }
         return false;
-    }
+    };
     
     // @todo maybe check ref?
     Frame.prototype.equals = function(frame) {
